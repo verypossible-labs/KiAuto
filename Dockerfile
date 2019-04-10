@@ -47,6 +47,6 @@ COPY ./config/* /root/.config/kicad/
 
 # Copy the installed global symbol and footprint so projcts built with stock
 # symbols and footprints don't break
-CMD ["cp","/usr/share/kicad/template/sym-lib-table","/root/.config/kicad/"]
-CMD ["cp","/usr/share/kicad/template/fp-lib-table","/root/.config/kicad/"]
+RUN cp /usr/share/kicad/template/sym-lib-table /root/.config/kicad/
+RUN cp /usr/share/kicad/template/fp-lib-table /root/.config/kicad/
 
