@@ -120,14 +120,6 @@ def eeschema_plot_schematic(output_directory, file_format, all_pages):
         'Tab',
         'space'
     ]
-    if file_format == 'pdf':
-        logger.info('Select PDF plot format')
-        for i in range(3):
-            command_list.insert(6, 'Up')
-    else:
-        logger.info('Select SVG plot format')
-        for i in range(2):
-            command_list.insert(6, 'Up')
 
     if not all_pages:   # all pages is default option
         command_list.extend(['Tab', 'Tab', 'Tab', 'Tab'])
@@ -136,9 +128,11 @@ def eeschema_plot_schematic(output_directory, file_format, all_pages):
     logger.info('Plot')
     xdotool(['key', 'Return'])
 
-def set_default_plot_option():
+def set_default_plot_option(file_format="hpgl"):
     # eeschema saves the latest plot format, this is problematic because
     # plot_schematic() does not know which option is set (it assumes HPGL)
+
+    logger.info('Setting the default plot format to ' + file_format);
     opt_file_path = os.path.expanduser('~/.config/kicad/')
     in_p = os.path.join(opt_file_path, 'eeschema')
     if os.path.exists(in_p):
@@ -148,7 +142,16 @@ def set_default_plot_option():
         for in_line in in_f:
             param, value = in_line.split('=', 1)
             if param == 'PlotFormat':
-                out_line = 'PlotFormat=0\n'  # 1: ps, 4: pdf, 5:svg, 3: dxf, 0: hpgl
+		if file_format == "ps":
+                	out_line = 'PlotFormat=1\n'
+		elif file_format == "dxf":
+                	out_line = 'PlotFormat=3\n'
+		elif file_format == "pdf":
+                	out_line = 'PlotFormat=4\n'
+		elif file_format == "svg":
+                	out_line = 'PlotFormat=5\n'
+		else: #  if file_format == "hpgl" or we don't know what's up:
+                	out_line = 'PlotFormat=0\n'
             else:
                 out_line = in_line
             out_f.write(out_line)
@@ -164,7 +167,7 @@ def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_page
         logging.info('Removing old file')
         os.remove(output_file)
 
-    set_default_plot_option()
+    set_default_plot_option(file_format)
     os.path.basename('/root/dir/sub/file.ext')
 
     with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
