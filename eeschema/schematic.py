@@ -102,10 +102,9 @@ def eeschema_plot_schematic(output_directory, file_format, all_pages):
     logger.info('Focus main eeschema window')
     xdotool(['search', '--name', '\[', 'windowfocus'])
 
-    logger.info('Open File->Plot->Plot')
+    logger.info('Open File->pLot')
     xdotool(['key', 'alt+f',
-        'p',
-        'p'
+        'l'
     ])
 
     wait_for_window('plot', 'Plot')
