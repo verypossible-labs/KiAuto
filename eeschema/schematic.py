@@ -127,6 +127,11 @@ def eeschema_plot_schematic(output_directory, file_format, all_pages):
 
     logger.info('Plot')
     xdotool(['key', 'Return'])
+    logger.info('Quitting eeschema')
+    xdotool(['key', 'Escape'])
+    wait_for_window('eeschema', '\[')
+    xdotool(['key', 'Ctrl+q'])
+			
 
 def set_default_plot_option(file_format="hpgl"):
     # eeschema saves the latest plot format, this is problematic because
@@ -174,7 +179,10 @@ def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_page
         with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
             eeschema_plot_schematic(output_dir, file_format, all_pages)
             file_util.wait_for_file_created_by_process(eeschema_proc.pid, output_file)
-            eeschema_proc.terminate()
+	    # TODO: this kills things too quickly on multi-sheet SVG outputs
+	    # since it creates multiple files, with the one we know to look for being the first one
+	    # So we wait for the process to exit on its own
+            eeschema_proc.wait()
 
     return output_file
 
