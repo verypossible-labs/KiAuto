@@ -70,6 +70,23 @@ def dismiss_newer_version():
     except RuntimeError:
         pass
 
+
+def dismiss_remap_helper():
+    # The "Remap Symbols" windows pop up if the uses the project symbol library 
+    # the older list look up method for loading library symbols.
+    # This can be ignored as we're just trying to output data and don't 
+    # want to mess with the actual project.
+    try:
+        logger.info('Dismiss schematic symbol remapping')
+        wait_for_window('Remap Symbols', 'Info', 3)
+
+        xdotool(['key', 'Escape'])
+    except RuntimeError:
+        pass
+
+
+
+
 def eeschema_plot_schematic(output_directory, file_format, all_pages):
     if file_format not in ('pdf', 'svg'):
         raise ValueError("file_format should be 'pdf' or 'svg'")
@@ -78,6 +95,7 @@ def eeschema_plot_schematic(output_directory, file_format, all_pages):
 
     dismiss_library_warning()
     dismiss_newer_version()
+    dismiss_remap_helper();
 
     wait_for_window('eeschema', '\[')
 
@@ -182,6 +200,7 @@ def eeschema_run_erc(schematic, output_dir, warning_as_error):
         with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
             dismiss_library_warning()
             dismiss_newer_version()
+            dismiss_remap_helper()
 
             logger.info('Focus main eeschema window')
             wait_for_window('eeschema', '\[')
