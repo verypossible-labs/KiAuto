@@ -53,7 +53,7 @@ def dismiss_library_warning():
         wait_for_window(nf_title, nf_title, 3)
 
         logger.info('Dismiss eeschema library warning window')
-        xdotool(['search', '--name', nf_title, 'windowfocus'])
+        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
         xdotool(['key', 'Return'])
     except RuntimeError:
         pass
@@ -78,7 +78,7 @@ def dismiss_remap_helper():
     # want to mess with the actual project.
     try:
         logger.info('Dismiss schematic symbol remapping')
-        wait_for_window('Remap Symbols', 'Info', 3)
+        wait_for_window('Remap Symbols', 'Remap', 3)
 
         xdotool(['key', 'Escape'])
     except RuntimeError:
@@ -97,10 +97,10 @@ def eeschema_plot_schematic(output_directory, file_format, all_pages):
     dismiss_newer_version()
     dismiss_remap_helper();
 
-    wait_for_window('eeschema', '\[')
+    wait_for_window('eeschema', '.sch')
 
     logger.info('Focus main eeschema window')
-    xdotool(['search', '--name', '\[', 'windowfocus'])
+    xdotool(['search', '--onlyvisible', '--name', '.sch', 'windowfocus'])
 
     logger.info('Open File->pLot')
     xdotool(['key', 'alt+f',
@@ -112,24 +112,34 @@ def eeschema_plot_schematic(output_directory, file_format, all_pages):
     logger.info('Paste output directory')
     xdotool(['key', 'ctrl+v'])
 
+    logger.info('Move to the "plot" button')
+
     command_list = ['key',
         'Tab',
         'Tab',
         'Tab',
         'Tab',
         'Tab',
-        'space'
+        'Tab',
+        'Tab',
+        'Tab',
+        'Tab',
+        'Tab',
+        'Tab',
+        'Tab',
+        'Tab',
+        'Tab',
     ]
 
     if not all_pages:   # all pages is default option
-        command_list.extend(['Tab', 'Tab', 'Tab', 'Tab'])
+        command_list.extend(['Tab'])
     xdotool(command_list)
 
     logger.info('Plot')
     xdotool(['key', 'Return'])
     logger.info('Quitting eeschema')
     xdotool(['key', 'Escape'])
-    wait_for_window('eeschema', '\[')
+    wait_for_window('eeschema', '.sch')
     xdotool(['key', 'Ctrl+q'])
 			
 
@@ -213,7 +223,7 @@ def eeschema_run_erc(schematic, output_dir, warning_as_error):
             dismiss_remap_helper()
 
             logger.info('Focus main eeschema window')
-            wait_for_window('eeschema', '\[')
+            wait_for_window('eeschema', '.sch')
 
             logger.info('Open Tools->Electrical Rules Checker')
             xdotool(['key',
