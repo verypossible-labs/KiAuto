@@ -22,7 +22,7 @@ Build the docker image and run it:
 
 ```
 docker build -t kicad-automation .
-docker run --rm -it -v <path to a kicad project>/kicad-project -v`pwd`:/kicad-automation-scriptskicad-automation-scripts
+docker run --rm -it -v <path to a kicad project>/kicad-project -v`pwd`:/kicad-automation-scripts kicad-automation
 ```
 
 Or fetch it from [Dockerhub]:
@@ -66,7 +66,9 @@ can use the following commands:
 ### Export a schematic to PDF or SVG
 
 ```
-python -m kicad-automation.eeschema.schematic export /kicad-project/<some-schematic>.sch <build_dir> <svg or pdf> <all-pages (True or False)>
+
+python -m kicad-automation.eeschema.schematic export --all_pages  --file-format (pdf or svg) /kicad-project/<some-schematic>.sch <output-dir>
+
 ```
 
 ### Run ERC:
