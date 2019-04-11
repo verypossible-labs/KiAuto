@@ -31,6 +31,7 @@ repo_root = os.path.dirname(eeschema_dir)
 
 sys.path.append(repo_root)
 
+from xvfbwrapper import Xvfb
 from util import file_util
 from util.ui_automation import (
     PopenContext,
@@ -138,14 +139,17 @@ def eeschema_export_bom(output_dir, eeschema_proc):
     xdotool(['key', 'Ctrl+q'])
     logger.info('Done!');
 
-def export_bom(schematic_file, output_dir):
+def export_bom(schematic_file, output_dir, screencast_dir):
 
-    screencast_output_file = os.path.join(output_dir, 'export_bom_screencast.ogv')
-
-    with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
-        with PopenContext(['eeschema', schematic_file], close_fds=True) as eeschema_proc:
-            eeschema_export_bom(output_dir, eeschema_proc)
-
+    if screencast_dir:
+    	screencast_output_file = os.path.join(screencast_dir, 'export_bom_screencast.ogv')
+        with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
+            with PopenContext(['eeschema', schematic_file], close_fds=True) as eeschema_proc:
+                eeschema_export_bom(output_dir, eeschema_proc)
+    else:
+        with Xvfb(width=800, height=600, colordepth=24):
+            with PopenContext(['eeschema', schematic_file], close_fds=True) as eeschema_proc:
+                eeschema_export_bom(output_dir, eeschema_proc)
     #logger.info('Convert component XML to useful BOM CSV file...')
     #subprocess.check_call([
     #    'python',
@@ -160,8 +164,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad BOM generation automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
 
-    parser.add_argument('schematic', help='KiCad schematic file')
-    parser.add_argument('output_dir', help='output directory')
+    parser.add_argument('--schematic', help='KiCad schematic file')
+    parser.add_argument('--output_dir', help='output directory')
+    parser.add_argument('--screencast_dir', help='Where to record a screencast. No dir = no screencast', default=None)
 
     export_parser = subparsers.add_parser('export', help='Export the BOM')
     
@@ -175,7 +180,7 @@ if __name__ == '__main__':
     file_util.mkdir_p(output_dir)
 
     if args.command == 'export':
-        export_bom(args.schematic, output_dir)
+        export_bom(args.schematic, output_dir, args.screencast_dir)
         exit(0)
     else:
         usage()

@@ -30,6 +30,7 @@ repo_root = os.path.dirname(eeschema_dir)
 
 sys.path.append(repo_root)
 
+from xvfbwrapper import Xvfb
 from util import file_util
 from util.ui_automation import (
     PopenContext,
@@ -176,8 +177,7 @@ def set_default_plot_option(file_format="hpgl"):
         os.remove(in_p)
         os.rename(out_p, in_p)
 
-def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_pages=False):
-    screencast_output_file = os.path.join(output_dir, 'export_schematic_screencast.ogv')
+def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_pages=False, screencast_dir=None):
     file_format = file_format.lower()
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.'+file_format)
     if os.path.exists(output_file):
@@ -187,14 +187,18 @@ def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_page
     set_default_plot_option(file_format)
     os.path.basename('/root/dir/sub/file.ext')
 
-    with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
-        with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
-            eeschema_plot_schematic(output_dir, file_format, all_pages)
-            file_util.wait_for_file_created_by_process(eeschema_proc.pid, output_file)
-	    # TODO: this kills things too quickly on multi-sheet SVG outputs
-	    # since it creates multiple files, with the one we know to look for being the first one
-	    # So we wait for the process to exit on its own
-            eeschema_proc.wait()
+
+    if screencast_dir:
+        screencast_output_file = os.path.join(screencast__dir, 'export_schematic_screencast.ogv')
+        with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
+            with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
+                eeschema_plot_schematic(output_dir, file_format, all_pages)
+                eeschema_proc.wait()
+    else:
+        with Xvfb(width=800, height=600, colordepth=24):
+            with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
+                eeschema_plot_schematic(output_dir, file_format, all_pages)
+                eeschema_proc.wait()
 
     return output_file
 
@@ -213,12 +217,13 @@ def eeschema_parse_erc(erc_file, warning_as_error = False):
         return int(errors) + int(warnings)
     return int(errors)
 
-def eeschema_run_erc(schematic, output_dir, warning_as_error):
+def eeschema_run_erc(schematic, output_dir, warning_as_error, screencast_dir=None):
     os.environ['EDITOR'] = '/bin/cat'
 
-    screencast_output_file = os.path.join(output_dir, 'run_erc_schematic_screencast.ogv')
-
-    with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
+    if screencast_dir:
+    	screencast_output_file = os.path.join(screencast_dir, 'run_erc_schematic_screencast.ogv')
+    # TODO: refactor this to make it easier to toggle the screencast
+    with Xvfb(width=800, height=600, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
             dismiss_library_warning()
             dismiss_newer_version()
@@ -275,8 +280,10 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad schematic automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
 
-    parser.add_argument('schematic', help='KiCad schematic file')
-    parser.add_argument('output_dir', help='output directory')
+    parser.add_argument('--schematic', help='KiCad schematic file')
+    parser.add_argument('--output_dir', help='output directory')
+
+    parser.add_argument('--screencast_dir', help="Directory to record screencast to. If empty, no screencast", default=None)
 
     export_parser = subparsers.add_parser('export', help='Export a schematic')
     export_parser.add_argument('--file_format', '-f', help='Export file format',
@@ -302,10 +309,10 @@ if __name__ == '__main__':
     file_util.mkdir_p(output_dir)
 
     if args.command == 'export':
-        eeschema_export_schematic(args.schematic, output_dir, args.file_format, args.all_pages)
+        eeschema_export_schematic(args.schematic, output_dir, args.file_format, args.all_pages, args.screencast_dir)
         exit(0)
     if args.command == 'run_erc':
-        errors = eeschema_run_erc(args.schematic, output_dir, args.warnings_as_errors)
+        errors = eeschema_run_erc(args.schematic, output_dir, args.warnings_as_errors, args.screencast_dir)
         if errors > 0:
             logging.error('{} ERC errors detected'.format(errors))
             exit(errors)
