@@ -140,6 +140,8 @@ def eeschema_plot_schematic(output_dir, file_format, all_pages):
     logger.info('Quitting eeschema')
     xdotool(['key', 'Escape'])
     wait_for_window('eeschema', '.sch')
+    logger.info('Focus main eeschema window')
+    xdotool(['search', '--onlyvisible', '--name', '.sch', 'windowfocus'])
     xdotool(['key', 'Ctrl+q'])
 			
 
