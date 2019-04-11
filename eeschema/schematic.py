@@ -87,7 +87,7 @@ def dismiss_remap_helper():
 
 
 
-def eeschema_plot_schematic(output_directory, file_format, all_pages):
+def eeschema_plot_schematic(output_dir, file_format, all_pages):
     if file_format not in ('pdf', 'svg'):
         raise ValueError("file_format should be 'pdf' or 'svg'")
 
