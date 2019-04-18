@@ -189,7 +189,7 @@ def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_page
 
 
     if screencast_dir:
-        screencast_output_file = os.path.join(screencast__dir, 'export_schematic_screencast.ogv')
+        screencast_output_file = os.path.join(screencast_dir, 'export_schematic_screencast.ogv')
         with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
             with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
                 eeschema_plot_schematic(output_dir, file_format, all_pages)
