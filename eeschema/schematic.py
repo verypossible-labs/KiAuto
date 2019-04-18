@@ -94,9 +94,9 @@ def eeschema_plot_schematic(output_dir, file_format, all_pages):
 
     clipboard_store(output_dir)
 
-    dismiss_library_warning()
     dismiss_newer_version()
     dismiss_remap_helper();
+    dismiss_library_warning()
 
     wait_for_window('eeschema', '.sch')
 
