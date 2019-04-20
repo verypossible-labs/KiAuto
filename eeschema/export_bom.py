@@ -46,6 +46,21 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
+def dismiss_library_error():
+    # The "Error" modal pops up if libraries required by the schematic have
+    # not been found. This can be ignored as all symbols are placed inside the
+    # *-cache.lib file:
+    # There -should- be a way to disable it, but I haven't the magic to drop in the config file yet
+    try:
+        nf_title = 'Error'
+        wait_for_window(nf_title, nf_title, 3)
+
+        logger.info('Dismiss eeschema library warning modal')
+        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+        xdotool(['key', 'Escape'])
+    except RuntimeError:
+        pass
+
 def dismiss_library_warning():
     # The "Not Found" window pops up if libraries required by the schematic have
     # not been found. This can be ignored as all symbols are placed inside the
@@ -94,9 +109,10 @@ def eeschema_export_bom(output_dir, eeschema_proc):
     bom_file = output_dir + "bom.csv"
     clipboard_store('xsltproc -o "'+bom_file + '" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"');
 
-    dismiss_library_warning()
     dismiss_newer_version()
-    dismiss_remap_helper();
+    dismiss_remap_helper()
+    dismiss_library_warning()
+    dismiss_library_error()
 
     wait_for_window('eeschema', '.sch')
 

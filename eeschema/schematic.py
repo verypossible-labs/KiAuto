@@ -44,6 +44,21 @@ from util.ui_automation import (
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
+def dismiss_library_error():
+    # The "Error" modal pops up if libraries required by the schematic have
+    # not been found. This can be ignored as all symbols are placed inside the
+    # *-cache.lib file:
+    # There -should- be a way to disable it, but I haven't the magic to drop in the config file yet
+    try:
+        nf_title = 'Error'
+        wait_for_window(nf_title, nf_title, 3)
+
+        logger.info('Dismiss eeschema library warning modal')
+        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+        xdotool(['key', 'Escape'])
+    except RuntimeError:
+        pass
+
 
 def dismiss_library_warning():
     # The "Not Found" window pops up if libraries required by the schematic have
@@ -97,6 +112,7 @@ def eeschema_plot_schematic(output_dir, file_format, all_pages):
     dismiss_newer_version()
     dismiss_remap_helper();
     dismiss_library_warning()
+    dismiss_library_error()
 
     wait_for_window('eeschema', '.sch')
 
@@ -225,9 +241,10 @@ def eeschema_run_erc(schematic, output_dir, warning_as_error, screencast_dir=Non
     # TODO: refactor this to make it easier to toggle the screencast
     with Xvfb(width=800, height=600, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
-            dismiss_library_warning()
             dismiss_newer_version()
             dismiss_remap_helper()
+            dismiss_library_warning()
+    	    dismiss_library_error()
 
             logger.info('Focus main eeschema window')
             wait_for_window('eeschema', '.sch')
