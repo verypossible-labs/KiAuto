@@ -23,6 +23,10 @@ import os
 import logging
 import argparse
 from xvfbwrapper import Xvfb
+import atexit
+
+config_file = ''
+old_config_file = ''
 
 pcbnew_dir = os.path.dirname(os.path.abspath(__file__))
 repo_root = os.path.dirname(pcbnew_dir)
@@ -69,13 +73,37 @@ def parse_drc(drc_file):
         'unconnected_pads': int(unconnected_pads)
     }
 
+def dismiss_already_running():
+    # The "Confirmation" modal pops up if pcbnew is already running
+    try:
+        nf_title = 'Confirmation'
+        wait_for_window(nf_title, nf_title, 1)
+
+        logger.info('Dismiss pcbnew already running')
+        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+        xdotool(['key', 'Return'])
+    except RuntimeError:
+        pass
+
+def dismiss_warning():
+    try:
+        nf_title = 'Warning'
+        wait_for_window(nf_title, nf_title, 1)
+
+        logger.error('Dismiss pcbnew warning, will fail')
+        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+        xdotool(['key', 'Return'])
+    except RuntimeError:
+        pass
+
 
 def run_drc(pcb_file, output_dir, record=True):
 
     file_util.mkdir_p(output_dir)
 
-    recording_file = os.path.join(output_dir, 'run_drc_screencast.ogv')
     drc_output_file = os.path.join(os.path.abspath(output_dir), 'drc_result.rpt')
+    if os.path.exists(drc_output_file):
+        os.remove(drc_output_file)
 
     xvfb_kwargs = {
 	    'width': 800,
@@ -83,12 +111,21 @@ def run_drc(pcb_file, output_dir, record=True):
 	    'colordepth': 24,
     }
 
-    with recorded_xvfb(recording_file, **xvfb_kwargs) if record else Xvfb(**xvfb_kwargs):
+    with recorded_xvfb(output_dir, **xvfb_kwargs) if record else Xvfb(**xvfb_kwargs):
         with PopenContext(['pcbnew', pcb_file], close_fds=True) as pcbnew_proc:
             clipboard_store(drc_output_file)
 
             logger.info('Focus main pcbnew window')
-            wait_for_window('pcbnew', 'Pcbnew')
+            failed_focuse = False
+            try:
+               wait_for_window('pcbnew', 'Pcbnew', 5)
+            except RuntimeError:
+               failed_focuse = True
+               pass
+            if failed_focuse:
+               dismiss_already_running()
+               dismiss_warning()
+               wait_for_window('pcbnew', 'Pcbnew', 5)
 
             logger.info('Open Inspect->DRC')
             xdotool(['key', 'alt+i'])
@@ -105,7 +142,8 @@ def run_drc(pcb_file, output_dir, record=True):
             xdotool(['key', 'space'])
             xdotool(['key', 'Tab'])
             xdotool(['key', 'Tab'])
-            xdotool(['key', 'space'])
+            xdotool(['key', 'Tab'])
+            xdotool(['key', 'Tab'])
             logger.info('Pasting output dir')
             xdotool(['key', 'ctrl+v'])
             xdotool(['key', 'Return'])
@@ -115,6 +153,12 @@ def run_drc(pcb_file, output_dir, record=True):
             pcbnew_proc.terminate()
 
     return drc_output_file
+
+# Restore the pcbnew configuration
+def restore_config():
+    if os.path.exists(old_config_file):
+       os.remove(config_file)
+       os.rename(old_config_file,config_file)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad automated DRC runner')
@@ -129,6 +173,21 @@ if __name__ == '__main__':
     )
 
     args = parser.parse_args()
+    # Force english + UTF-8
+    os.environ['LANG'] = 'C.UTF-8'
+
+    # Back-up the current pcbnew documentation
+    config_file = os.environ['HOME'] + '/.config/kicad/pcbnew'
+    old_config_file = config_file + '.pre_run_drc'
+    os.rename(config_file,old_config_file)
+    atexit.register(restore_config)
+
+    # Create a suitable configuration
+    text_file = open(config_file,"w")
+    text_file.write('canvas_type=2\n')
+    text_file.write('RefillZonesBeforeDrc=1\n')
+    text_file.write('PcbFrameFirstRunShown=1\n')
+    text_file.close()
 
     drc_result = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record))
 
