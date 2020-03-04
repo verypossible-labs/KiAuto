@@ -51,17 +51,23 @@ class PopenContext(subprocess.Popen):
         self.wait()
 
 @contextmanager
-def recorded_xvfb(video_filename, **xvfb_args):
-    with Xvfb(**xvfb_args):
-        with PopenContext([
-                'recordmydesktop',
-                '--no-sound',
-                '--no-frame',
-                '--on-the-fly-encoding',
-                '-o', video_filename], close_fds=True) as screencast_proc: 
-            yield
-            screencast_proc.terminate()
-
+def recorded_xvfb(video_dir, **xvfb_args):
+    if video_dir:
+       video_filename = os.path.join(video_dir, 'run_erc_schematic_screencast.ogv')
+       with Xvfb(**xvfb_args):
+           with PopenContext([
+                   'recordmydesktop',
+                   '--no-sound',
+                   '--no-frame',
+                   '--on-the-fly-encoding',
+                   '-o', video_filename], close_fds=True) as screencast_proc: 
+               yield
+               screencast_proc.terminate()
+    else:
+       with Xvfb(**xvfb_args):
+           with PopenContext(['printf'], close_fds=True) as screencast_proc:
+               yield
+               screencast_proc.terminate()
 
 def xdotool(command):
     return subprocess.check_output(['xdotool'] + command)
@@ -80,19 +86,51 @@ def clipboard_retrieve():
         output += line.decode()
     return output;
 
-def wait_for_window(name, window_regex, timeout=10, focus=True):
+
+def wait_focused(id, timeout=10):
+    DELAY = 0.5
+    logger.info('Waiting for %s window to get focus...', id)
+    for i in range(int(timeout/DELAY)):
+        cur_id = xdotool(['getwindowfocus']).rstrip()
+        logger.debug('Currently focused id: %s', cur_id)
+        if cur_id==id:
+           return
+        time.sleep(DELAY)
+    raise RuntimeError('Timed out waiting for %s window to get focus' % id)
+
+def wait_not_focused(id, timeout=10):
+    DELAY = 0.5
+    logger.info('Waiting for %s window to lose focus...', id)
+    for i in range(int(timeout/DELAY)):
+        cur_id = xdotool(['getwindowfocus']).rstrip()
+        logger.debug('Currently focused id: %s', cur_id)
+        if cur_id!=id:
+           return
+        time.sleep(DELAY)
+    raise RuntimeError('Timed out waiting for %s window to lose focus' % id)
+
+def wait_for_window(name, window_regex, timeout=10, focus=True, skip_id=0):
     DELAY = 0.5
     logger.info('Waiting for %s window...', name)
     xdotool_command = ['search', '--onlyvisible', '--name', window_regex]
-    if focus:
-        xdotool_command.append('windowfocus')
 
     for i in range(int(timeout/DELAY)):
         try:
-            window_id = xdotool(xdotool_command).strip()
-            logger.info('Found %s window', name)
-            logger.debug('Window id: %s', window_id)
-            return window_id
+            window_id = xdotool(xdotool_command).splitlines()
+            logger.info('Found %s window (%d)', name, len(window_id))
+            if len(window_id)==1:
+               id = window_id[0]
+            if len(window_id)>1:
+               id = window_id[1]
+            logger.debug('Window id: %s', id)
+            if id!=skip_id:
+               if focus:
+                  xdotool_command = ['windowfocus', '--sync', id ]
+                  xdotool(xdotool_command)
+                  wait_focused(id,timeout)
+               return window_id
+            else:
+               logger.debug('Skipped')
         except subprocess.CalledProcessError:
             pass
         time.sleep(DELAY)
