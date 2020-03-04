@@ -101,7 +101,12 @@ def dismiss_remap_helper():
         pass
 
 
-
+def eeschema_skip_errors():
+    #dismiss_newer_version()
+    #dismiss_remap_helper();
+    #dismiss_library_warning()
+    #dismiss_library_error()
+    return 0
 
 def eeschema_plot_schematic(output_dir, file_format, all_pages):
     if file_format not in ('pdf', 'svg'):
@@ -109,14 +114,9 @@ def eeschema_plot_schematic(output_dir, file_format, all_pages):
 
     clipboard_store(output_dir)
 
-    dismiss_newer_version()
-    dismiss_remap_helper();
-    dismiss_library_warning()
-    dismiss_library_error()
-
-    wait_for_window('eeschema', '.sch')
-
     logger.info('Focus main eeschema window')
+    wait_for_window('Eeschema', '.sch')
+
     xdotool(['search', '--onlyvisible', '--name', '.sch', 'windowfocus'])
 
     logger.info('Open File->pLot')
@@ -154,13 +154,18 @@ def eeschema_plot_schematic(output_dir, file_format, all_pages):
 
     logger.info('Plot')
     xdotool(['key', 'Return'])
-    logger.info('Quitting eeschema')
+    logger.info('Closing window')
     xdotool(['key', 'Escape'])
+
+
+def eeschema_quit():
+    logger.info('Quitting eeschema')
+    xdotool(['key', 'Escape', 'Escape', 'Escape'])
     wait_for_window('eeschema', '.sch')
     logger.info('Focus main eeschema window')
     xdotool(['search', '--onlyvisible', '--name', '.sch', 'windowfocus'])
     xdotool(['key', 'Ctrl+q'])
-			
+
 
 def set_default_plot_option(file_format="hpgl"):
     # eeschema saves the latest plot format, this is problematic because
@@ -174,18 +179,22 @@ def set_default_plot_option(file_format="hpgl"):
         in_f = open(in_p)
         out_f = open(out_p, 'w')
         for in_line in in_f:
-            param, value = in_line.split('=', 1)
+            if in_line.find('=') != -1:
+                param, value = in_line.split('=', 1)
+            else:
+                param = 'none'
+                value = 'none'
             if param == 'PlotFormat':
-		if file_format == "ps":
-                	out_line = 'PlotFormat=1\n'
-		elif file_format == "dxf":
-                	out_line = 'PlotFormat=3\n'
-		elif file_format == "pdf":
-                	out_line = 'PlotFormat=4\n'
-		elif file_format == "svg":
-                	out_line = 'PlotFormat=5\n'
-		else: #  if file_format == "hpgl" or we don't know what's up:
-                	out_line = 'PlotFormat=0\n'
+                if file_format == "ps":
+                        out_line = 'PlotFormat=1\n'
+                elif file_format == "dxf":
+                        out_line = 'PlotFormat=3\n'
+                elif file_format == "pdf":
+                        out_line = 'PlotFormat=4\n'
+                elif file_format == "svg":
+                        out_line = 'PlotFormat=5\n'
+                else: #  if file_format == "hpgl" or we don't know what's up:
+                        out_line = 'PlotFormat=0\n'
             else:
                 out_line = in_line
             out_f.write(out_line)
@@ -203,18 +212,12 @@ def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_page
     set_default_plot_option(file_format)
     os.path.basename('/root/dir/sub/file.ext')
 
-
-    if screencast_dir:
-        screencast_output_file = os.path.join(screencast_dir, 'export_schematic_screencast.ogv')
-        with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
-            with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
-                eeschema_plot_schematic(output_dir, file_format, all_pages)
-                eeschema_proc.wait()
-    else:
-        with Xvfb(width=800, height=600, colordepth=24):
-            with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
-                eeschema_plot_schematic(output_dir, file_format, all_pages)
-                eeschema_proc.wait()
+    with recorded_xvfb(screencast_dir, width=1024, height=900, colordepth=24):
+        with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
+            eeschema_skip_errors()
+            eeschema_plot_schematic(output_dir, file_format, all_pages)
+            eeschema_quit()
+            eeschema_proc.wait()
 
     return output_file
 
@@ -233,65 +236,148 @@ def eeschema_parse_erc(erc_file, warning_as_error = False):
         return int(errors) + int(warnings)
     return int(errors)
 
+def eeschema_run_erc_schematic(output_dir, pid):
+
+    logger.info('Focus main eeschema window')
+    wait_for_window('eeschema', '.sch')
+
+    logger.info('Open Tools->Electrical Rules Checker')
+    xdotool(['key',
+        'alt+i', # alt+t
+        'c'
+    ])
+
+    # Do this now since we have to wait for KiCad anyway
+    clipboard_store(output_dir)
+
+    logger.info('Focus Electrical Rules Checker window')
+    wait_for_window('Electrical Rules Checker', 'Electrical Rules Checker')
+    xdotool(['key',
+        'Tab',
+        'Tab',
+        'Tab',
+        'Tab',
+        'space',
+        'Return'
+    ])
+
+    wait_for_window('ERC File save dialog', 'ERC File')
+    xdotool(['key', 'Home'])
+    logger.info('Pasting output dir')
+    xdotool(['key', 'ctrl+v'])
+    logger.info('Copy full file path')
+    xdotool(['key',
+        'ctrl+a',
+        'ctrl+c'
+    ])
+
+    erc_file = clipboard_retrieve()
+    if os.path.exists(erc_file):
+        os.remove(erc_file)
+
+    logger.info('Run ERC')
+    xdotool(['key', 'Return'])
+
+    logger.info('Wait for ERC file creation')
+    file_util.wait_for_file_created_by_process(pid, erc_file)
+
+    logger.info('Exit ERC')
+    xdotool(['key', 'shift+Tab', 'Return'])
+
+    return erc_file
+
+
+def eeschema_netlist_commands(output_file, pid):
+    logger.info('Focus main eeschema window')
+    wait_for_window('eeschema', '.sch')
+
+    logger.info('Open Tools->Generate Netlist File')
+    xdotool(['key',
+        'alt+t',
+        'n'
+    ])
+
+    # Do this now since we have to wait for KiCad anyway
+    clipboard_store(output_file)
+
+    logger.info('Focus Netlist window')
+    wait_for_window('Netlist', 'Netlist')
+    xdotool(['key','Tab','Tab','Return'])
+
+    wait_for_window('Netlist File save dialog', 'Save Netlist File')
+    logger.info('Pasting output file')
+    xdotool(['key', 'ctrl+v'])
+    logger.info('Copy full file path')
+    xdotool(['key', 'ctrl+a', 'ctrl+c'])
+
+    net_file = clipboard_retrieve()
+    if os.path.exists(net_file):
+        os.remove(net_file)
+
+    logger.info('Generate Netlist')
+    xdotool(['key', 'Return'])
+
+    logger.info('Wait for Netlist file creation')
+    file_util.wait_for_file_created_by_process(pid, net_file)
+
+    return net_file
+
+
+def eeschema_bom_xml_commands(output_file, pid):
+    logger.info('Focus main eeschema window')
+    wait_for_window('eeschema', '.sch')
+
+    logger.info('Open Tools->Generate Bill of Materials')
+    xdotool(['key',
+        'alt+t',
+        'm'
+    ])
+
+    logger.info('Focus BoM window')
+    wait_for_window('Bill of Material', 'Bill of Material')
+    xdotool(['key','Return'])
+
+    logger.info('Wait for BoM file creation')
+    file_util.wait_for_file_created_by_process(pid, output_file)
+
+    time.sleep(3)
+
+    logger.info('Close BoM window')
+    xdotool(['key','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Return'])
+    wait_for_window('eeschema', '.sch')
+
+    return output_file
+
+
 def eeschema_run_erc(schematic, output_dir, warning_as_error, screencast_dir=None):
     os.environ['EDITOR'] = '/bin/cat'
 
-    if screencast_dir:
-    	screencast_output_file = os.path.join(screencast_dir, 'run_erc_schematic_screencast.ogv')
-    # TODO: refactor this to make it easier to toggle the screencast
-    with Xvfb(width=800, height=600, colordepth=24):
-        with PopenContext(['eeschema', schematic], close_fds=True) as eeschema_proc:
-            dismiss_newer_version()
-            dismiss_remap_helper()
-            dismiss_library_warning()
-    	    dismiss_library_error()
-
-            logger.info('Focus main eeschema window')
-            wait_for_window('eeschema', '.sch')
-
-            logger.info('Open Tools->Electrical Rules Checker')
-            xdotool(['key',
-                'alt+t',
-                'c'
-            ])
-
-            # Do this now since we have to wait for KiCad anyway
-            clipboard_store(output_dir)
-
-            logger.info('Focus Electrical Rules Checker window')
-            wait_for_window('Electrical Rules Checker', 'Electrical Rules Checker')
-            xdotool(['key',
-                'Tab',
-                'Tab',
-                'Tab',
-                'Tab',
-                'space',
-                'Return'
-            ])
-
-            wait_for_window('ERC File save dialog', 'ERC File')
-            xdotool(['key', 'Home'])
-            logger.info('Pasting output dir')
-            xdotool(['key', 'ctrl+v'])
-            logger.info('Copy full file path')
-            xdotool(['key',
-                'ctrl+a',
-                'ctrl+c'
-            ])
-
-            erc_file = clipboard_retrieve()
-            if os.path.exists(erc_file):
-                os.remove(erc_file)
-
-            logger.info('Run ERC')
-            xdotool(['key', 'Return'])
-
-            logger.info('Wait for ERC file creation')
-            file_util.wait_for_file_created_by_process(eeschema_proc.pid, erc_file)
-
-            eeschema_proc.terminate()
+    with recorded_xvfb(screencast_dir, width=1024, height=900, colordepth=24):
+        with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
+            eeschema_skip_errors()
+            erc_file = eeschema_run_erc_schematic(output_dir,eeschema_proc.pid)
+            eeschema_quit()
+            eeschema_proc.wait()
 
     return eeschema_parse_erc(erc_file, warning_as_error)
+
+def eeschema_netlist(schematic, output_dir, screencast_dir=None):
+    output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0])
+    with recorded_xvfb(screencast_dir, width=1600, height=900, colordepth=24):
+        with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
+            eeschema_skip_errors()
+            eeschema_netlist_commands(output_file,eeschema_proc.pid)
+            eeschema_quit()
+            eeschema_proc.wait()
+
+def eeschema_bom_xml(schematic, output_dir, screencast_dir=None):
+    output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.xml')
+    with recorded_xvfb(screencast_dir, width=1600, height=900, colordepth=24):
+        with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
+            eeschema_skip_errors()
+            eeschema_bom_xml_commands(output_file,eeschema_proc.pid)
+            eeschema_quit()
+            eeschema_proc.wait()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad schematic automation')
@@ -316,6 +402,9 @@ if __name__ == '__main__':
         action='store_true'
     )
 
+    netlist_parser = subparsers.add_parser('netlist', help='Create the netlist')
+    bom_xml_parser = subparsers.add_parser('bom_xml', help='Create the BoM in XML format')
+
     args = parser.parse_args()
 
     if not os.path.isfile(args.schematic):
@@ -324,9 +413,16 @@ if __name__ == '__main__':
 
     output_dir = os.path.abspath(args.output_dir)+'/'
     file_util.mkdir_p(output_dir)
+    os.environ['LANG'] = 'C.UTF-8'
 
     if args.command == 'export':
         eeschema_export_schematic(args.schematic, output_dir, args.file_format, args.all_pages, args.screencast_dir)
+        exit(0)
+    if args.command == 'netlist':
+        eeschema_netlist(args.schematic, output_dir, args.screencast_dir)
+        exit(0)
+    if args.command == 'bom_xml':
+        eeschema_bom_xml(args.schematic, output_dir, args.screencast_dir)
         exit(0)
     if args.command == 'run_erc':
         errors = eeschema_run_erc(args.schematic, output_dir, args.warnings_as_errors, args.screencast_dir)
