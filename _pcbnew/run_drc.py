@@ -28,11 +28,10 @@ import atexit
 config_file = ''
 old_config_file = ''
 
-pcbnew_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.dirname(pcbnew_dir)
-
-sys.path.append(repo_root)
-
+# Look for the 'util' module from where the script is running
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(script_dir))
+# Utils import
 from util import file_util
 from util.ui_automation import (
     PopenContext,
