@@ -92,7 +92,7 @@ def run_drc(pcb_file, output_dir, record=True):
 
     file_util.mkdir_p(output_dir)
 
-    drc_output_file = os.path.join(os.path.abspath(output_dir), 'drc_result.rpt')
+    drc_output_file = os.path.join(os.path.abspath(output_dir), args.output_name[0])
     if os.path.exists(drc_output_file):
         os.remove(drc_output_file)
 
@@ -158,6 +158,7 @@ if __name__ == '__main__':
                         action='store_true')
     parser.add_argument('--record', help='Record the UI automation',
                         action='store_true')
+    parser.add_argument('--output_name',nargs=1,help='Name of the output file',default=['drc_result.rpt'])
     parser.add_argument('--verbose','-v',action='count',default=0)
     parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
                         __copyright__+' - License: '+__license__)
