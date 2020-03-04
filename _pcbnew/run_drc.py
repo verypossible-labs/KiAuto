@@ -1,22 +1,18 @@
 #!/usr/bin/env python
-#
-#   UI automation script to run DRC on a KiCad PCBNew layout
-#   Sadly it is not possible to run DRC with the PCBNew Python API since the
-#   code is to tied in to the UI. Might change in the future.
-#
-#   Copyright 2019 Productize SPRL
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+"""Run DRC
+
+This program runs pcbnew and then runs the Distance Rules Check (DRC).
+The process is graphical and very delicated.
+Exits with the number of errors reported by pcbnew.
+"""
+
+__author__   ='Salvador E. Tropea'
+__copyright__='Copyright 2019-2020, INTI/Productize SPRL'
+__credits__  =['Salvador E. Tropea','Scott Bezek']
+__license__  ='Apache 2.0'
+__version__  ='1.0.0'
+__email__    ='salvador@inti.gob.ar'
+__status__   ='beta'
 
 import sys
 import os
@@ -38,11 +34,7 @@ from util.ui_automation import (
     xdotool,
     wait_for_window,
     recorded_xvfb,
-    clipboard_store
-)
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+    clipboard_store)
 
 def parse_drc(drc_file):
     from re import search as regex_search
@@ -160,22 +152,38 @@ def restore_config():
        os.rename(old_config_file,config_file)
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='KiCad automated DRC runner')
+    parser = argparse.ArgumentParser(description='KiCad automated DRC runner',
+                                     epilog='Runs `pcbnew` and the the DRC, the result is stored in drc_result.rpt')
 
-    parser.add_argument('kicad_pcb_file', help='KiCad schematic file')
-    parser.add_argument('output_dir', help='Output directory')
+    parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
+    parser.add_argument('output_dir', help='Output directory (for drc_result.rpt)')
     parser.add_argument('--ignore_unconnected', '-i', help='Ignore unconnected paths',
-        action='store_true'
-    )
+                        action='store_true')
     parser.add_argument('--record', help='Record the UI automation',
-        action='store_true'
-    )
+                        action='store_true')
+    parser.add_argument('--verbose','-v',action='count',default=0)
+    parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
+                        __copyright__+' - License: '+__license__)
 
     args = parser.parse_args()
+
+    # Create a logger with the specified verbosity
+    if args.verbose>=2:
+       log_level=logging.DEBUG
+       verb='-vv'
+    elif args.verbose==1:
+       log_level=logging.INFO
+       verb='-v'
+    else:
+       verb=None
+       log_level=logging.WARNING
+    logging.basicConfig(level=log_level)
+    logger=logging.getLogger(os.path.basename(__file__))
+
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
 
-    # Back-up the current pcbnew documentation
+    # Back-up the current pcbnew configuration
     config_file = os.environ['HOME'] + '/.config/kicad/pcbnew'
     old_config_file = config_file + '.pre_run_drc'
     os.rename(config_file,old_config_file)
@@ -190,11 +198,10 @@ if __name__ == '__main__':
 
     drc_result = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record))
 
-    logging.info(drc_result);
+    logger.info(drc_result);
     if drc_result['drc_errors'] == 0 and drc_result['unconnected_pads'] == 0:
         exit(0)
     else:
-
         logger.error('Found {} DRC errors and {} unconnected pads'.format(
             drc_result['drc_errors'],
             drc_result['unconnected_pads']
