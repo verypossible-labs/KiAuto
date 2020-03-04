@@ -96,7 +96,7 @@ def run_drc(pcb_file, output_dir, record=True):
     if os.path.exists(drc_output_file):
         os.remove(drc_output_file)
 
-    xvfb_kwargs = { 'width': 800, 'height': 600, 'colordepth': 24, }
+    xvfb_kwargs = { 'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
     with recorded_xvfb(output_dir, **xvfb_kwargs) if record else Xvfb(**xvfb_kwargs):
         with PopenContext(['pcbnew', pcb_file], stderr=open(os.devnull, 'wb'), close_fds=True) as pcbnew_proc:
@@ -154,11 +154,11 @@ if __name__ == '__main__':
 
     parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     parser.add_argument('output_dir', help='Output directory (for drc_result.rpt)')
-    parser.add_argument('--ignore_unconnected', '-i', help='Ignore unconnected paths',
-                        action='store_true')
-    parser.add_argument('--record', help='Record the UI automation',
-                        action='store_true')
-    parser.add_argument('--output_name',nargs=1,help='Name of the output file',default=['drc_result.rpt'])
+    parser.add_argument('--ignore_unconnected','-i',help='Ignore unconnected paths',action='store_true')
+    parser.add_argument('--record','-r',help='Record the UI automation',action='store_true')
+    parser.add_argument('--rec_width',help='Record width [800]',type=int,default=800)
+    parser.add_argument('--rec_height',help='Record height [600]',type=int,default=600)
+    parser.add_argument('--output_name','-o',nargs=1,help='Name of the output file',default=['drc_result.rpt'])
     parser.add_argument('--verbose','-v',action='count',default=0)
     parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
                         __copyright__+' - License: '+__license__)
