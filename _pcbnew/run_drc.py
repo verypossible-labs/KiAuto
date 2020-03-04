@@ -96,14 +96,11 @@ def run_drc(pcb_file, output_dir, record=True):
     if os.path.exists(drc_output_file):
         os.remove(drc_output_file)
 
-    xvfb_kwargs = {
-	    'width': 800,
-	    'height': 600,
-	    'colordepth': 24,
-    }
+    xvfb_kwargs = { 'width': 800, 'height': 600, 'colordepth': 24, }
 
     with recorded_xvfb(output_dir, **xvfb_kwargs) if record else Xvfb(**xvfb_kwargs):
-        with PopenContext(['pcbnew', pcb_file], close_fds=True) as pcbnew_proc:
+        with PopenContext(['pcbnew', pcb_file], stderr=open(os.devnull, 'wb'), close_fds=True) as pcbnew_proc:
+
             clipboard_store(drc_output_file)
 
             logger.info('Focus main pcbnew window')
