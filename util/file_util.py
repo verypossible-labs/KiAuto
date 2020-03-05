@@ -4,6 +4,7 @@ import errno
 import os
 import logging
 import time
+# python3-psutil
 import psutil
 
 logging.basicConfig(level=logging.DEBUG)

@@ -29,11 +29,15 @@ import time
 
 from contextlib import contextmanager
 
+# python3-xvfbwrapper
 from xvfbwrapper import Xvfb
 from util import file_util
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+def set_level(log_level):
+    logger.setLevel(log_level)
 
 class PopenContext(subprocess.Popen):
     def __enter__(self):
@@ -73,17 +77,40 @@ def xdotool(command):
     return subprocess.check_output(['xdotool'] + command)
 
 def clipboard_store(string):
-    p = subprocess.Popen(['xclip', '-selection', 'clipboard'], stdin=subprocess.PIPE)
-    outs, errs = p.communicate(input=string)
-    if (errs):
-        logger.error('Failed to store string in clipboard')
-        logger.error(errs)
+    # I don't know how to use Popen/run to make it run with pipes without
+    # either blocking or losing the messages.
+    # Using files works really well.
+    logger.debug('Clipboard store "'+string+'"')
+    # Write the text to a file
+    fd_in, temp_in = tempfile.mkstemp(text=True)
+    os.write(fd_in, string.encode())
+    os.close(fd_in)
+    # Capture output
+    fd_out, temp_out = tempfile.mkstemp(text=True)
+    process = subprocess.Popen(['xclip', '-selection', 'clipboard', temp_in],
+                               stdout=fd_out, stderr=subprocess.STDOUT)
+    ret_code = process.wait()
+    os.remove(temp_in)
+    os.lseek(fd_out, 0, os.SEEK_SET)
+    ret_text = os.read(fd_out,1000)
+    os.close(fd_out)
+    os.remove(temp_out)
+    ret_text = ret_text.decode()
+    if ret_text:
+       logger.error('Failed to store string in clipboard')
+       logger.error(ret_text)
+       raise
+    if ret_code:
+       logger.error('Failed to store string in clipboard')
+       logger.error('xclip returned %d' % ret_code)
+       raise
 
 def clipboard_retrieve():
     p = subprocess.Popen(['xclip', '-o', '-selection', 'clipboard'], stdout=subprocess.PIPE)
     output = '';
     for line in p.stdout:
         output += line.decode()
+    logger.debug('Clipboard retrieve "'+output+'"')
     return output;
 
 

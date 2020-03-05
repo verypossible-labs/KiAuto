@@ -21,20 +21,22 @@ import argparse
 from xvfbwrapper import Xvfb
 import atexit
 
-config_file = ''
-old_config_file = ''
-
 # Look for the 'util' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(script_dir))
 # Utils import
 from util import file_util
+from util import ui_automation
 from util.ui_automation import (
     PopenContext,
     xdotool,
     wait_for_window,
     recorded_xvfb,
     clipboard_store)
+
+# Default W,H for recording
+REC_W=1366
+REC_H=768
 
 def parse_drc(drc_file):
     from re import search as regex_search
@@ -156,8 +158,8 @@ if __name__ == '__main__':
     parser.add_argument('output_dir', help='Output directory (for drc_result.rpt and record)')
     parser.add_argument('--ignore_unconnected','-i',help='Ignore unconnected paths',action='store_true')
     parser.add_argument('--record','-r',help='Record the UI automation',action='store_true')
-    parser.add_argument('--rec_width',help='Record width [800]',type=int,default=800)
-    parser.add_argument('--rec_height',help='Record height [600]',type=int,default=600)
+    parser.add_argument('--rec_width',help='Record width ['+str(REC_W)+']',type=int,default=REC_W)
+    parser.add_argument('--rec_height',help='Record height ['+str(REC_H)+']',type=int,default=REC_H)
     parser.add_argument('--output_name','-o',nargs=1,help='Name of the output file',default=['drc_result.rpt'])
     parser.add_argument('--verbose','-v',action='count',default=0)
     parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
@@ -175,8 +177,9 @@ if __name__ == '__main__':
     else:
        verb=None
        log_level=logging.WARNING
-    logging.basicConfig(level=log_level)
     logger=logging.getLogger(os.path.basename(__file__))
+    logger.setLevel(log_level)
+    ui_automation.set_level(log_level)
 
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
