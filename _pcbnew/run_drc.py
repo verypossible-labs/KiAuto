@@ -100,7 +100,7 @@ def run_drc(pcb_file, output_dir, record=True):
 
     xvfb_kwargs = { 'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
-    with recorded_xvfb(output_dir, 'run_drc_pcbnew_screencast.ogv', **xvfb_kwargs) if record else Xvfb(**xvfb_kwargs):
+    with recorded_xvfb(output_dir, 'run_drc_pcbnew_screencast.ogv', **xvfb_kwargs):
         with PopenContext(['pcbnew', pcb_file], stderr=open(os.devnull, 'wb'), close_fds=True) as pcbnew_proc:
 
             clipboard_store(drc_output_file)

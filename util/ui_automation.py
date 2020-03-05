@@ -54,24 +54,42 @@ class PopenContext(subprocess.Popen):
         # Wait for the process to terminate, to avoid zombies.
         self.wait()
 
+def wait_xserver():
+    timeout = 10
+    DELAY = 0.1
+    logger.debug('Waiting for virtual X server ...')
+    for i in range(int(timeout/DELAY)):
+        with open(os.devnull, 'w') as fnull:
+             ret = subprocess.call(['xset', 'q'],stdout=fnull,stderr=subprocess.STDOUT,close_fds=True)
+        if not ret:
+           return
+        logger.debug('   Retry')
+        time.sleep(DELAY)
+    raise RuntimeError('Timed out waiting for virtual X server')
+
 @contextmanager
 def recorded_xvfb(video_dir, video_name, **xvfb_args):
     if video_dir:
        video_filename = os.path.join(video_dir, video_name)
        with Xvfb(**xvfb_args):
+           wait_xserver()
+           fnull = open(os.devnull, 'w')
+           logger.debug('Recording session to %s', video_filename)
            with PopenContext([
                    'recordmydesktop',
                    '--no-sound',
                    '--no-frame',
                    '--on-the-fly-encoding',
-                   '-o', video_filename], close_fds=True) as screencast_proc: 
+                   '-o', video_filename],
+                   stdout=fnull,
+                   stderr=subprocess.STDOUT,
+                   close_fds=True) as screencast_proc:
                yield
                screencast_proc.terminate()
     else:
        with Xvfb(**xvfb_args):
-           with PopenContext(['printf'], close_fds=True) as screencast_proc:
-               yield
-               screencast_proc.terminate()
+           wait_xserver()
+
 
 def xdotool(command):
     return subprocess.check_output(['xdotool'] + command)
