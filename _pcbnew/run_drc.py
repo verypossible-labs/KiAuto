@@ -105,23 +105,21 @@ def run_drc(pcb_file, output_dir, record=True):
 
             clipboard_store(drc_output_file)
 
-            logger.info('Focus main pcbnew window')
             failed_focuse = False
             try:
-               wait_for_window('pcbnew', 'Pcbnew', 5)
+               wait_for_window('Main pcbnew window', 'Pcbnew', 5)
             except RuntimeError:
                failed_focuse = True
                pass
             if failed_focuse:
                dismiss_already_running()
                dismiss_warning()
-               wait_for_window('pcbnew', 'Pcbnew', 5)
+               wait_for_window('Main pcbnew window', 'Pcbnew', 5)
 
             logger.info('Open Inspect->DRC')
             xdotool(['key', 'alt+i'])
             xdotool(['key', 'd'])
 
-            logger.info('Focus DRC modal window')
             wait_for_window('DRC modal window', 'DRC Control')
             xdotool(['key', 'Tab'])
             xdotool(['key', 'Tab'])
@@ -198,14 +196,14 @@ if __name__ == '__main__':
     text_file.close()
 
     drc_result = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record))
+    logger.debug(drc_result);
 
-    logger.info(drc_result);
     if drc_result['drc_errors'] == 0 and drc_result['unconnected_pads'] == 0:
-        exit(0)
+       logger.info('No errors');
+       exit(0)
     else:
-        logger.error('Found {} DRC errors and {} unconnected pads'.format(
+       logger.error('Found {} DRC errors and {} unconnected pads'.format(
             drc_result['drc_errors'],
-            drc_result['unconnected_pads']
-        ))
-        exit(drc_result['drc_errors']+drc_result['unconnected_pads'])
+            drc_result['unconnected_pads']))
+       exit(drc_result['drc_errors']+drc_result['unconnected_pads'])
     

@@ -134,7 +134,7 @@ def clipboard_retrieve():
 
 def wait_focused(id, timeout=10):
     DELAY = 0.5
-    logger.info('Waiting for %s window to get focus...', id)
+    logger.debug('Waiting for %s window to get focus...', id)
     for i in range(int(timeout/DELAY)):
         cur_id = xdotool(['getwindowfocus']).rstrip()
         logger.debug('Currently focused id: %s', cur_id)
@@ -145,7 +145,7 @@ def wait_focused(id, timeout=10):
 
 def wait_not_focused(id, timeout=10):
     DELAY = 0.5
-    logger.info('Waiting for %s window to lose focus...', id)
+    logger.debug('Waiting for %s window to lose focus...', id)
     for i in range(int(timeout/DELAY)):
         cur_id = xdotool(['getwindowfocus']).rstrip()
         logger.debug('Currently focused id: %s', cur_id)
@@ -156,13 +156,13 @@ def wait_not_focused(id, timeout=10):
 
 def wait_for_window(name, window_regex, timeout=10, focus=True, skip_id=0):
     DELAY = 0.5
-    logger.info('Waiting for %s window...', name)
+    logger.info('Waiting for "%s" ...', name)
     xdotool_command = ['search', '--onlyvisible', '--name', window_regex]
 
     for i in range(int(timeout/DELAY)):
         try:
             window_id = xdotool(xdotool_command).splitlines()
-            logger.info('Found %s window (%d)', name, len(window_id))
+            logger.debug('Found %s window (%d)', name, len(window_id))
             if len(window_id)==1:
                id = window_id[0]
             if len(window_id)>1:
