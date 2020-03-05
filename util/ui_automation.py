@@ -51,9 +51,9 @@ class PopenContext(subprocess.Popen):
         self.wait()
 
 @contextmanager
-def recorded_xvfb(video_dir, **xvfb_args):
+def recorded_xvfb(video_dir, video_name, **xvfb_args):
     if video_dir:
-       video_filename = os.path.join(video_dir, 'run_erc_schematic_screencast.ogv')
+       video_filename = os.path.join(video_dir, video_name)
        with Xvfb(**xvfb_args):
            with PopenContext([
                    'recordmydesktop',

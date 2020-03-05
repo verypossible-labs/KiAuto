@@ -212,7 +212,7 @@ def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_page
     set_default_plot_option(file_format)
     os.path.basename('/root/dir/sub/file.ext')
 
-    with recorded_xvfb(screencast_dir, width=1024, height=900, colordepth=24):
+    with recorded_xvfb(screencast_dir, 'export_eeschema_screencast.ogv', width=1024, height=900, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             eeschema_plot_schematic(output_dir, file_format, all_pages)
@@ -352,7 +352,7 @@ def eeschema_bom_xml_commands(output_file, pid):
 def eeschema_run_erc(schematic, output_dir, warning_as_error, screencast_dir=None):
     os.environ['EDITOR'] = '/bin/cat'
 
-    with recorded_xvfb(screencast_dir, width=1024, height=900, colordepth=24):
+    with recorded_xvfb(screencast_dir, 'run_erc_eeschema_screencast.ogv', width=1024, height=900, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             erc_file = eeschema_run_erc_schematic(output_dir,eeschema_proc.pid)
@@ -363,7 +363,7 @@ def eeschema_run_erc(schematic, output_dir, warning_as_error, screencast_dir=Non
 
 def eeschema_netlist(schematic, output_dir, screencast_dir=None):
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0])
-    with recorded_xvfb(screencast_dir, width=1600, height=900, colordepth=24):
+    with recorded_xvfb(screencast_dir, 'netlist_eeschema_screencast.ogv', width=1600, height=900, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             eeschema_netlist_commands(output_file,eeschema_proc.pid)
@@ -372,7 +372,7 @@ def eeschema_netlist(schematic, output_dir, screencast_dir=None):
 
 def eeschema_bom_xml(schematic, output_dir, screencast_dir=None):
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.xml')
-    with recorded_xvfb(screencast_dir, width=1600, height=900, colordepth=24):
+    with recorded_xvfb(screencast_dir, 'bom_xml_eeschema_screencast.ogv', width=1600, height=900, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             eeschema_bom_xml_commands(output_file,eeschema_proc.pid)

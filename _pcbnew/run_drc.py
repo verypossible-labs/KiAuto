@@ -98,7 +98,7 @@ def run_drc(pcb_file, output_dir, record=True):
 
     xvfb_kwargs = { 'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
-    with recorded_xvfb(output_dir, **xvfb_kwargs) if record else Xvfb(**xvfb_kwargs):
+    with recorded_xvfb(output_dir, 'run_drc_pcbnew_screencast.ogv', **xvfb_kwargs) if record else Xvfb(**xvfb_kwargs):
         with PopenContext(['pcbnew', pcb_file], stderr=open(os.devnull, 'wb'), close_fds=True) as pcbnew_proc:
 
             clipboard_store(drc_output_file)
@@ -153,7 +153,7 @@ if __name__ == '__main__':
                                      epilog='Runs `pcbnew` and the the DRC, the result is stored in drc_result.rpt')
 
     parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
-    parser.add_argument('output_dir', help='Output directory (for drc_result.rpt)')
+    parser.add_argument('output_dir', help='Output directory (for drc_result.rpt and record)')
     parser.add_argument('--ignore_unconnected','-i',help='Ignore unconnected paths',action='store_true')
     parser.add_argument('--record','-r',help='Record the UI automation',action='store_true')
     parser.add_argument('--rec_width',help='Record width [800]',type=int,default=800)

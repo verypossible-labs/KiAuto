@@ -1,3 +1,4 @@
 *.pyc
+*.epr
 */__pycache__/
 output/

@@ -159,7 +159,7 @@ def export_bom(schematic_file, output_dir, screencast_dir):
 
     if screencast_dir:
     	screencast_output_file = os.path.join(screencast_dir, 'export_bom_screencast.ogv')
-        with recorded_xvfb(screencast_output_file, width=800, height=600, colordepth=24):
+        with recorded_xvfb(screencast_output_file, 'export_bom_eeschema_screencast.ogv', width=800, height=600, colordepth=24):
             with PopenContext(['eeschema', schematic_file], close_fds=True) as eeschema_proc:
                 eeschema_export_bom(output_dir, eeschema_proc)
     else:
