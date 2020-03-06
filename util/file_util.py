@@ -7,8 +7,8 @@ import time
 # python3-psutil
 import psutil
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+from util import log
+logger = log.get_logger(__name__)
 
 def mkdir_p(path):
     try:
@@ -59,3 +59,4 @@ def wait_for_file_created_by_process(pid, file, timeout=5):
 #         time.sleep(DELAY)
 # 
 #     raise RuntimeError('Timed out waiting for creation of %s' % file)
+

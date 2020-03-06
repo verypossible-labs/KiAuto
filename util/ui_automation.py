@@ -33,11 +33,8 @@ from contextlib import contextmanager
 from xvfbwrapper import Xvfb
 from util import file_util
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
-
-def set_level(log_level):
-    logger.setLevel(log_level)
+from util import log
+logger = log.get_logger(__name__)
 
 class PopenContext(subprocess.Popen):
     def __enter__(self):
@@ -56,11 +53,12 @@ class PopenContext(subprocess.Popen):
 
 def wait_xserver():
     timeout = 10
-    DELAY = 0.1
+    DELAY = 0.5
     logger.debug('Waiting for virtual X server ...')
     for i in range(int(timeout/DELAY)):
         with open(os.devnull, 'w') as fnull:
              ret = subprocess.call(['xset', 'q'],stdout=fnull,stderr=subprocess.STDOUT,close_fds=True)
+             #ret = subprocess.call(['xset', 'q'])
         if not ret:
            return
         logger.debug('   Retry')

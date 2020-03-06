@@ -25,6 +25,9 @@ import atexit
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(script_dir))
 # Utils import
+# Log functionality first
+from util import log
+log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from util import file_util
 from util import ui_automation
 from util.ui_automation import (
@@ -175,9 +178,13 @@ if __name__ == '__main__':
     else:
        verb=None
        log_level=logging.WARNING
-    logger=logging.getLogger(os.path.basename(__file__))
+
+    logger=log.get_logger(None)
     logger.setLevel(log_level)
-    ui_automation.set_level(log_level)
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.DEBUG)
+    ch.setFormatter(log.CustomFormatter())
+    logger.addHandler(ch)
 
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
