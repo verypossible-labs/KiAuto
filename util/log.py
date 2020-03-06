@@ -40,9 +40,9 @@ class CustomFormatter(logging.Formatter):
 
     if sys.stderr.isatty():
        grey = "\x1b[38;21m"
-       yellow = "\x1b[33;21m"
-       red = "\x1b[31;21m"
-       bold_red = "\x1b[31;1m"
+       yellow = "\x1b[93;1m"
+       red = "\x1b[91;1m"
+       bold_red = "\x1b[91;21m"
        cyan = "\x1b[36;1m"
        reset = "\x1b[0m"
     else:
