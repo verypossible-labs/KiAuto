@@ -155,6 +155,7 @@ def wait_not_focused(id, timeout=10):
 def wait_for_window(name, window_regex, timeout=10, focus=True, skip_id=0):
     DELAY = 0.5
     logger.info('Waiting for "%s" ...', name)
+    if skip_id: logger.debug('Will skip %s', skip_id)
     xdotool_command = ['search', '--onlyvisible', '--name', window_regex]
 
     for i in range(int(timeout/DELAY)):
