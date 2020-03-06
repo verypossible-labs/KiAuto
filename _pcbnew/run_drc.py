@@ -30,16 +30,13 @@ from util import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from util import file_util
 from util import ui_automation
+from util.misc import (REC_W,REC_H,__version__)
 from util.ui_automation import (
     PopenContext,
     xdotool,
     wait_for_window,
     recorded_xvfb,
     clipboard_store)
-
-# Default W,H for recording
-REC_W=1366
-REC_H=768
 
 def parse_drc(drc_file):
     from re import search as regex_search
