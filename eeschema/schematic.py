@@ -387,8 +387,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad schematic automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
 
-    parser.add_argument('--schematic', help='KiCad schematic file')
-    parser.add_argument('--output_dir', help='output directory')
+    parser.add_argument('schematic', help='KiCad schematic file')
+    parser.add_argument('output_dir', help='Output directory')
 
     parser.add_argument('--record','-r',help='Record the UI automation',action='store_true')
     parser.add_argument('--rec_width',help='Record width ['+str(REC_W)+']',type=int,default=REC_W)
@@ -399,17 +399,13 @@ if __name__ == '__main__':
 
     export_parser = subparsers.add_parser('export', help='Export a schematic')
     export_parser.add_argument('--file_format', '-f', help='Export file format',
-        choices=['svg', 'pdf'],
-        default='svg'
-    )
+        choices=['svg', 'pdf'],default='svg')
     export_parser.add_argument('--all_pages', '-a', help='Plot all schematic pages in one file',
-        action='store_true'
-    )
+        action='store_true')
 
     erc_parser = subparsers.add_parser('run_erc', help='Run Electrical Rules Checker on a schematic')
     erc_parser.add_argument('--warnings_as_errors', '-w', help='Treat warnings as errors',
-        action='store_true'
-    )
+        action='store_true')
 
     netlist_parser = subparsers.add_parser('netlist', help='Create the netlist')
     bom_xml_parser = subparsers.add_parser('bom_xml', help='Create the BoM in XML format')
