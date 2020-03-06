@@ -206,7 +206,7 @@ def set_default_plot_option(file_format="hpgl"):
         os.remove(in_p)
         os.rename(out_p, in_p)
 
-def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_pages=False, screencast_dir=None):
+def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_pages=False, record=False):
     file_format = file_format.lower()
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.'+file_format)
     if os.path.exists(output_file):
@@ -216,7 +216,7 @@ def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_page
     set_default_plot_option(file_format)
     os.path.basename('/root/dir/sub/file.ext')
 
-    with recorded_xvfb(screencast_dir, 'export_eeschema_screencast.ogv', width=1024, height=900, colordepth=24):
+    with recorded_xvfb(output_dir if record else None, 'export_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             eeschema_plot_schematic(output_dir, file_format, all_pages)
@@ -353,10 +353,10 @@ def eeschema_bom_xml_commands(output_file, pid):
     return output_file
 
 
-def eeschema_run_erc(schematic, output_dir, warning_as_error, screencast_dir=None):
+def eeschema_run_erc(schematic, output_dir, warning_as_error, record=False):
     os.environ['EDITOR'] = '/bin/cat'
 
-    with recorded_xvfb(screencast_dir, 'run_erc_eeschema_screencast.ogv', width=1024, height=900, colordepth=24):
+    with recorded_xvfb(output_dir if record else None, 'run_erc_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             erc_file = eeschema_run_erc_schematic(output_dir,eeschema_proc.pid)
@@ -365,18 +365,18 @@ def eeschema_run_erc(schematic, output_dir, warning_as_error, screencast_dir=Non
 
     return eeschema_parse_erc(erc_file, warning_as_error)
 
-def eeschema_netlist(schematic, output_dir, screencast_dir=None):
+def eeschema_netlist(schematic, output_dir, record=False):
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0])
-    with recorded_xvfb(screencast_dir, 'netlist_eeschema_screencast.ogv', width=1600, height=900, colordepth=24):
+    with recorded_xvfb(output_dir if record else None, 'netlist_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             eeschema_netlist_commands(output_file,eeschema_proc.pid)
             eeschema_quit()
             eeschema_proc.wait()
 
-def eeschema_bom_xml(schematic, output_dir, screencast_dir=None):
+def eeschema_bom_xml(schematic, output_dir, record=False):
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.xml')
-    with recorded_xvfb(screencast_dir, 'bom_xml_eeschema_screencast.ogv', width=1600, height=900, colordepth=24):
+    with recorded_xvfb(output_dir if record else None, 'bom_xml_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             eeschema_bom_xml_commands(output_file,eeschema_proc.pid)
@@ -390,7 +390,9 @@ if __name__ == '__main__':
     parser.add_argument('--schematic', help='KiCad schematic file')
     parser.add_argument('--output_dir', help='output directory')
 
-    parser.add_argument('--screencast_dir', help="Directory to record screencast to. If empty, no screencast", default=None)
+    parser.add_argument('--record','-r',help='Record the UI automation',action='store_true')
+    parser.add_argument('--rec_width',help='Record width ['+str(REC_W)+']',type=int,default=REC_W)
+    parser.add_argument('--rec_height',help='Record height ['+str(REC_H)+']',type=int,default=REC_H)
     parser.add_argument('--verbose','-v',action='count',default=0)
     parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
                         __copyright__+' - License: '+__license__)
@@ -426,16 +428,16 @@ if __name__ == '__main__':
     os.environ['LANG'] = 'C.UTF-8'
 
     if args.command == 'export':
-        eeschema_export_schematic(args.schematic, output_dir, args.file_format, args.all_pages, args.screencast_dir)
+        eeschema_export_schematic(args.schematic, output_dir, args.file_format, args.all_pages, args.record)
         exit(0)
     if args.command == 'netlist':
-        eeschema_netlist(args.schematic, output_dir, args.screencast_dir)
+        eeschema_netlist(args.schematic, output_dir, args.record)
         exit(0)
     if args.command == 'bom_xml':
-        eeschema_bom_xml(args.schematic, output_dir, args.screencast_dir)
+        eeschema_bom_xml(args.schematic, output_dir, args.record)
         exit(0)
     if args.command == 'run_erc':
-        errors = eeschema_run_erc(args.schematic, output_dir, args.warnings_as_errors, args.screencast_dir)
+        errors = eeschema_run_erc(args.schematic, output_dir, args.warnings_as_errors, args.record)
         if errors > 0:
             logger.error('{} ERC errors detected'.format(errors))
             exit(errors)
