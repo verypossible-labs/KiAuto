@@ -110,7 +110,7 @@ def run_drc(pcb_file, output_dir, record=True):
 
             failed_focuse = False
             try:
-               wait_for_window('Main pcbnew window', 'Pcbnew', 5)
+               wait_for_window('Main pcbnew window', 'Pcbnew', 25)
             except RuntimeError:
                failed_focuse = True
                pass
