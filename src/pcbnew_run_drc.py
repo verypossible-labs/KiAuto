@@ -10,7 +10,6 @@ __author__   ='Salvador E. Tropea'
 __copyright__='Copyright 2019-2020, INTI/Productize SPRL'
 __credits__  =['Salvador E. Tropea','Scott Bezek']
 __license__  ='Apache 2.0'
-__version__  ='1.0.0'
 __email__    ='salvador@inti.gob.ar'
 __status__   ='beta'
 
@@ -18,7 +17,6 @@ import sys
 import os
 import logging
 import argparse
-from xvfbwrapper import Xvfb
 import atexit
 
 # Look for the 'util' module from where the script is running
@@ -100,7 +98,7 @@ def run_drc(pcb_file, output_dir, record=True):
 
     xvfb_kwargs = { 'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
-    with recorded_xvfb(output_dir, 'run_drc_pcbnew_screencast.ogv', **xvfb_kwargs):
+    with recorded_xvfb(output_dir, 'pcbnew_run_drc_screencast.ogv', **xvfb_kwargs):
         with PopenContext(['pcbnew', pcb_file], stderr=open(os.devnull, 'wb'), close_fds=True) as pcbnew_proc:
 
             clipboard_store(drc_output_file)
