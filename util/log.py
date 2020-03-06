@@ -1,3 +1,4 @@
+import sys
 import logging
 
 #logging.basicConfig(level=logging.DEBUG)
@@ -11,20 +12,29 @@ def set_domain(name):
     domain = name
 
 class CustomFormatter(logging.Formatter):
-    """Logging Formatter to add colors and count warning / errors"""
+    """Logging Formatter to add colors"""
 
-    grey = "\x1b[38;21m"
-    yellow = "\x1b[33;21m"
-    red = "\x1b[31;21m"
-    bold_red = "\x1b[31;1m"
-    cyan = "\x1b[36;1m"
-    reset = "\x1b[0m"
+    if sys.stderr.isatty():
+       grey = "\x1b[38;21m"
+       yellow = "\x1b[33;21m"
+       red = "\x1b[31;21m"
+       bold_red = "\x1b[31;1m"
+       cyan = "\x1b[36;1m"
+       reset = "\x1b[0m"
+    else:
+       grey = ""
+       yellow = ""
+       red = ""
+       bold_red = ""
+       cyan = ""
+       reset = ""
     #format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s (%(filename)s:%(lineno)d)"
     format = "%(levelname)s:%(message)s (%(name)s - %(filename)s:%(lineno)d)"
+    format_simple = "%(levelname)s:%(message)s"
 
     FORMATS = {
         logging.DEBUG: grey + format + reset,
-        logging.INFO: cyan + format + reset,
+        logging.INFO: cyan + format_simple + reset,
         logging.WARNING: yellow + format + reset,
         logging.ERROR: red + format + reset,
         logging.CRITICAL: bold_red + format + reset
