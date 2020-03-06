@@ -1,15 +1,39 @@
+"""Log module
+
+Handles logging initialization and formating.
+"""
 import sys
 import logging
 
-#logging.basicConfig(level=logging.DEBUG)
+# Default domain, base name for the tool
 domain = 'ki_auto'
 
-def get_logger(name):
+def get_logger(name=None):
+    """Get a module for a submodule or the root logger if no name is provided"""
     return logging.getLogger(domain+'.'+name) if name else logging.getLogger(domain)
 
 def set_domain(name):
+    """Set the base name for the tool"""
     global domain
     domain = name
+
+def init(level):
+    """Initialize the logging feature using a custom format and the specified verbosity level"""
+    if level>=2:
+       log_level=logging.DEBUG
+    elif level==1:
+       log_level=logging.INFO
+    else:
+       log_level=logging.WARNING
+
+    logger=get_logger()
+    logger.setLevel(log_level)
+    ch = logging.StreamHandler()
+    ch.setFormatter(CustomFormatter())
+    logger.addHandler(ch)
+
+    return logger
+
 
 class CustomFormatter(logging.Formatter):
     """Logging Formatter to add colors"""

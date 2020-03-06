@@ -159,22 +159,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Create a logger with the specified verbosity
-    if args.verbose>=2:
-       log_level=logging.DEBUG
-       verb='-vv'
-    elif args.verbose==1:
-       log_level=logging.INFO
-       verb='-v'
-    else:
-       verb=None
-       log_level=logging.WARNING
-
-    logger=log.get_logger(None)
-    logger.setLevel(log_level)
-    ch = logging.StreamHandler()
-    ch.setLevel(logging.DEBUG)
-    ch.setFormatter(log.CustomFormatter())
-    logger.addHandler(ch)
+    logger = log.init(args.verbose)
 
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
