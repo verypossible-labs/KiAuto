@@ -15,6 +15,13 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+__author__   ='Scott Bezek, Salvador E. Tropea'
+__copyright__='Copyright 2015-2020, INTI/Productize SPRL/Scott Bezek'
+__credits__  =['Salvador E. Tropea','Scott Bezek']
+__license__  ='Apache 2.0'
+__email__    ='salvador@inti.gob.ar'
+__status__   ='beta'
+
 import logging
 import os
 import subprocess
@@ -23,15 +30,15 @@ import time
 import re
 import argparse
 
-from contextlib import contextmanager
-
-eeschema_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.dirname(eeschema_dir)
-
-sys.path.append(repo_root)
-
-from xvfbwrapper import Xvfb
+# Look for the 'util' module from where the script is running
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(script_dir))
+# Utils import
+# Log functionality first
+from util import log
+log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from util import file_util
+from util.misc import (REC_W,REC_H,__version__)
 from util.ui_automation import (
     PopenContext,
     xdotool,
@@ -40,9 +47,6 @@ from util.ui_automation import (
     clipboard_store,
     clipboard_retrieve
 )
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 def dismiss_library_error():
     # The "Error" modal pops up if libraries required by the schematic have
@@ -206,7 +210,7 @@ def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_page
     file_format = file_format.lower()
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.'+file_format)
     if os.path.exists(output_file):
-        logging.info('Removing old file')
+        logger.debug('Removing old file')
         os.remove(output_file)
 
     set_default_plot_option(file_format)
@@ -226,7 +230,7 @@ def eeschema_parse_erc(erc_file, warning_as_error = False):
         lines = f.read().splitlines()
         last_line = lines[-1]
     
-    logging.debug('Last line: '+last_line)
+    logger.debug('Last line: '+last_line)
     m = re.search('^ \*\* ERC messages: ([0-9]+) +Errors ([0-9]+) +Warnings ([0-9]+)+$', last_line)
     messages = m.group(1)
     errors = m.group(2)
@@ -387,6 +391,9 @@ if __name__ == '__main__':
     parser.add_argument('--output_dir', help='output directory')
 
     parser.add_argument('--screencast_dir', help="Directory to record screencast to. If empty, no screencast", default=None)
+    parser.add_argument('--verbose','-v',action='count',default=0)
+    parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
+                        __copyright__+' - License: '+__license__)
 
     export_parser = subparsers.add_parser('export', help='Export a schematic')
     export_parser.add_argument('--file_format', '-f', help='Export file format',
@@ -407,8 +414,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
+    # Create a logger with the specified verbosity
+    logger = log.init(args.verbose)
+
     if not os.path.isfile(args.schematic):
-        logging.error(args.schematic+' does not exist')
+        logger.error(args.schematic+' does not exist')
         exit(-1)
 
     output_dir = os.path.abspath(args.output_dir)+'/'
@@ -427,8 +437,9 @@ if __name__ == '__main__':
     if args.command == 'run_erc':
         errors = eeschema_run_erc(args.schematic, output_dir, args.warnings_as_errors, args.screencast_dir)
         if errors > 0:
-            logging.error('{} ERC errors detected'.format(errors))
+            logger.error('{} ERC errors detected'.format(errors))
             exit(errors)
+        logger.info('No errors');
         exit(0)
     else:
         usage()
