@@ -1,28 +1,22 @@
 #!/usr/bin/env python
-#
-#   UI automation script to run DRC on a KiCad PCBNew layout
-#   Sadly it is not possible to run DRC with the PCBNew Python API since the
-#   code is to tied in to the UI. Might change in the future.
-#
-#   Copyright 2019 Productize SPRL
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+"""Print PCB layers
+
+This program runs pcbnew and then uses the File|Print menu to print the desired
+layers.
+The process is graphical and very delicated.
+"""
+
+__author__   ='Salvador E. Tropea'
+__copyright__='Copyright 2019-2020, INTI/Productize SPRL'
+__credits__  =['Salvador E. Tropea','Scott Bezek']
+__license__  ='Apache 2.0'
+__email__    ='salvador@inti.gob.ar'
+__status__   ='beta'
 
 import sys
 import os
 import logging
 import argparse
-from xvfbwrapper import Xvfb
 import atexit
 import time
 import re
@@ -30,15 +24,15 @@ import re
 import subprocess
 import gettext
 
-config_file = ''
-old_config_file = ''
-
-pcbnew_dir = os.path.dirname(os.path.abspath(__file__))
-repo_root = os.path.dirname(pcbnew_dir)
-
-sys.path.append(repo_root)
-
+# Look for the 'util' module from where the script is running
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.dirname(script_dir))
+# Utils import
+# Log functionality first
+from util import log
+log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from util import file_util
+from util.misc import (REC_W,REC_H,__version__)
 from util.ui_automation import (
     PopenContext,
     xdotool,
@@ -48,9 +42,6 @@ from util.ui_automation import (
     recorded_xvfb,
     clipboard_store
 )
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 def dismiss_already_running():
     # The "Confirmation" modal pops up if pcbnew is already running
@@ -87,81 +78,79 @@ def dismiss_pcbNew_Error():
     except RuntimeError:
         pass
 
-def print_layers(pcb_file, output_dir, record=True):
+def print_layers(pcb_file, output_dir, output_filename, record=True):
 
     file_util.mkdir_p(output_dir)
 
-    print_output_file = os.path.join(os.path.abspath(output_dir), 'printed.pdf')
+    print_output_file = os.path.join(os.path.abspath(output_dir), output_filename)
     if os.path.exists(print_output_file):
         os.remove(print_output_file)
 
-    xvfb_kwargs = { 'width': 1024, 'height': 1080, 'colordepth': 24, }
+    xvfb_kwargs = { 'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
-    with recorded_xvfb(output_dir, 'print_layers_pcbnew_screencast.ogv', **xvfb_kwargs) if record else Xvfb(**xvfb_kwargs):
-        with PopenContext(['pcbnew', pcb_file], close_fds=True) as pcbnew_proc:
+    with recorded_xvfb(output_dir, 'pcbnew_print_layers_screencast.ogv', **xvfb_kwargs):
+        with PopenContext(['pcbnew', pcb_file], stderr=open(os.devnull, 'wb'), close_fds=True) as pcbnew_proc:
+
             clipboard_store(print_output_file)
 
             #dismiss_pcbNew_Error()
 
-            logger.info('Focus main pcbnew window')
             failed_focuse = False
             try:
-               wait_for_window('pcbnew', 'Pcbnew', 5)
+               wait_for_window('Main pcbnew window', 'Pcbnew', 25)
             except RuntimeError:
                failed_focuse = True
                pass
             if failed_focuse:
                dismiss_already_running()
                dismiss_warning()
-               wait_for_window('pcbnew', 'Pcbnew', 5)
+               wait_for_window('Main pcbnew window', 'Pcbnew', 5)
 
             logger.info('Open File->Print')
-            xdotool(['key', 'alt+f'])
-            xdotool(['key', 'p'])
+            xdotool(['key', 'alt+f', 'p'])
 
-            logger.info('Focus Print modal window')
-            id=wait_for_window('Print modal window', 'Print')
+            id=wait_for_window('Print dialog', 'Print')
             # The color option is selected (not with a WM)
             xdotool(['key', 'Tab',  'Tab',  'Tab',  'Tab',  'Tab',  'Tab',  'Tab',  'Tab', 'Return'])
 
-            logger.info('Focus 2nd Print modal window (skip=%s)',id[0])
-            id2 = wait_for_window('Printer modal window', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
+            id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
             # List of printers
-            xdotool(['key', 'Tab'])
-            # Go up to the top
-            xdotool(['key', 'Home'])
-            # Output file name
-            xdotool(['key', 'Tab'])
-            # Open dialog
-            xdotool(['key', 'Return'])
+            xdotool(['key', 'Tab',
+                    # Go up to the top
+                    'Home',
+                    # Output file name
+                    'Tab',
+                    # Open dialog
+                    'Return'])
             id_sel_f = wait_for_window('Select a filename', '(Select a filename|%s)' % select_a_filename, 2)
-            # Select all
-            xdotool(['key', 'ctrl+a'])
             logger.info('Pasting output dir')
-            xdotool(['key', 'ctrl+v'])
-            # Select this name
-            xdotool(['key', 'Return'])
+            xdotool(['key',
+                    # Select all
+                    'ctrl+a',
+                    # Paste
+                    'ctrl+v',
+                    # Select this name
+                    'Return'])
             # Back to print
             wait_not_focused(id_sel_f[0])
-            logger.info('Focus 2nd Print modal window (skip=%s)',id[0])
-            wait_for_window('Printer modal window', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
-            # Format options
-            xdotool(['key', 'Tab'])
-            # Be sure we are at left (PDF)
-            xdotool(['key', 'Left','Left','Left' ])
-            # Print it
-            xdotool(['key', 'Return'])
+            wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
+            xdotool(['key',
+                    # Format options
+                    'Tab',
+                    # Be sure we are at left (PDF)
+                    'Left','Left','Left',
+                    # Print it
+                    'Return'])
 
             file_util.wait_for_file_created_by_process(pcbnew_proc.pid, print_output_file)
 
             wait_not_focused(id2[1])
-            logger.info('Focus Print modal window')
-            id=wait_for_window('Print modal window', 'Print')
+            id=wait_for_window('Print dialog', 'Print')
             # Close button
             xdotool(['key', 'Tab',  'Tab',  'Tab',  'Tab',  'Tab',  'Tab',  'Tab',  'Tab', 'Tab', 'Tab', 'Return'])
 
             wait_not_focused(id2[0])
-            wait_for_window('pcbnew', 'Pcbnew')
+            wait_for_window('Main pcbnew window', 'Pcbnew')
             pcbnew_proc.terminate()
 
     return print_output_file
@@ -178,24 +167,25 @@ if __name__ == '__main__':
     parser.add_argument('kicad_pcb_file', help='KiCad schematic file')
     parser.add_argument('output_dir', help='Output directory')
     parser.add_argument('layers', nargs='+', help='Which layers to include')
-    parser.add_argument('--record', help='Record the UI automation',action='store_true')
+    parser.add_argument('--record','-r',help='Record the UI automation',action='store_true')
+    parser.add_argument('--rec_width',help='Record width ['+str(REC_W)+']',type=int,default=REC_W)
+    parser.add_argument('--rec_height',help='Record height ['+str(REC_H)+']',type=int,default=REC_H)
+    parser.add_argument('--output_name','-o',nargs=1,help='Name of the output file',default=['printed.pdf'])
+    parser.add_argument('--verbose','-v',action='count',default=0)
+    parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
+                        __copyright__+' - License: '+__license__)
 
     args = parser.parse_args()
 
+    # Create a logger with the specified verbosity
+    logger = log.init(args.verbose)
+
+    # Get local versions for the GTK window names
     gettext.textdomain('gtk30')
     select_a_filename=gettext.gettext('Select a filename')
     print_dlg_name=gettext.gettext('Print')
     logger.debug('Select a filename -> '+select_a_filename)
     logger.debug('Print -> '+print_dlg_name)
-
-    #cmd=['gettext','gtk30','Select a filename']
-#     cmd='gettext gtk30 "Select a filename"'
-#     logger.debug(cmd)
-#     p=subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
-#     (output, err)=p.communicate()
-#     p_status=p.wait()
-#     logger.debug(output)
-#     sys.exit(0)
 
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
@@ -251,6 +241,6 @@ if __name__ == '__main__':
         text_file.write('PlotLayer_%d=%d\n' % (x,used_layers[x]))
     text_file.close()
 
-    print_layers(args.kicad_pcb_file, args.output_dir, args.record)
+    print_layers(args.kicad_pcb_file, args.output_dir, args.output_name[0], args.record)
 
     
