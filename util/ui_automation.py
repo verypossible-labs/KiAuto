@@ -87,6 +87,7 @@ def recorded_xvfb(video_dir, video_name, **xvfb_args):
     else:
        with Xvfb(**xvfb_args):
            wait_xserver()
+           yield
 
 
 def xdotool(command):
