@@ -218,7 +218,7 @@ def eeschema_run_erc_schematic(erc_file, pid):
     wait_for_window('ERC File save dialog', 'ERC File')
     logger.info('Pasting output file')
     xdotool(['key', 'ctrl+v'])
-    # KiCad adds .erc unconditionally
+    # KiCad adds .erc
     erc_file = erc_file + '.erc'
     if os.path.exists(erc_file):
        os.remove(erc_file)
@@ -235,32 +235,25 @@ def eeschema_run_erc_schematic(erc_file, pid):
     return erc_file
 
 
-def eeschema_netlist_commands(output_file, pid):
-    logger.info('Focus main eeschema window')
-    wait_for_window('eeschema', 'Eeschema.*\.sch')
+def eeschema_netlist_commands(net_file, pid):
+    # Do this now since we have to wait for KiCad anyway
+    clipboard_store(net_file)
+
+    wait_for_window('Main eeschema window', 'Eeschema.*\.sch')
 
     logger.info('Open Tools->Generate Netlist File')
-    xdotool(['key',
-        'alt+t',
-        'n'
-    ])
+    xdotool(['key', 'alt+t', 'n'])
 
-    # Do this now since we have to wait for KiCad anyway
-    clipboard_store(output_file)
-
-    logger.info('Focus Netlist window')
-    wait_for_window('Netlist', 'Netlist')
+    wait_for_window('Netlist dialog', 'Netlist')
     xdotool(['key','Tab','Tab','Return'])
 
     wait_for_window('Netlist File save dialog', 'Save Netlist File')
     logger.info('Pasting output file')
     xdotool(['key', 'ctrl+v'])
-    logger.info('Copy full file path')
-    xdotool(['key', 'ctrl+a', 'ctrl+c'])
-
-    net_file = clipboard_retrieve()
+    # KiCad adds .net
+    net_file = net_file + '.net'
     if os.path.exists(net_file):
-        os.remove(net_file)
+       os.remove(net_file)
 
     logger.info('Generate Netlist')
     xdotool(['key', 'Return'])
@@ -300,8 +293,7 @@ def eeschema_netlist(schematic, output_dir, record=False):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             eeschema_netlist_commands(output_file,eeschema_proc.pid)
-            eeschema_quit()
-            eeschema_proc.wait()
+            eeschema_proc.terminate()
 
 def eeschema_bom_xml(schematic, output_dir, record=False):
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.xml')
