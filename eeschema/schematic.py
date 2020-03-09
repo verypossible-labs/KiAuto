@@ -113,21 +113,13 @@ def eeschema_skip_errors():
     #dismiss_library_error()
     return 0
 
-def eeschema_plot_schematic(output_dir, file_format, all_pages):
-    if file_format not in ('pdf', 'svg'):
-        raise ValueError("file_format should be 'pdf' or 'svg'")
-
+def eeschema_plot_schematic(output_dir, output_file, all_pages, pid):
     clipboard_store(output_dir)
 
-    logger.info('Focus main eeschema window')
-    wait_for_window('Eeschema', 'Eeschema.*\.sch')
-
-    xdotool(['search', '--onlyvisible', '--name', 'Eeschema.*\.sch', 'windowfocus'])
+    wait_for_window('Main eeschema window', 'Eeschema.*\.sch')
 
     logger.info('Open File->pLot')
-    xdotool(['key', 'alt+f',
-        'l'
-    ])
+    xdotool(['key', 'alt+f', 'l'])
 
     wait_for_window('plot', 'Plot')
 
@@ -135,41 +127,20 @@ def eeschema_plot_schematic(output_dir, file_format, all_pages):
     xdotool(['key', 'ctrl+v'])
 
     logger.info('Move to the "plot" button')
-
-    command_list = ['key',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-    ]
-
+    command_list = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
+                    'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', ]
     if not all_pages:   # all pages is default option
-        command_list.extend(['Tab'])
+       command_list.extend(['Tab'])
     xdotool(command_list)
 
     logger.info('Plot')
     xdotool(['key', 'Return'])
+
+    logger.info('Wait for plot file creation')
+    file_util.wait_for_file_created_by_process(pid, output_file)
+
     logger.info('Closing window')
     xdotool(['key', 'Escape'])
-
-
-def eeschema_quit():
-    logger.info('Quitting eeschema')
-    xdotool(['key', 'Escape', 'Escape', 'Escape'])
-    wait_for_window('eeschema', 'Eeschema.*\.sch')
-    logger.info('Focus main eeschema window')
-    xdotool(['search', '--onlyvisible', '--name', 'Eeschema.*\.sch', 'windowfocus'])
-    xdotool(['key', 'Ctrl+q'])
 
 def eeschema_export_schematic(schematic, output_dir, file_format, all_pages=False, record=False):
     file_format = file_format.lower()
@@ -181,9 +152,8 @@ def eeschema_export_schematic(schematic, output_dir, file_format, all_pages=Fals
     with recorded_xvfb(output_dir if record else None, 'export_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
-            eeschema_plot_schematic(output_dir, file_format, all_pages)
-            eeschema_quit()
-            eeschema_proc.wait()
+            eeschema_plot_schematic(output_dir, output_file, all_pages, eeschema_proc.pid)
+            eeschema_proc.terminate()
 
     return output_file
 
