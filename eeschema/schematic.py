@@ -338,7 +338,14 @@ def restore_config():
     if os.path.exists(old_config_file):
        os.remove(config_file)
        os.rename(old_config_file,config_file)
-       logger.debug('Restoring old config')
+       logger.debug('Restoring old eeschema config')
+
+# Restore the KiCad common configuration
+def restore_common_config():
+    if os.path.exists(old_common_config_file):
+       os.remove(common_config_file)
+       os.rename(old_common_config_file,common_config_file)
+       logger.debug('Restoring old KiCad common config')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad schematic automation')
@@ -407,6 +414,27 @@ if __name__ == '__main__':
     except:
         index=0
     text_file.write('PlotFormat=%d\n' % index)
+    text_file.close()
+
+    # Back-up the current kicad_common configuration
+    common_config_file = os.environ['HOME'] + '/.config/kicad/kicad_common'
+    old_common_config_file = common_config_file + '.pre_script'
+    logger.debug('Kicad common config: '+common_config_file)
+    # If we have an old back-up ask for the user to solve it
+    if os.path.isfile(old_common_config_file):
+       logger.error('KiCad common config back-up found (%s)',old_common_config_file)
+       logger.error('It could contain your kiCad configuration, rename it to %s or discard it.',common_config_file)
+       exit(-1)
+    if os.path.isfile(common_config_file):
+       logger.debug('Moving current config to '+old_common_config_file)
+       os.rename(common_config_file,old_common_config_file)
+       atexit.register(restore_common_config)
+
+    # Create a suitable configuration
+    logger.debug('Creating a KiCad common config')
+    text_file = open(common_config_file,"w")
+    text_file.write('ShowEnvVarWarningDialog=0\n')
+    text_file.write('Editor=/bin/cat\n')
     text_file.close()
 
     if args.command == 'export':
