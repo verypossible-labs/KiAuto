@@ -202,30 +202,24 @@ def eeschema_parse_erc(erc_file, warning_as_error = False):
         return int(errors) + int(warnings)
     return int(errors)
 
-def eeschema_run_erc_schematic(output_dir, pid):
+def eeschema_run_erc_schematic(erc_file, pid):
+
+    # Do this now since we have to wait for KiCad anyway
+    clipboard_store(erc_file)
 
     wait_for_window('Main eeschema window', '.sch', 25)
 
     logger.info('Open Tools->Electrical Rules Checker')
     xdotool(['key', 'alt+i', 'c'])
 
-    # Do this now since we have to wait for KiCad anyway
-    clipboard_store(output_dir)
-
     wait_for_window('Electrical Rules Checker dialog', 'Electrical Rules Checker')
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'space', 'Return' ])
 
     wait_for_window('ERC File save dialog', 'ERC File')
-    xdotool(['key', 'Home'])
-    logger.info('Pasting output dir')
+    logger.info('Pasting output file')
     xdotool(['key', 'ctrl+v'])
-    logger.info('Copy full file path')
-    xdotool(['key', 'ctrl+a', 'ctrl+c'])
-
-    erc_file = clipboard_retrieve()
-    if os.path.isdir(erc_file):
-       logger.error('Copy & Paste error')
-       exit(1)
+    # KiCad adds .erc unconditionally
+    erc_file = erc_file + '.erc'
     if os.path.exists(erc_file):
        os.remove(erc_file)
 
@@ -304,12 +298,11 @@ def eeschema_bom_xml_commands(output_file, pid):
 
 
 def eeschema_run_erc(schematic, output_dir, warning_as_error, record=False):
-    os.environ['EDITOR'] = '/bin/cat'
-
+    erc_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0])
     with recorded_xvfb(output_dir if record else None, 'run_erc_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
-            erc_file = eeschema_run_erc_schematic(output_dir,eeschema_proc.pid)
+            erc_file = eeschema_run_erc_schematic(erc_file,eeschema_proc.pid)
             eeschema_quit()
             eeschema_proc.wait()
 
