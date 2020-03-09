@@ -22,7 +22,7 @@ def mkdir_p(path):
 def wait_for_file_created_by_process(pid, file, timeout=5):
     process = psutil.Process(pid)
 
-    DELAY = 0.1
+    DELAY = 0.2
     for i in range(int(timeout/DELAY)):
         open_files = process.open_files()
         logger.debug(open_files)
