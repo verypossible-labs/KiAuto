@@ -19,17 +19,17 @@ import logging
 import argparse
 import atexit
 
-# Look for the 'util' module from where the script is running
+# Look for the 'kicad_auto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(os.path.dirname(script_dir))
 # Utils import
 # Log functionality first
-from util import log
+from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
-from util import file_util
-from util import ui_automation
-from util.misc import (REC_W,REC_H,__version__)
-from util.ui_automation import (
+from kicad_auto import file_util
+from kicad_auto import ui_automation
+from kicad_auto.misc import (REC_W,REC_H,__version__)
+from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
     wait_for_window,

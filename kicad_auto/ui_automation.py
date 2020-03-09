@@ -31,9 +31,9 @@ from contextlib import contextmanager
 
 # python3-xvfbwrapper
 from xvfbwrapper import Xvfb
-from util import file_util
+from kicad_auto import file_util
 
-from util import log
+from kicad_auto import log
 logger = log.get_logger(__name__)
 
 class PopenContext(subprocess.Popen):

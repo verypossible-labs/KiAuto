@@ -7,7 +7,7 @@ import time
 # python3-psutil
 import psutil
 
-from util import log
+from kicad_auto import log
 logger = log.get_logger(__name__)
 
 def mkdir_p(path):
