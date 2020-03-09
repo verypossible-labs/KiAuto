@@ -120,9 +120,9 @@ def eeschema_plot_schematic(output_dir, file_format, all_pages):
     clipboard_store(output_dir)
 
     logger.info('Focus main eeschema window')
-    wait_for_window('Eeschema', '.sch')
+    wait_for_window('Eeschema', 'Eeschema.*\.sch')
 
-    xdotool(['search', '--onlyvisible', '--name', '.sch', 'windowfocus'])
+    xdotool(['search', '--onlyvisible', '--name', 'Eeschema.*\.sch', 'windowfocus'])
 
     logger.info('Open File->pLot')
     xdotool(['key', 'alt+f',
@@ -166,9 +166,9 @@ def eeschema_plot_schematic(output_dir, file_format, all_pages):
 def eeschema_quit():
     logger.info('Quitting eeschema')
     xdotool(['key', 'Escape', 'Escape', 'Escape'])
-    wait_for_window('eeschema', '.sch')
+    wait_for_window('eeschema', 'Eeschema.*\.sch')
     logger.info('Focus main eeschema window')
-    xdotool(['search', '--onlyvisible', '--name', '.sch', 'windowfocus'])
+    xdotool(['search', '--onlyvisible', '--name', 'Eeschema.*\.sch', 'windowfocus'])
     xdotool(['key', 'Ctrl+q'])
 
 def eeschema_export_schematic(schematic, output_dir, all_pages=False, record=False):
@@ -207,7 +207,7 @@ def eeschema_run_erc_schematic(erc_file, pid):
     # Do this now since we have to wait for KiCad anyway
     clipboard_store(erc_file)
 
-    wait_for_window('Main eeschema window', '.sch', 25)
+    wait_for_window('Main eeschema window', 'Eeschema.*\.sch', 25)
 
     logger.info('Open Tools->Electrical Rules Checker')
     xdotool(['key', 'alt+i', 'c'])
@@ -237,7 +237,7 @@ def eeschema_run_erc_schematic(erc_file, pid):
 
 def eeschema_netlist_commands(output_file, pid):
     logger.info('Focus main eeschema window')
-    wait_for_window('eeschema', '.sch')
+    wait_for_window('eeschema', 'Eeschema.*\.sch')
 
     logger.info('Open Tools->Generate Netlist File')
     xdotool(['key',
@@ -273,7 +273,7 @@ def eeschema_netlist_commands(output_file, pid):
 
 def eeschema_bom_xml_commands(output_file, pid):
     logger.info('Focus main eeschema window')
-    wait_for_window('eeschema', '.sch')
+    wait_for_window('eeschema', 'Eeschema.*\.sch')
 
     logger.info('Open Tools->Generate Bill of Materials')
     xdotool(['key',
@@ -292,7 +292,7 @@ def eeschema_bom_xml_commands(output_file, pid):
 
     logger.info('Close BoM window')
     xdotool(['key','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Return'])
-    wait_for_window('eeschema', '.sch')
+    wait_for_window('eeschema', 'Eeschema.*\.sch')
 
     return output_file
 
