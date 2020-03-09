@@ -1,19 +1,13 @@
 #!/usr/bin/env python
+"""Various schematic operations
 
-#   Copyright 2019 Productize SPRL
-#   Copyright 2015-2016 Scott Bezek and the splitflap contributors
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+This program runs eeschema and can:
+1) Export (plot) the schematic
+2) Generate the netlist
+3) Generate the BoM in XML format
+4) Run the ERC
+The process is graphical and very delicated.
+"""
 
 __author__   ='Scott Bezek, Salvador E. Tropea'
 __copyright__='Copyright 2015-2020, INTI/Productize SPRL/Scott Bezek'
@@ -48,6 +42,12 @@ from util.ui_automation import (
     clipboard_store,
     clipboard_retrieve
 )
+
+# Return error codes
+# Positive values are ERC errors
+NO_SCHEMATIC=-1
+EESCHEMA_CFG_PRESENT=-2
+KICAD_CFG_PRESENT=-3
 
 def dismiss_library_error():
     # The "Error" modal pops up if libraries required by the schematic have
@@ -142,21 +142,6 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid):
     logger.info('Closing window')
     xdotool(['key', 'Escape'])
 
-def eeschema_export_schematic(schematic, output_dir, file_format, all_pages=False, record=False):
-    file_format = file_format.lower()
-    output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.'+file_format)
-    if os.path.exists(output_file):
-        logger.debug('Removing old file')
-        os.remove(output_file)
-
-    with recorded_xvfb(output_dir if record else None, 'export_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
-        with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
-            eeschema_skip_errors()
-            eeschema_plot_schematic(output_dir, output_file, all_pages, eeschema_proc.pid)
-            eeschema_proc.terminate()
-
-    return output_file
-
 def eeschema_parse_erc(erc_file, warning_as_error = False):
     with open(erc_file, 'r') as f:
         lines = f.read().splitlines()
@@ -247,32 +232,6 @@ def eeschema_bom_xml_commands(output_file, pid):
     file_util.wait_for_file_created_by_process(pid, output_file)
 
 
-def eeschema_run_erc(schematic, output_dir, warning_as_error, record=False):
-    erc_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0])
-    with recorded_xvfb(output_dir if record else None, 'run_erc_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
-        with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
-            eeschema_skip_errors()
-            erc_file = eeschema_run_erc_schematic(erc_file,eeschema_proc.pid)
-            eeschema_proc.terminate()
-
-    return eeschema_parse_erc(erc_file, warning_as_error)
-
-def eeschema_netlist(schematic, output_dir, record=False):
-    output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0])
-    with recorded_xvfb(output_dir if record else None, 'netlist_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
-        with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
-            eeschema_skip_errors()
-            eeschema_netlist_commands(output_file,eeschema_proc.pid)
-            eeschema_proc.terminate()
-
-def eeschema_bom_xml(schematic, output_dir, record=False):
-    output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.xml')
-    with recorded_xvfb(output_dir if record else None, 'bom_xml_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
-        with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
-            eeschema_skip_errors()
-            eeschema_bom_xml_commands(output_file,eeschema_proc.pid)
-            eeschema_proc.terminate()
-
 # Restore the eeschema configuration
 def restore_config():
     if os.path.exists(old_config_file):
@@ -320,8 +279,8 @@ if __name__ == '__main__':
     logger = log.init(args.verbose)
 
     if not os.path.isfile(args.schematic):
-        logger.error(args.schematic+' does not exist')
-        exit(-1)
+       logger.error(args.schematic+' does not exist')
+       exit(NO_SCHEMATIC)
 
     # Create output dir if it doesn't exist
     output_dir = os.path.abspath(args.output_dir)+'/'
@@ -338,7 +297,7 @@ if __name__ == '__main__':
     if os.path.isfile(old_config_file):
        logger.error('Eeschema config back-up found (%s)',old_config_file)
        logger.error('It could contain your eeschema configuration, rename it to %s or discard it.',config_file)
-       exit(-1)
+       exit(EESCHEMA_CFG_PRESENT)
     if os.path.isfile(config_file):
        logger.debug('Moving current config to '+old_config_file)
        os.rename(config_file,old_config_file)
@@ -365,7 +324,7 @@ if __name__ == '__main__':
     if os.path.isfile(old_common_config_file):
        logger.error('KiCad common config back-up found (%s)',old_common_config_file)
        logger.error('It could contain your kiCad configuration, rename it to %s or discard it.',common_config_file)
-       exit(-1)
+       exit(KICAD_CFG_PRESENT)
     if os.path.isfile(common_config_file):
        logger.debug('Moving current config to '+old_common_config_file)
        os.rename(common_config_file,old_common_config_file)
@@ -378,16 +337,33 @@ if __name__ == '__main__':
     text_file.write('Editor=/bin/cat\n')
     text_file.close()
 
-    if args.command == 'export':
-        eeschema_export_schematic(args.schematic, output_dir, args.file_format, args.all_pages, args.record)
-    elif args.command == 'netlist':
-        eeschema_netlist(args.schematic, output_dir, args.record)
-    elif args.command == 'bom_xml':
-        eeschema_bom_xml(args.schematic, output_dir, args.record)
-    elif args.command == 'run_erc':
-        errors = eeschema_run_erc(args.schematic, output_dir, args.warnings_as_errors, args.record)
-        if errors > 0:
-            logger.error('{} ERC errors detected'.format(errors))
-            exit(errors)
-        logger.info('No errors');
+
+    output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(args.schematic))[0])
+    with recorded_xvfb(output_dir if args.record else None, args.command+'_eeschema_screencast.ogv',
+                       width=args.rec_width, height=args.rec_height, colordepth=24):
+         with PopenContext(['eeschema', args.schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
+              eeschema_skip_errors()
+              if args.command == 'export':
+                 # Export
+                 output_file = output_file_no_ext+'.'+args.file_format.lower()
+                 if os.path.exists(output_file):
+                    logger.debug('Removing old file')
+                    os.remove(output_file)
+                 eeschema_plot_schematic(output_dir, output_file, args.all_pages, eeschema_proc.pid)
+              elif args.command == 'netlist':
+                 # Netlist
+                 eeschema_netlist_commands(output_file_no_ext,eeschema_proc.pid)
+              elif args.command == 'bom_xml':
+                 # BoM XML
+                 output_file = output_file_no_ext+'.xml'
+                 eeschema_bom_xml_commands(output_file,eeschema_proc.pid)
+              elif args.command == 'run_erc':
+                 # Run ERC
+                 erc_file = eeschema_run_erc_schematic(output_file_no_ext,eeschema_proc.pid)
+                 errors = eeschema_parse_erc(erc_file, args.warnings_as_errors)
+                 if errors > 0:
+                    logger.error('{} ERC errors detected'.format(errors))
+                    exit(errors)
+                 logger.info('No errors');
+              eeschema_proc.terminate()
     exit(0)
