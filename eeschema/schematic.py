@@ -29,6 +29,7 @@ import sys
 import time
 import re
 import argparse
+import atexit
 
 # Look for the 'util' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -170,51 +171,12 @@ def eeschema_quit():
     xdotool(['search', '--onlyvisible', '--name', '.sch', 'windowfocus'])
     xdotool(['key', 'Ctrl+q'])
 
-
-def set_default_plot_option(file_format="hpgl"):
-    # eeschema saves the latest plot format, this is problematic because
-    # plot_schematic() does not know which option is set (it assumes HPGL)
-
-    logger.info('Setting the default plot format to ' + file_format);
-    opt_file_path = os.path.expanduser('~/.config/kicad/')
-    in_p = os.path.join(opt_file_path, 'eeschema')
-    if os.path.exists(in_p):
-        out_p = os.path.join(opt_file_path, 'eeschema.new')
-        in_f = open(in_p)
-        out_f = open(out_p, 'w')
-        for in_line in in_f:
-            if in_line.find('=') != -1:
-                param, value = in_line.split('=', 1)
-            else:
-                param = 'none'
-                value = 'none'
-            if param == 'PlotFormat':
-                if file_format == "ps":
-                        out_line = 'PlotFormat=1\n'
-                elif file_format == "dxf":
-                        out_line = 'PlotFormat=3\n'
-                elif file_format == "pdf":
-                        out_line = 'PlotFormat=4\n'
-                elif file_format == "svg":
-                        out_line = 'PlotFormat=5\n'
-                else: #  if file_format == "hpgl" or we don't know what's up:
-                        out_line = 'PlotFormat=0\n'
-            else:
-                out_line = in_line
-            out_f.write(out_line)
-        out_f.close()
-        os.remove(in_p)
-        os.rename(out_p, in_p)
-
-def eeschema_export_schematic(schematic, output_dir, file_format="svg", all_pages=False, record=False):
+def eeschema_export_schematic(schematic, output_dir, all_pages=False, record=False):
     file_format = file_format.lower()
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.'+file_format)
     if os.path.exists(output_file):
         logger.debug('Removing old file')
         os.remove(output_file)
-
-    set_default_plot_option(file_format)
-    os.path.basename('/root/dir/sub/file.ext')
 
     with recorded_xvfb(output_dir if record else None, 'export_eeschema_screencast.ogv', width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
@@ -242,42 +204,30 @@ def eeschema_parse_erc(erc_file, warning_as_error = False):
 
 def eeschema_run_erc_schematic(output_dir, pid):
 
-    logger.info('Focus main eeschema window')
-    wait_for_window('eeschema', '.sch')
+    wait_for_window('Main eeschema window', '.sch', 25)
 
     logger.info('Open Tools->Electrical Rules Checker')
-    xdotool(['key',
-        'alt+i', # alt+t
-        'c'
-    ])
+    xdotool(['key', 'alt+i', 'c'])
 
     # Do this now since we have to wait for KiCad anyway
     clipboard_store(output_dir)
 
-    logger.info('Focus Electrical Rules Checker window')
-    wait_for_window('Electrical Rules Checker', 'Electrical Rules Checker')
-    xdotool(['key',
-        'Tab',
-        'Tab',
-        'Tab',
-        'Tab',
-        'space',
-        'Return'
-    ])
+    wait_for_window('Electrical Rules Checker dialog', 'Electrical Rules Checker')
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'space', 'Return' ])
 
     wait_for_window('ERC File save dialog', 'ERC File')
     xdotool(['key', 'Home'])
     logger.info('Pasting output dir')
     xdotool(['key', 'ctrl+v'])
     logger.info('Copy full file path')
-    xdotool(['key',
-        'ctrl+a',
-        'ctrl+c'
-    ])
+    xdotool(['key', 'ctrl+a', 'ctrl+c'])
 
     erc_file = clipboard_retrieve()
+    if os.path.isdir(erc_file):
+       logger.error('Copy & Paste error')
+       exit(1)
     if os.path.exists(erc_file):
-        os.remove(erc_file)
+       os.remove(erc_file)
 
     logger.info('Run ERC')
     xdotool(['key', 'Return'])
@@ -383,6 +333,13 @@ def eeschema_bom_xml(schematic, output_dir, record=False):
             eeschema_quit()
             eeschema_proc.wait()
 
+# Restore the eeschema configuration
+def restore_config():
+    if os.path.exists(old_config_file):
+       os.remove(config_file)
+       os.rename(old_config_file,config_file)
+       logger.debug('Restoring old config')
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad schematic automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
@@ -419,28 +376,49 @@ if __name__ == '__main__':
         logger.error(args.schematic+' does not exist')
         exit(-1)
 
+    # Create output dir if it doesn't exist
     output_dir = os.path.abspath(args.output_dir)+'/'
     file_util.mkdir_p(output_dir)
+
+    # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
 
+    # Back-up the current eeschema configuration
+    config_file = os.environ['HOME'] + '/.config/kicad/eeschema'
+    old_config_file = config_file + '.pre_script'
+    logger.debug('Eeschema config: '+config_file)
+    # If we have an old back-up ask for the user to solve it
+    if os.path.isfile(old_config_file):
+       logger.error('Eeschema config back-up found (%s)',old_config_file)
+       logger.error('It could contain your eeschema configuration, rename it to %s or discard it.',config_file)
+       exit(-1)
+    if os.path.isfile(config_file):
+       logger.debug('Moving current config to '+old_config_file)
+       os.rename(config_file,old_config_file)
+       atexit.register(restore_config)
+
+    # Create a suitable configuration
+    logger.debug('Creating an eeschema config')
+    text_file = open(config_file,"w")
+    text_file.write('RescueNeverShow=1\n')
+    try:
+        index=['ps','---','dxf','pdf','svg'].index(args.file_format)
+        logger.debug('Selecting plot format %s (%d)',args.file_format,index)
+    except:
+        index=0
+    text_file.write('PlotFormat=%d\n' % index)
+    text_file.close()
+
     if args.command == 'export':
-        eeschema_export_schematic(args.schematic, output_dir, args.file_format, args.all_pages, args.record)
-        exit(0)
-    if args.command == 'netlist':
+        eeschema_export_schematic(args.schematic, output_dir, args.all_pages, args.record)
+    elif args.command == 'netlist':
         eeschema_netlist(args.schematic, output_dir, args.record)
-        exit(0)
-    if args.command == 'bom_xml':
+    elif args.command == 'bom_xml':
         eeschema_bom_xml(args.schematic, output_dir, args.record)
-        exit(0)
-    if args.command == 'run_erc':
+    elif args.command == 'run_erc':
         errors = eeschema_run_erc(args.schematic, output_dir, args.warnings_as_errors, args.record)
         if errors > 0:
             logger.error('{} ERC errors detected'.format(errors))
             exit(errors)
         logger.info('No errors');
-        exit(0)
-    else:
-        usage()
-        if sys.argv[1] == 'help':
-            exit(0)
-    exit(-1)
+    exit(0)
