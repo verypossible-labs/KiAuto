@@ -272,17 +272,12 @@ def eeschema_netlist_commands(output_file, pid):
 
 
 def eeschema_bom_xml_commands(output_file, pid):
-    logger.info('Focus main eeschema window')
-    wait_for_window('eeschema', 'Eeschema.*\.sch')
+    wait_for_window('Main eeschema window', 'Eeschema.*\.sch')
 
     logger.info('Open Tools->Generate Bill of Materials')
-    xdotool(['key',
-        'alt+t',
-        'm'
-    ])
+    xdotool(['key', 'alt+t', 'm' ])
 
-    logger.info('Focus BoM window')
-    wait_for_window('Bill of Material', 'Bill of Material')
+    wait_for_window('Bill of Material dialog', 'Bill of Material')
     xdotool(['key','Return'])
 
     logger.info('Wait for BoM file creation')
