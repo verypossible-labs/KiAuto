@@ -75,6 +75,7 @@ def recorded_xvfb(video_dir, video_name, **xvfb_args):
            logger.debug('Recording session to %s', video_filename)
            with PopenContext([
                    'recordmydesktop',
+                   '--overwrite',
                    '--no-sound',
                    '--no-frame',
                    '--on-the-fly-encoding',
