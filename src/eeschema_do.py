@@ -222,11 +222,14 @@ def eeschema_netlist_commands(net_file, pid):
 def eeschema_bom_xml_commands(output_file, pid):
     wait_for_window('Main eeschema window', 'Eeschema.*\.sch')
 
+    clipboard_store('xsltproc -o "'+output_file + '" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"');
+
     logger.info('Open Tools->Generate Bill of Materials')
     xdotool(['key', 'alt+t', 'm' ])
 
     wait_for_window('Bill of Material dialog', 'Bill of Material')
-    xdotool(['key','Return'])
+    logger.info('Paste xslt command')
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'ctrl+v', 'Return']);
 
     logger.info('Wait for BoM file creation')
     file_util.wait_for_file_created_by_process(pid, output_file)
@@ -355,7 +358,7 @@ if __name__ == '__main__':
                  eeschema_netlist_commands(output_file_no_ext,eeschema_proc.pid)
               elif args.command == 'bom_xml':
                  # BoM XML
-                 output_file = output_file_no_ext+'.xml'
+                 output_file = output_file_no_ext+'.csv'
                  eeschema_bom_xml_commands(output_file,eeschema_proc.pid)
               elif args.command == 'run_erc':
                  # Run ERC
