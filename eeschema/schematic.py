@@ -288,14 +288,6 @@ def eeschema_bom_xml_commands(output_file, pid):
     logger.info('Wait for BoM file creation')
     file_util.wait_for_file_created_by_process(pid, output_file)
 
-    time.sleep(3)
-
-    logger.info('Close BoM window')
-    xdotool(['key','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Tab','Return'])
-    wait_for_window('eeschema', 'Eeschema.*\.sch')
-
-    return output_file
-
 
 def eeschema_run_erc(schematic, output_dir, warning_as_error, record=False):
     erc_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0])
@@ -303,8 +295,7 @@ def eeschema_run_erc(schematic, output_dir, warning_as_error, record=False):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             erc_file = eeschema_run_erc_schematic(erc_file,eeschema_proc.pid)
-            eeschema_quit()
-            eeschema_proc.wait()
+            eeschema_proc.terminate()
 
     return eeschema_parse_erc(erc_file, warning_as_error)
 
@@ -323,8 +314,7 @@ def eeschema_bom_xml(schematic, output_dir, record=False):
         with PopenContext(['eeschema', schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
             eeschema_skip_errors()
             eeschema_bom_xml_commands(output_file,eeschema_proc.pid)
-            eeschema_quit()
-            eeschema_proc.wait()
+            eeschema_proc.terminate()
 
 # Restore the eeschema configuration
 def restore_config():
