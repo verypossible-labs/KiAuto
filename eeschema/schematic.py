@@ -171,7 +171,7 @@ def eeschema_quit():
     xdotool(['search', '--onlyvisible', '--name', 'Eeschema.*\.sch', 'windowfocus'])
     xdotool(['key', 'Ctrl+q'])
 
-def eeschema_export_schematic(schematic, output_dir, all_pages=False, record=False):
+def eeschema_export_schematic(schematic, output_dir, file_format, all_pages=False, record=False):
     file_format = file_format.lower()
     output_file = os.path.join(output_dir, os.path.splitext(os.path.basename(schematic))[0]+'.'+file_format)
     if os.path.exists(output_file):
@@ -333,7 +333,7 @@ if __name__ == '__main__':
 
     export_parser = subparsers.add_parser('export', help='Export a schematic')
     export_parser.add_argument('--file_format', '-f', help='Export file format',
-        choices=['svg', 'pdf'],default='svg')
+        choices=['svg', 'pdf'],default='pdf')
     export_parser.add_argument('--all_pages', '-a', help='Plot all schematic pages in one file',
         action='store_true')
 
@@ -379,10 +379,11 @@ if __name__ == '__main__':
     text_file = open(config_file,"w")
     text_file.write('RescueNeverShow=1\n')
     try:
-        index=['ps','---','dxf','pdf','svg'].index(args.file_format)
+        # HPGL:0 ??:1 PS:2 DXF:3 PDF:4 SVG:5
+        index=['hpgl','---','ps','dxf','pdf','svg'].index(args.file_format.lower())
         logger.debug('Selecting plot format %s (%d)',args.file_format,index)
     except:
-        index=0
+        index=4
     text_file.write('PlotFormat=%d\n' % index)
     text_file.close()
 
@@ -408,7 +409,7 @@ if __name__ == '__main__':
     text_file.close()
 
     if args.command == 'export':
-        eeschema_export_schematic(args.schematic, output_dir, args.all_pages, args.record)
+        eeschema_export_schematic(args.schematic, output_dir, args.file_format, args.all_pages, args.record)
     elif args.command == 'netlist':
         eeschema_netlist(args.schematic, output_dir, args.record)
     elif args.command == 'bom_xml':
