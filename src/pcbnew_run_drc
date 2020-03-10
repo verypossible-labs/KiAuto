@@ -182,5 +182,5 @@ if __name__ == '__main__':
        logger.error('Found {} DRC errors and {} unconnected pads'.format(
             drc_result['drc_errors'],
             drc_result['unconnected_pads']))
-       exit(drc_result['drc_errors']+drc_result['unconnected_pads'])
+       exit(-(drc_result['drc_errors']+drc_result['unconnected_pads']))
     
