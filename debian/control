@@ -1,0 +1,17 @@
+Source: kicad-automation-scripts.inti-cmnb
+Section: electronics
+Priority: optional
+Maintainer: Salvador Eduardo Tropea <salvador@inti.gob.ar>
+Build-Depends: debhelper (>=11~), dh-python, python3-all
+Standards-Version: 4.1.4
+Homepage: https://github.com/INTI-CMNB/kicad-automation-scripts/
+X-Python3-Version: >= 3.2
+
+Package: kicad-automation-scripts.inti-cmnb
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}, ${python3:Depends}, python3-xvfbwrapper, python3-psutil, recordmydesktop, xdotool, xclip, kicad (>= 5.1.0), python3-wxgtk4.0
+Description: KiCad automatio scripts
+ Runs KiCad in a virtual environment to automate some tasks.
+ You can run the ERC and DRC, print the PCB and schematic,
+ generate the netlist and the BoM.
