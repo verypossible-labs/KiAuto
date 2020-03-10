@@ -1,10 +1,10 @@
 KiCad automation scripts
 ========================
 
-A bunch of scripts to automate [KiCad] processes using UI automation with [xdotool].
+A bunch of scripts to automate [KiCad](https://www.kicad-pcb.org/) processes using UI automation with [xdotool](https://www.semicomplete.com/projects/xdotool/).
 
 This is a fork of Productize SPRL's  [scripts](https://github.com/productize/kicad-automation-scripts), based in big parts on Scott Bezek's scripts in his 
-[split-flap display project][split-flap].
+[split-flap display project](https://scottbez1.github.io/splitflap/).
 For more info see his [excellent blog posts][scot's blog].
 
 Currently tested and working:
@@ -14,7 +14,7 @@ Currently tested and working:
 - Running ERC on schematics
 - Running DRC on layouts
 - Netlist generation
-- Basic BoM generation (mainly the XML needed for KiBoM)
+- Basic BoM generation (mainly the XML needed for [KiBoM](https://github.com/SchrodingersGat/KiBoM))
 
 Note that this version is more oriented to support running the scripts in your main system, instead of a docker image.
 
@@ -60,7 +60,7 @@ You'll get *DESTINATION/YOUR_SCHEMATIC.net*
 
 ### Update BoM XML/basic BoM generation:
 
-Tools like KiBoM can generate a nice BoM, but in order to run them from the command line you need to be sure that the project's XML BoM is updated. You can do it running:
+Tools like [KiBoM](https://github.com/SchrodingersGat/KiBoM) can generate a nice BoM, but in order to run them from the command line you need to be sure that the project's XML BoM is updated. You can do it running:
 ``` 
 eeschema_do bom_xml YOUR_SCHEMATIC.sch DESTINATION/
 ```
