@@ -82,6 +82,12 @@ pcbnew_print_layers YOUR_PCB.kicad_pcb DESTINATION/ LAYER1 LAYER2
 ```
 Will generate *DESTINATION/printed.pdf* containing LAYER1 and LAYER2 overlapped. You can list as many layers as you want. I use things like ```F.Cu Dwgs.User```. The name of the layers is the same you see in the GUI, if your first inner layer is GND you just need to use ```GND.Cu```.
 
+If you need to get a list of valid layers run:
+
+```
+pcbnew_print_layers --list YOUR_PCB.kicad_pcb
+```
+
 ### Common options
 
 By default all the scripts run very quiet. If you want to get some information about what's going on use *-v*. 
@@ -93,7 +99,11 @@ The nature of these scripts make them very fragile. In particular when you run t
 ## Useful references
 
 KiCad: http://kicad-pcb.org/
+
 xdotool: https://github.com/jordansissel/xdotool
+
 split-flap: https://github.com/scottbez1/splitflap
+
 scot's blog: https://scottbezek.blogspot.be/2016/04/scripting-kicad-pcbnew-exports.html
+
 Dockerhub: https://hub.docker.com/r/productize/kicad-automation-scripts
