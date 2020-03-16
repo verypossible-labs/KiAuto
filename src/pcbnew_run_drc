@@ -88,7 +88,7 @@ def dismiss_warning():
         pass
 
 
-def run_drc(pcb_file, output_dir, record=True):
+def run_drc(pcb_file, output_dir, record=True, save=False):
 
     file_util.mkdir_p(output_dir)
 
@@ -119,6 +119,7 @@ def run_drc(pcb_file, output_dir, record=True):
 
             wait_for_window('DRC modal window', 'DRC Control')
             # Note: Refill zones on DRC gets saved in ~/.config/kicad/pcbnew as RefillZonesBeforeDrc
+            # The space here is to enable the report of all errors for tracks
             logger.info('Enable reporting all errors for tracks')
             xdotool(['key','Tab','Tab','Tab','Tab','space','Tab','Tab','Tab','Tab'])
             logger.info('Pasting output dir')
@@ -126,6 +127,15 @@ def run_drc(pcb_file, output_dir, record=True):
 
             wait_for_window('Report completed dialog', 'Disk File Report Completed')
             xdotool(['key', 'Return'])
+
+            if save:
+               xdotool(['key', 'Escape'])
+               wait_for_window('Main pcbnew window', 'Pcbnew')
+               logger.info('Saving PCB')
+               os.rename(pcb_file, pcb_file + '-bak')
+               xdotool(['key', 'ctrl+s'])
+               file_util.wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
+
             pcbnew_proc.terminate()
 
     return drc_output_file
@@ -143,10 +153,11 @@ if __name__ == '__main__':
     parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     parser.add_argument('output_dir', help='Output directory (for drc_result.rpt and record)')
     parser.add_argument('--ignore_unconnected','-i',help='Ignore unconnected paths',action='store_true')
+    parser.add_argument('--output_name','-o',nargs=1,help='Name of the output file',default=['drc_result.rpt'])
     parser.add_argument('--record','-r',help='Record the UI automation',action='store_true')
     parser.add_argument('--rec_width',help='Record width ['+str(REC_W)+']',type=int,default=REC_W)
     parser.add_argument('--rec_height',help='Record height ['+str(REC_H)+']',type=int,default=REC_H)
-    parser.add_argument('--output_name','-o',nargs=1,help='Name of the output file',default=['drc_result.rpt'])
+    parser.add_argument('--save','-s',help='Save after DRC (updating filled zones)',action='store_true')
     parser.add_argument('--verbose','-v',action='count',default=0)
     parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
                         __copyright__+' - License: '+__license__)
@@ -170,9 +181,10 @@ if __name__ == '__main__':
     text_file.write('canvas_type=2\n')
     text_file.write('RefillZonesBeforeDrc=1\n')
     text_file.write('PcbFrameFirstRunShown=1\n')
+    text_file.write('DrcTrackToZoneTest=1\n')
     text_file.close()
 
-    drc_result = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record))
+    drc_result = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record, args.save))
     logger.debug(drc_result);
 
     if drc_result['drc_errors'] == 0 and drc_result['unconnected_pads'] == 0:

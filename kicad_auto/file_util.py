@@ -23,6 +23,7 @@ def wait_for_file_created_by_process(pid, file, timeout=5):
     process = psutil.Process(pid)
 
     DELAY = 0.2
+    logger.debug('Waiting for file %s', file)
     for i in range(int(timeout/DELAY)):
         open_files = process.open_files()
         logger.debug(open_files)
