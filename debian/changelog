@@ -1,3 +1,9 @@
+kicad-automation-scripts.inti-cmnb (1.1.1-1) testing; urgency=medium
+
+  * Made ERC errorlevels negative
+
+ -- Salvador E. Tropea <salvador@kaira.inti.gov.ar>  Wed, 18 Mar 2020 22:31:27 -0300
+
 kicad-automation-scripts.inti-cmnb (1.1.0-1) testing; urgency=medium
 
   * Added --save option to pcbnew_run_drc
