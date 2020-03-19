@@ -45,9 +45,9 @@ from kicad_auto.ui_automation import (
 
 # Return error codes
 # Positive values are ERC errors
-NO_SCHEMATIC=-1
-EESCHEMA_CFG_PRESENT=-2
-KICAD_CFG_PRESENT=-3
+NO_SCHEMATIC=1
+EESCHEMA_CFG_PRESENT=2
+KICAD_CFG_PRESENT=3
 
 def dismiss_library_error():
     # The "Error" modal pops up if libraries required by the schematic have
@@ -366,7 +366,7 @@ if __name__ == '__main__':
                  errors = eeschema_parse_erc(erc_file, args.warnings_as_errors)
                  if errors > 0:
                     logger.error('{} ERC errors detected'.format(errors))
-                    exit(errors)
+                    exit(-errors)
                  logger.info('No errors');
               eeschema_proc.terminate()
     exit(0)
