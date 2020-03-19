@@ -344,7 +344,8 @@ if __name__ == '__main__':
     output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(args.schematic))[0])
     with recorded_xvfb(output_dir if args.record else None, args.command+'_eeschema_screencast.ogv',
                        width=args.rec_width, height=args.rec_height, colordepth=24):
-         with PopenContext(['eeschema', args.schematic], close_fds=True, stderr=open(os.devnull, 'wb')) as eeschema_proc:
+         with PopenContext(['eeschema', args.schematic], close_fds=True,
+                           stderr=open(os.devnull, 'wb'), stdout=open(os.devnull, 'wb')) as eeschema_proc:
               eeschema_skip_errors()
               if args.command == 'export':
                  # Export
