@@ -249,9 +249,18 @@ if __name__ == '__main__':
     used_layers=[0]*50
     for layer in args.layers:
         try:
-            used_layers[layer_names.index(layer)]=1
+            # Support for kiplot inner layers
+            if layer.startswith("Inner"):
+               m = re.match(r"^Inner\.([0-9]+)$", layer)
+               if not m:
+                  logger.error('Malformed inner layer name: '+layer+', use Inner.N')
+                  sys.exit(1)
+               used_layers[int(m.group(1))]=1
+            else:
+               used_layers[layer_names.index(layer)]=1
         except:
-            print('Unknown layer %s' % layer)
+            logger.error('Unknown layer '+layer)
+            sys.exit(1)
     # List all posible layers, indicating which ones are requested
     for x in range(0,50):
         text_file.write('PlotLayer_%d=%d\n' % (x,used_layers[x]))
