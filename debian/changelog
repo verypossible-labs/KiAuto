@@ -1,3 +1,9 @@
+kicad-automation-scripts.inti-cmnb (1.1.2) testing; urgency=medium
+
+  * Kiplot inner layer names support
+
+ -- Salvador E. Tropea <salvador@kaira.inti.gov.ar>  Sat, 21 Mar 2020 14:23:39 -0300
+
 kicad-automation-scripts.inti-cmnb (1.1.1-1) testing; urgency=medium
 
   * Made ERC errorlevels negative
