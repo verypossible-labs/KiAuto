@@ -57,8 +57,8 @@ class CustomFormatter(logging.Formatter):
     format_simple = "%(levelname)s:%(message)s"
 
     FORMATS = {
-        logging.DEBUG: grey + format + reset,
-        logging.INFO: cyan + format_simple + reset,
+        logging.DEBUG: cyan + format + reset,
+        logging.INFO: grey + format_simple + reset,
         logging.WARNING: yellow + format + reset,
         logging.ERROR: red + format + reset,
         logging.CRITICAL: bold_red + format + reset
