@@ -37,6 +37,11 @@ from kicad_auto.ui_automation import (
     recorded_xvfb,
     clipboard_store)
 
+# Return error codes
+# Negative values are DRC errors
+NO_PCB=1
+PCBNEW_CFG_PRESENT=2
+
 def parse_drc(drc_file):
     from re import search as regex_search
 
@@ -171,6 +176,10 @@ if __name__ == '__main__':
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
 
+    if not os.path.isfile(args.kicad_pcb_file):
+       logger.error(args.kicad_pcb_file+' does not exist')
+       exit(NO_PCB)
+
     # Back-up the current pcbnew configuration
     kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
     if not os.path.isdir(kicad_cfg_dir):
@@ -178,8 +187,16 @@ if __name__ == '__main__':
        file_util.mkdir_p(kicad_cfg_dir)
     config_file = os.path.join(kicad_cfg_dir, 'pcbnew')
     old_config_file = config_file + '.pre_run_drc'
-    os.rename(config_file,old_config_file)
-    atexit.register(restore_config)
+    logger.debug('PCBnew config: '+config_file)
+    # If we have an old back-up ask for the user to solve it
+    if os.path.isfile(old_config_file):
+       logger.error('PCBnew config back-up found (%s)',old_config_file)
+       logger.error('It could contain your pcbnew configuration, rename it to %s or discard it.',config_file)
+       exit(PCBNEW_CFG_PRESENT)
+    if os.path.isfile(config_file):
+       logger.debug('Moving current config to '+old_config_file)
+       os.rename(config_file,old_config_file)
+       atexit.register(restore_config)
 
     # Create a suitable configuration
     text_file = open(config_file,"w")

@@ -44,6 +44,10 @@ from kicad_auto.ui_automation import (
     clipboard_store
 )
 
+# Return error codes
+NO_PCB=1
+PCBNEW_CFG_PRESENT=2
+
 def dismiss_already_running():
     # The "Confirmation" modal pops up if pcbnew is already running
     try:
@@ -224,18 +228,30 @@ if __name__ == '__main__':
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
 
+    if not os.path.isfile(args.kicad_pcb_file):
+       logger.error(args.kicad_pcb_file+' does not exist')
+       exit(NO_PCB)
+
     # Read the layer names from the PCB
     layer_names=load_layers(args.kicad_pcb_file)
 
-    # Back-up the current pcbnew documentation
+    # Back-up the current pcbnew configuration
     kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
     if not os.path.isdir(kicad_cfg_dir):
        logger.debug('Creating KiCad config dir')
        file_util.mkdir_p(kicad_cfg_dir)
     config_file = os.path.join(kicad_cfg_dir, 'pcbnew')
-    old_config_file = config_file + '.pre_print_layers'
-    os.rename(config_file,old_config_file)
-    atexit.register(restore_config)
+    old_config_file = config_file + '.pre_run_drc'
+    logger.debug('PCBnew config: '+config_file)
+    # If we have an old back-up ask for the user to solve it
+    if os.path.isfile(old_config_file):
+       logger.error('PCBnew config back-up found (%s)',old_config_file)
+       logger.error('It could contain your pcbnew configuration, rename it to %s or discard it.',config_file)
+       exit(PCBNEW_CFG_PRESENT)
+    if os.path.isfile(config_file):
+       logger.debug('Moving current config to '+old_config_file)
+       os.rename(config_file,old_config_file)
+       atexit.register(restore_config)
 
     # Create a suitable configuration
     text_file = open(config_file,"w")
