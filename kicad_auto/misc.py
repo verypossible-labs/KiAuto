@@ -2,4 +2,4 @@
 REC_W=1366
 REC_H=768
 
-__version__ ='1.1.3'
+__version__ ='1.1.4'
