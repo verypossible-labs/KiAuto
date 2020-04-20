@@ -171,7 +171,11 @@ if __name__ == '__main__':
     os.environ['LANG'] = 'C.UTF-8'
 
     # Back-up the current pcbnew configuration
-    config_file = os.environ['HOME'] + '/.config/kicad/pcbnew'
+    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
+    if not os.path.isdir(kicad_cfg_dir):
+       logger.debug('Creating KiCad config dir')
+       file_util.mkdir_p(kicad_cfg_dir)
+    config_file = os.path.join(kicad_cfg_dir, 'pcbnew')
     old_config_file = config_file + '.pre_run_drc'
     os.rename(config_file,old_config_file)
     atexit.register(restore_config)
