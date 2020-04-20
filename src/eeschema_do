@@ -24,6 +24,7 @@ import time
 import re
 import argparse
 import atexit
+import shutil
 
 # Look for the 'kicad_auto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -343,6 +344,16 @@ if __name__ == '__main__':
     text_file.write('ShowEnvVarWarningDialog=0\n')
     text_file.write('Editor=/bin/cat\n')
     text_file.close()
+
+    # Make sure the user has sym-lib-table
+    user_lib_table = os.path.join(kicad_cfg_dir, 'sym-lib-table')
+    if not os.path.isfile(user_lib_table):
+       logger.debug('Missing default sym-lib-table')
+       system_lib_table = '/usr/share/kicad/template/sym-lib-table'
+       if os.path.isfile(system_lib_table):
+          shutil.copy2(system_lib_table, user_lib_table)
+       else:
+          logger.warning('Missing default system symbol table '+system_lib_table+' KiCad will most probably fail')
 
 
     output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(args.schematic))[0])

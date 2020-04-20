@@ -20,6 +20,7 @@ import argparse
 import atexit
 import time
 import re
+import shutil
 
 import subprocess
 import gettext
@@ -269,6 +270,16 @@ if __name__ == '__main__':
     for x in range(0,50):
         text_file.write('PlotLayer_%d=%d\n' % (x,used_layers[x]))
     text_file.close()
+
+    # Make sure the user has fp-lib-table
+    user_lib_table = os.path.join(kicad_cfg_dir, 'fp-lib-table')
+    if not os.path.isfile(user_lib_table):
+       logger.debug('Missing default fp-lib-table')
+       system_lib_table = '/usr/share/kicad/template/fp-lib-table'
+       if os.path.isfile(system_lib_table):
+          shutil.copy2(system_lib_table, user_lib_table)
+       else:
+          logger.warning('Missing default system footprint table '+system_lib_table+' KiCad will most probably fail')
 
     print_layers(args.kicad_pcb_file, args.output_dir, args.output_name[0], args.record)
 

@@ -18,6 +18,7 @@ import os
 import logging
 import argparse
 import atexit
+import shutil
 
 # Look for the 'kicad_auto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -187,6 +188,16 @@ if __name__ == '__main__':
     text_file.write('PcbFrameFirstRunShown=1\n')
     text_file.write('DrcTrackToZoneTest=1\n')
     text_file.close()
+
+    # Make sure the user has fp-lib-table
+    user_lib_table = os.path.join(kicad_cfg_dir, 'fp-lib-table')
+    if not os.path.isfile(user_lib_table):
+       logger.debug('Missing default fp-lib-table')
+       system_lib_table = '/usr/share/kicad/template/fp-lib-table'
+       if os.path.isfile(system_lib_table):
+          shutil.copy2(system_lib_table, user_lib_table)
+       else:
+          logger.warning('Missing default system footprint table '+system_lib_table+' KiCad will most probably fail')
 
     drc_result = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record, args.save))
     logger.debug(drc_result);
