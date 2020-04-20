@@ -2,6 +2,7 @@ kicad-automation-scripts.inti-cmnb (1.1.4-1) stable; urgency=medium
 
   * Tolerate when the $HOME/.config/kicad dir is absent
   * Support missing *-lib-table in user config
+  * eeschema_do also reports warnings as a warning message
 
  -- Salvador E. Tropea <salvador@kaira.inti.gov.ar>  Mon, 20 Apr 2020 16:02:40 -0300
 

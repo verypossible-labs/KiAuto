@@ -155,8 +155,8 @@ def eeschema_parse_erc(erc_file, warning_as_error = False):
     warnings = m.group(3)
 
     if warning_as_error:
-        return int(errors) + int(warnings)
-    return int(errors)
+        return int(errors) + int(warnings), 0
+    return int(errors), int(warnings)
 
 def eeschema_run_erc_schematic(erc_file, pid):
 
@@ -379,10 +379,12 @@ if __name__ == '__main__':
               elif args.command == 'run_erc':
                  # Run ERC
                  erc_file = eeschema_run_erc_schematic(output_file_no_ext,eeschema_proc.pid)
-                 errors = eeschema_parse_erc(erc_file, args.warnings_as_errors)
+                 errors, warnings = eeschema_parse_erc(erc_file, args.warnings_as_errors)
                  if errors > 0:
-                    logger.error('{} ERC errors detected'.format(errors))
+                    logger.error(str(errors)+' ERC errors detected')
                     exit(-errors)
+                 if warnings > 0:
+                    logger.warning(str(warnings)+' ERC warnings detected')
                  logger.info('No errors');
               eeschema_proc.terminate()
     exit(0)
