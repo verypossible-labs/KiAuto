@@ -1,3 +1,9 @@
+kicad-automation-scripts.inti-cmnb (1.1.6-1) stable; urgency=medium
+
+  *  Modified to remove x11-xserver-utils dependency
+
+ -- Salvador E. Tropea <salvador@kaira.inti.gov.ar>  Thu, 23 Apr 2020 16:36:03 -0300
+
 kicad-automation-scripts.inti-cmnb (1.1.5-1) stable; urgency=medium
 
   * Better support for docker environment in the pcbnew scripts
