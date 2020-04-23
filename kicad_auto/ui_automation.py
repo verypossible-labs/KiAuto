@@ -26,6 +26,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import shutil
 
 from contextlib import contextmanager
 
@@ -55,9 +56,17 @@ def wait_xserver():
     timeout = 10
     DELAY = 0.5
     logger.debug('Waiting for virtual X server ...')
+    if shutil.which('setxkbmap'):
+       cmd = ['setxkbmap', '-query']
+    elif shutil.which('setxkbmap'):
+       cmd = ['xset', 'q']
+    else:
+       cmd = ['ls']
+       logger.warning('No setxkbmap nor xset available, unable to verify if X is running')
     for i in range(int(timeout/DELAY)):
         with open(os.devnull, 'w') as fnull:
-             ret = subprocess.call(['xset', 'q'],stdout=fnull,stderr=subprocess.STDOUT,close_fds=True)
+             logger.debug('Checking using '+str(cmd))
+             ret = subprocess.call(cmd,stdout=fnull,stderr=subprocess.STDOUT,close_fds=True)
              #ret = subprocess.call(['xset', 'q'])
         if not ret:
            return
