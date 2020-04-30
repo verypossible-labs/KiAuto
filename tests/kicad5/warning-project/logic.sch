@@ -1,5 +1,5 @@
 EESchema Schematic File Version 4
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -14,7 +14,7 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L passive:R R1
+L warning-project-rescue:R-passive R1
 U 1 1 5CA75C86
 P 5500 2790
 F 0 "R1" H 5492 2948 40  0000 C CNN
@@ -25,7 +25,7 @@ F 3 "" H 5500 2790 60  0000 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L passive:C C2
+L warning-project-rescue:C-passive C2
 U 1 1 5CA76352
 P 5700 2860
 F 0 "C2" V 5654 2904 40  0000 L CNN
