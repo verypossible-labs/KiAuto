@@ -1,6 +1,5 @@
 EESchema Schematic File Version 4
-LIBS:good-project-cache
-EELAYER 29 0
+EELAYER 30 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -15,9 +14,11 @@ Comment3 ""
 Comment4 ""
 $EndDescr
 $Comp
-L conn:CONN_01X02 P1
+L fail-project-rescue:CONN_01X02-conn P1
 U 1 1 5CA714F2
 P 4350 3610
+AR Path="/5CA714F2" Ref="P1"  Part="1" 
+AR Path="/5CA71704/5CA714F2" Ref="P1"  Part="1" 
 F 0 "P1" H 4267 3335 50  0000 C CNN
 F 1 "CONN_01X02" H 4267 3426 50  0000 C CNN
 F 2 "Connector_JST:JST_JWPF_B02B-JWPF-SK-R_1x02_P2.00mm_Vertical" H 4350 3610 50  0001 C CNN
@@ -71,7 +72,7 @@ $EndComp
 Wire Wire Line
 	4850 3560 5450 3560
 $Comp
-L passive:C C1
+L fail-project-rescue:C-passive C1
 U 1 1 5CA745A6
 P 5450 3610
 F 0 "C1" V 5404 3654 40  0000 L CNN
