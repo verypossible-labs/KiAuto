@@ -11,7 +11,10 @@ lint:
 	flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 	flake8 . --count --statistics
 
-test:
+test: lint
 	pytest-3
 
-.PHONY: deb deb_clean test
+test_local: lint
+	pytest-3 --test_dir output
+
+.PHONY: deb deb_clean test lint
