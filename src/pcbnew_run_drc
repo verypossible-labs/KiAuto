@@ -65,10 +65,7 @@ def parse_drc(drc_file):
             unconnected_pads = m.group(1);
             continue
 
-    return {
-        'drc_errors': int(drc_errors),
-        'unconnected_pads': int(unconnected_pads)
-    }
+    return int(drc_errors), int(unconnected_pads)
 
 def dismiss_already_running():
     # The "Confirmation" modal pops up if pcbnew is already running
@@ -216,15 +213,15 @@ if __name__ == '__main__':
        else:
           logger.warning('Missing default system footprint table '+system_lib_table+' KiCad will most probably fail')
 
-    drc_result = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record, args.save))
-    logger.debug(drc_result);
+    drc_errors, unconnected_pads = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record, args.save))
+    logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
 
-    if drc_result['drc_errors'] == 0 and drc_result['unconnected_pads'] == 0:
+    if drc_errors == 0 and unconnected_pads == 0:
        logger.info('No errors');
        exit(0)
     else:
-       logger.error('Found {} DRC errors and {} unconnected pads'.format(
-            drc_result['drc_errors'],
-            drc_result['unconnected_pads']))
-       exit(-(drc_result['drc_errors']+drc_result['unconnected_pads']))
+       logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+       if args.ignore_unconnected:
+           unconnected_pads = 0
+       exit(-(drc_errors+unconnected_pads))
     
