@@ -7,12 +7,18 @@ import subprocess
 import re
 
 KICAD_PCB_EXT = '.kicad_pcb'
+KICAD_SCH_EXT = '.sch'
 REF_DIR = 'tests/reference'
+
+MODE_SCH = 1
+MODE_PCB = 0
 
 
 class TestContext(object):
 
-    def __init__(self, test_name, board_name, test_dir):
+    def __init__(self, test_name, board_name, test_dir, mode=MODE_PCB):
+        # The KiCad component
+        self.mode = mode
         # The name used for the test output dirs and other logging
         self.test_name = test_name
         # The name of the PCB board file
@@ -32,7 +38,8 @@ class TestContext(object):
     def _get_board_name(self):
         self.board_file = os.path.join(self._get_board_cfg_dir(),
                                        self.board_name,
-                                       self.board_name + KICAD_PCB_EXT)
+                                       self.board_name +
+                                       (KICAD_PCB_EXT if self.mode == MODE_PCB else KICAD_SCH_EXT))
         logging.info('PCB file: '+self.board_file)
         assert os.path.isfile(self.board_file)
 
