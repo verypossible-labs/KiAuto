@@ -105,6 +105,15 @@ class TestContext(object):
         m = re.search(text, self.err, re.MULTILINE)
         return m
 
+    def search_in_file(self, file, texts):
+        logging.debug('Searching in "'+file+'" output')
+        with open(os.path.join(self.output_dir, file)) as f:
+            txt = f.read()
+        for t in texts:
+            logging.debug('- r"'+t+'"')
+            m = re.search(t, txt, re.MULTILINE)
+            assert m
+
     def compare_image(self, image, reference=None, diff='diff.png'):
         if reference is None:
             reference = image
