@@ -1,10 +1,10 @@
-
 import os
 import shutil
 import tempfile
 import logging
 import subprocess
 import re
+import pytest
 
 KICAD_PCB_EXT = '.kicad_pcb'
 KICAD_SCH_EXT = '.sch'
@@ -16,7 +16,7 @@ MODE_PCB = 0
 
 class TestContext(object):
 
-    def __init__(self, test_name, board_name, test_dir, mode=MODE_PCB):
+    def __init__(self, test_name, board_name, mode=MODE_PCB):
         # The KiCad component
         self.mode = mode
         # The name used for the test output dirs and other logging
@@ -26,7 +26,7 @@ class TestContext(object):
         # The actual board file that will be loaded
         self._get_board_name()
         # The actual output dir for this run
-        self._set_up_output_dir(test_dir)
+        self._set_up_output_dir(pytest.config.getoption('test_dir'))
         # stdout and stderr from the run
         self.out = None
         self.err = None

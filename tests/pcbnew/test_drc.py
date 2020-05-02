@@ -21,16 +21,16 @@ REPORT = 'drc_result.rpt'
 OUT_REX = r'(\d+) DRC errors and (\d+) unconnected pads'
 
 
-def test_drc_ok(test_dir):
-    ctx = context.TestContext('DRC_Ok', 'good-project', test_dir)
+def test_drc_ok():
+    ctx = context.TestContext('DRC_Ok', 'good-project')
     cmd = [PROG]
     ctx.run(cmd)
     ctx.expect_out_file(REPORT)
     ctx.clean_up()
 
 
-def test_drc_fail(test_dir):
-    ctx = context.TestContext('DRC_Error', 'fail-project', test_dir)
+def test_drc_fail():
+    ctx = context.TestContext('DRC_Error', 'fail-project')
     cmd = [PROG]
     ctx.run(cmd, 254)
     ctx.expect_out_file(REPORT)
@@ -41,8 +41,8 @@ def test_drc_fail(test_dir):
     ctx.clean_up()
 
 
-def test_drc_unco(test_dir):
-    ctx = context.TestContext('DRC_Unconnected', 'warning-project', test_dir)
+def test_drc_unco():
+    ctx = context.TestContext('DRC_Unconnected', 'warning-project')
     cmd = [PROG, '--output_name', 'drc.txt']
     ctx.run(cmd, 255)
     ctx.expect_out_file('drc.txt')
@@ -53,8 +53,8 @@ def test_drc_unco(test_dir):
     ctx.clean_up()
 
 
-def test_drc_unco_ok(test_dir):
-    ctx = context.TestContext('DRC_Unconnected_Ok', 'warning-project', test_dir)
+def test_drc_unco_ok():
+    ctx = context.TestContext('DRC_Unconnected_Ok', 'warning-project')
     cmd = [PROG, '--output_name', 'drc.txt', '--ignore_unconnected']
     ctx.run(cmd)
     ctx.expect_out_file('drc.txt')

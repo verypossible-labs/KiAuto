@@ -21,18 +21,18 @@ OUT_ERR_REX = r'(\d+) ERC errors'
 OUT_WAR_REX = r'(\d+) ERC warnings'
 
 
-def test_erc_ok(test_dir):
+def test_erc_ok():
     prj = 'good-project'
-    ctx = context.TestContext('ERC_Ok', prj, test_dir, context.MODE_SCH)
+    ctx = context.TestContext('ERC_Ok', prj, context.MODE_SCH)
     cmd = [PROG, 'run_erc']
     ctx.run(cmd)
     ctx.expect_out_file(prj+'.erc')
     ctx.clean_up()
 
 
-def test_erc_fail(test_dir):
+def test_erc_fail():
     prj = 'fail-project'
-    ctx = context.TestContext('ERC_Error', prj, test_dir, context.MODE_SCH)
+    ctx = context.TestContext('ERC_Error', prj, context.MODE_SCH)
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, 255)
     ctx.expect_out_file(prj+'.erc')
@@ -45,9 +45,9 @@ def test_erc_fail(test_dir):
     ctx.clean_up()
 
 
-def test_erc_warning(test_dir):
+def test_erc_warning():
     prj = 'warning-project'
-    ctx = context.TestContext('ERC_Warning', prj, test_dir, context.MODE_SCH)
+    ctx = context.TestContext('ERC_Warning', prj, context.MODE_SCH)
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, 0)
     ctx.expect_out_file(prj+'.erc')
@@ -57,9 +57,9 @@ def test_erc_warning(test_dir):
     ctx.clean_up()
 
 
-def test_erc_warning_fail(test_dir):
+def test_erc_warning_fail():
     prj = 'warning-project'
-    ctx = context.TestContext('ERC_Warning_as_Error', prj, test_dir, context.MODE_SCH)
+    ctx = context.TestContext('ERC_Warning_as_Error', prj, context.MODE_SCH)
     cmd = [PROG, 'run_erc', '--warnings_as_errors']
     ctx.run(cmd, 255)
     ctx.expect_out_file(prj+'.erc')

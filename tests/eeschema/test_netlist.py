@@ -19,10 +19,10 @@ from utils import context
 PROG = 'eeschema_do'
 
 
-def test_netlist(test_dir):
+def test_netlist():
     prj = 'good-project'
     net = prj+'.net'
-    ctx = context.TestContext('Netlist', prj, test_dir, context.MODE_SCH)
+    ctx = context.TestContext('Netlist', prj, context.MODE_SCH)
     cmd = [PROG, 'netlist']
     ctx.run(cmd)
     ctx.expect_out_file(net)

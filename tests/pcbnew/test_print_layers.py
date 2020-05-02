@@ -21,8 +21,8 @@ DEFAULT = 'printed.pdf'
 CMD_OUT = 'output.txt'
 
 
-def test_print_pcb_good_dwg(test_dir):
-    ctx = context.TestContext('Print_Good_with_Dwg', 'good-project', test_dir)
+def test_print_pcb_good_dwg():
+    ctx = context.TestContext('Print_Good_with_Dwg', 'good-project')
     pdf = 'good_pcb_with_dwg.pdf'
     cmd = [PROG, '--output_name', pdf]
     layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
@@ -32,8 +32,8 @@ def test_print_pcb_good_dwg(test_dir):
     ctx.clean_up()
 
 
-def test_print_pcb_good_inner(test_dir):
-    ctx = context.TestContext('Print_Good_Inner', 'good-project', test_dir)
+def test_print_pcb_good_inner():
+    ctx = context.TestContext('Print_Good_Inner', 'good-project')
     cmd = [PROG]
     layers = ['F.Cu', 'F.SilkS', 'GND.Cu', 'Signal1.Cu', 'Signal2.Cu', 'Power.Cu', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
@@ -42,8 +42,8 @@ def test_print_pcb_good_inner(test_dir):
     ctx.clean_up()
 
 
-def test_print_pcb_layers(test_dir):
-    ctx = context.TestContext('Print_Layers', 'good-project', test_dir)
+def test_print_pcb_layers():
+    ctx = context.TestContext('Print_Layers', 'good-project')
     cmd = [PROG, '--list']
     ctx.run(cmd)
     ctx.compare_txt(CMD_OUT, 'good_pcb_layers.txt')
