@@ -90,6 +90,62 @@ Wire Wire Line
 	6320 2720 6110 2720
 Wire Wire Line
 	6110 2720 6110 2630
-Text Notes 5810 2410 0    50   ~ 0
-Input to input: ERC error
+Text Notes 6150 3550 0    50   ~ 0
+Output to Output: ERC error
+$Comp
+L 74xx:74LS04 U1
+U 1 1 5EAD683A
+P 6350 3250
+F 0 "U1" H 6350 3567 50  0000 C CNN
+F 1 "74LS04" H 6350 3476 50  0000 C CNN
+F 2 "" H 6350 3250 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS04" H 6350 3250 50  0001 C CNN
+	1    6350 3250
+	1    0    0    -1  
+$EndComp
+$Comp
+L 74xx:74LS04 U1
+U 2 1 5EAD766B
+P 7050 3250
+F 0 "U1" H 7050 2933 50  0000 C CNN
+F 1 "74LS04" H 7050 3024 50  0000 C CNN
+F 2 "" H 7050 3250 50  0001 C CNN
+F 3 "http://www.ti.com/lit/gpn/sn74LS04" H 7050 3250 50  0001 C CNN
+	2    7050 3250
+	-1   0    0    1   
+$EndComp
+Wire Wire Line
+	6650 3250 6750 3250
+Wire Wire Line
+	6050 3250 6000 3250
+Wire Wire Line
+	6000 3250 6000 3350
+Wire Wire Line
+	7350 3250 7400 3250
+Wire Wire Line
+	7400 3250 7400 3350
+$Comp
+L power:GND #PWR05
+U 1 1 5EAD892D
+P 7400 3350
+F 0 "#PWR05" H 7400 3100 50  0001 C CNN
+F 1 "GND" H 7405 3177 50  0000 C CNN
+F 2 "" H 7400 3350 50  0001 C CNN
+F 3 "" H 7400 3350 50  0001 C CNN
+	1    7400 3350
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR04
+U 1 1 5EAD967D
+P 6000 3350
+F 0 "#PWR04" H 6000 3100 50  0001 C CNN
+F 1 "GND" H 6005 3177 50  0000 C CNN
+F 2 "" H 6000 3350 50  0001 C CNN
+F 3 "" H 6000 3350 50  0001 C CNN
+	1    6000 3350
+	1    0    0    -1  
+$EndComp
+Text Notes 5800 2400 0    50   ~ 0
+No driver ERC warning
 $EndSCHEMATC
