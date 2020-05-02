@@ -380,11 +380,11 @@ if __name__ == '__main__':
                  # Run ERC
                  erc_file = eeschema_run_erc_schematic(output_file_no_ext,eeschema_proc.pid)
                  errors, warnings = eeschema_parse_erc(erc_file, args.warnings_as_errors)
+                 if warnings > 0:
+                    logger.warning(str(warnings)+' ERC warnings detected')
                  if errors > 0:
                     logger.error(str(errors)+' ERC errors detected')
                     exit(-errors)
-                 if warnings > 0:
-                    logger.warning(str(warnings)+' ERC warnings detected')
                  logger.info('No errors');
               eeschema_proc.terminate()
     exit(0)
