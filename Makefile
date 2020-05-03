@@ -32,6 +32,7 @@ test_local: lint
 	x-www-browser htmlcov/index.html
 
 test_docker_local:
+	rm -rf output
 	# Run in the same directory to make the __pycache__ valid
 	# Also change the owner of the files to the current user (we run as root like in GitHub)
 	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:latest \
