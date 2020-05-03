@@ -5,6 +5,7 @@ import logging
 import subprocess
 import re
 import pytest
+from glob import glob
 
 KICAD_PCB_EXT = '.kicad_pcb'
 KICAD_SCH_EXT = '.sch'
@@ -66,6 +67,10 @@ class TestContext(object):
         assert os.path.getsize(file) > 0
         return file
 
+    def dont_expect_out_file(self, filename):
+        file = os.path.join(self.output_dir, filename)
+        assert not os.path.isfile(file)
+
     def run(self, cmd, ret_val=None, extra=None):
         logging.debug('Running '+self.test_name)
         # Change the command to be local and add the board and output arguments
@@ -115,6 +120,7 @@ class TestContext(object):
             assert m
 
     def compare_image(self, image, reference=None, diff='diff.png'):
+        """ For images and single page PDFs """
         if reference is None:
             reference = image
         cmd = ['compare', '-metric', 'MSE',
@@ -128,6 +134,41 @@ class TestContext(object):
         logging.debug('MSE={} ({})'.format(m.group(1), m.group(2)))
         assert float(m.group(2)) == 0.0
 
+    def compare_pdf(self, gen, reference=None, diff='diff-{}.png'):
+        """ For multi-page PDFs """
+        if reference is None:
+            reference = gen
+        logging.debug('Comparing PDFs: '+gen+' vs '+reference)
+        # Split the reference
+        logging.debug('Splitting '+reference)
+        cmd = ['convert', '-density', '150',
+               os.path.join(REF_DIR, reference),
+               os.path.join(self.output_dir, 'ref-%d.png')]
+        subprocess.check_call(cmd)
+        # Split the generated
+        logging.debug('Splitting '+gen)
+        cmd = ['convert', '-density', '150',
+               os.path.join(self.output_dir, gen),
+               os.path.join(self.output_dir, 'gen-%d.png')]
+        subprocess.check_call(cmd)
+        # Chek number of pages
+        ref_pages = glob(os.path.join(self.output_dir, 'ref-*.png'))
+        gen_pages = glob(os.path.join(self.output_dir, 'gen-*.png'))
+        logging.debug('Pages {} vs {}'.format(len(gen_pages), len(ref_pages)))
+        assert len(ref_pages) == len(gen_pages)
+        # Compare each page
+        for page in range(len(ref_pages)):
+            cmd = ['compare', '-metric', 'MSE',
+                   os.path.join(self.output_dir, 'ref-'+str(page)+'.png'),
+                   os.path.join(self.output_dir, 'gen-'+str(page)+'.png'),
+                   os.path.join(self.output_dir, diff.format(page))]
+            logging.debug('Comparing images with: '+str(cmd))
+            res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            m = re.match(r'([\d\.]+) \(([\d\.]+)\)', res.decode())
+            assert m
+            logging.debug('MSE={} ({})'.format(m.group(1), m.group(2)))
+            assert float(m.group(2)) == 0.0
+
     def compare_txt(self, text, reference=None, diff='diff.txt'):
         if reference is None:
             reference = text
@@ -136,3 +177,10 @@ class TestContext(object):
         logging.debug('Comparing texts with: '+str(cmd))
         res = subprocess.call(cmd)
         assert res == 0
+
+    def filter_txt(self, file, pattern, repl):
+        fname = os.path.join(self.output_dir, file)
+        with open(fname) as f:
+            txt = f.read()
+        with open(fname, 'w') as f:
+            f.write(re.sub(pattern, repl, txt))
