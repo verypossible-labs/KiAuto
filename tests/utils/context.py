@@ -17,9 +17,9 @@ MODE_PCB = 0
 
 class TestContext(object):
 
-    def __init__(self, test_name, board_name, mode=MODE_PCB):
-        # The KiCad component
-        self.mode = mode
+    def __init__(self, test_name, board_name):
+        # We are using PCBs
+        self.mode = MODE_PCB
         # The name used for the test output dirs and other logging
         self.test_name = test_name
         # The name of the PCB board file
@@ -184,3 +184,11 @@ class TestContext(object):
             txt = f.read()
         with open(fname, 'w') as f:
             f.write(re.sub(pattern, repl, txt))
+
+
+class TestContextSCH(TestContext):
+
+    def __init__(self, test_name, board_name):
+        super().__init__(test_name, board_name)
+        self.mode = MODE_SCH
+        self._get_board_name()

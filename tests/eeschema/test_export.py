@@ -20,7 +20,7 @@ PROG = 'eeschema_do'
 def test_export_all_pdf():
     prj = 'good-project'
     pdf = prj+'.pdf'
-    ctx = context.TestContext('Export_All_PDF', prj, context.MODE_SCH)
+    ctx = context.TestContextSCH('Export_All_PDF', prj)
     cmd = [PROG, 'export', '--file_format', 'pdf', '--all_pages']
     ctx.run(cmd)
     ctx.expect_out_file(pdf)
@@ -31,7 +31,7 @@ def test_export_all_pdf():
 def test_export_pdf():
     prj = 'good-project'
     pdf = prj+'.pdf'
-    ctx = context.TestContext('Export_All_PDF', prj, context.MODE_SCH)
+    ctx = context.TestContextSCH('Export_All_PDF', prj)
     cmd = [PROG, 'export', '--file_format', 'pdf']
     ctx.run(cmd)
     ctx.expect_out_file(pdf)
@@ -47,7 +47,7 @@ def do_test_svg(ctx, svg):
 
 def test_export_all_svg():
     prj = 'good-project'
-    ctx = context.TestContext('Export_All_SVG', prj, context.MODE_SCH)
+    ctx = context.TestContextSCH('Export_All_SVG', prj)
     cmd = [PROG, 'export', '--file_format', 'svg', '--all_pages']
     ctx.run(cmd)
     do_test_svg(ctx, 'good-project.svg')
@@ -58,7 +58,7 @@ def test_export_all_svg():
 
 def test_export_svg():
     prj = 'good-project'
-    ctx = context.TestContext('Export_SVG', prj, context.MODE_SCH)
+    ctx = context.TestContextSCH('Export_SVG', prj)
     cmd = [PROG, 'export', '--file_format', 'svg']
     ctx.run(cmd)
     do_test_svg(ctx, 'good-project.svg')

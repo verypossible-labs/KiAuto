@@ -20,7 +20,7 @@ PROG = 'eeschema_do'
 def test_bom_xml():
     prj = 'good-project'
     bom = prj+'.csv'
-    ctx = context.TestContext('BoM_XML', prj, context.MODE_SCH)
+    ctx = context.TestContextSCH('BoM_XML', prj)
     cmd = [PROG, 'bom_xml']
     ctx.run(cmd)
     ctx.expect_out_file(bom)

@@ -22,7 +22,7 @@ PROG = 'eeschema_do'
 def test_netlist():
     prj = 'good-project'
     net = prj+'.net'
-    ctx = context.TestContext('Netlist', prj, context.MODE_SCH)
+    ctx = context.TestContextSCH('Netlist', prj)
     cmd = [PROG, 'netlist']
     ctx.run(cmd)
     ctx.expect_out_file(net)
