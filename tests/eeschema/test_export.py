@@ -31,7 +31,7 @@ def test_export_all_pdf():
 def test_export_pdf():
     prj = 'good-project'
     pdf = prj+'.pdf'
-    ctx = context.TestContextSCH('Export_All_PDF', prj)
+    ctx = context.TestContextSCH('Export_PDF', prj)
     cmd = [PROG, 'export', '--file_format', 'pdf']
     ctx.run(cmd)
     ctx.expect_out_file(pdf)
