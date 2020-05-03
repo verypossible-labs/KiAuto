@@ -27,7 +27,7 @@ jobs:
       run: |
         pytest-3 --test_dir output
     - name: Store results
-      if: ¤{{ always() }}
+      if: ${{ always() }}
       uses: actions/upload-artifact@v1
       with:
         name: Test_Output
