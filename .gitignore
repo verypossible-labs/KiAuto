@@ -2,3 +2,7 @@
 *.epr
 */__pycache__/
 output/
+pp/
+# Coverage reports
+.coverage
+htmlcov/

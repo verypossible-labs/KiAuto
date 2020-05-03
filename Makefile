@@ -1,4 +1,5 @@
 #!/usr/bin/make
+PY_COV=python3-coverage
 REFDIR=tests/reference/
 GOOD=tests/kicad5/good-project/good-project.kicad_pcb
 GOOD_SCH=tests/kicad5/good-project/good-project.sch
@@ -18,10 +19,17 @@ lint:
 	flake8 . --count --statistics
 
 test: lint
+	$(PY_COV) erase
 	pytest-3
+	$(PY_COV) report
 
 test_local: lint
+	rm -rf output
+	$(PY_COV) erase
 	pytest-3 --test_dir output
+	$(PY_COV) report
+	$(PY_COV) html
+	x-www-browser htmlcov/index.html
 
 test_docker_local:
 	# Run in the same directory to make the __pycache__ valid

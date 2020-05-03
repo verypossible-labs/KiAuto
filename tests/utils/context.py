@@ -7,6 +7,7 @@ import re
 import pytest
 from glob import glob
 
+COVERAGE_SCRIPT = 'python3-coverage'
 KICAD_PCB_EXT = '.kicad_pcb'
 KICAD_SCH_EXT = '.sch'
 REF_DIR = 'tests/reference'
@@ -75,6 +76,7 @@ class TestContext(object):
         logging.debug('Running '+self.test_name)
         # Change the command to be local and add the board and output arguments
         cmd[0] = os.path.abspath(os.path.dirname(os.path.abspath(__file__))+'/../../src/'+cmd[0])
+        cmd = [COVERAGE_SCRIPT, 'run', '-a']+cmd
         cmd.append(self.board_file)
         cmd.append(self.output_dir)
         if extra is not None:
