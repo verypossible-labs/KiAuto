@@ -31,7 +31,7 @@ jobs:
         pytest-3 --test_dir output
         python3-coverage report
         python3-coverage html -d output/htmlcov
-        echo $COVERALLS_REPO_TOKEN | wc
+        echo $COVERALLS_REPO_TOKEN
         coveralls
     - name: Store results
       if: ${{ always() }}
