@@ -24,6 +24,8 @@ jobs:
         # exit-zero treats all errors as warnings.
         flake8 . --count --exit-zero --statistics
     - name: Test with pytest
+      env:
+        COVERALLS_REPO_TOKEN: ¤{{ secrets.COVERALLS_REPO_TOKEN }}
       run: |
         python3-coverage erase
         pytest-3 --test_dir output
