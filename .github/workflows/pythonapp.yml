@@ -29,6 +29,7 @@ jobs:
         pytest-3 --test_dir output
         python3-coverage report
         python3-coverage html -d output/htmlcov
+        coveralls
     - name: Store results
       if: ${{ always() }}
       uses: actions/upload-artifact@v1
