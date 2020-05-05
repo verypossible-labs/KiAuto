@@ -94,7 +94,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
     xvfb_kwargs = { 'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
     with recorded_xvfb(output_dir if record else None, 'pcbnew_print_layers_screencast.ogv', **xvfb_kwargs):
-        with PopenContext(['pcbnew', pcb_file], stderr=open(os.devnull, 'wb'), close_fds=True) as pcbnew_proc:
+        with PopenContext(['pcbnew', pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
 
             clipboard_store(print_output_file)
 
