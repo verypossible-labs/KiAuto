@@ -7,6 +7,13 @@ import re
 import pytest
 from glob import glob
 from pty import openpty
+from contextlib import contextmanager
+from psutil import pid_exists
+import sys
+# Look for the 'kicad_auto' module from where the script is running
+script_dir = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.dirname(os.path.dirname(script_dir)))
+from kicad_auto.ui_automation import recorded_xvfb, PopenContext
 
 COVERAGE_SCRIPT = 'python3-coverage'
 KICAD_PCB_EXT = '.kicad_pcb'
@@ -33,6 +40,7 @@ class TestContext(object):
         # stdout and stderr from the run
         self.out = None
         self.err = None
+        self.proc = None
 
     def _get_board_cfg_dir(self):
         this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -63,14 +71,17 @@ class TestContext(object):
             logging.debug('Removing dir')
             shutil.rmtree(self.output_dir)
 
+    def get_out_path(self, filename):
+        return os.path.join(self.output_dir, filename)
+
     def expect_out_file(self, filename):
-        file = os.path.join(self.output_dir, filename)
+        file = self.get_out_path(filename)
         assert os.path.isfile(file)
         assert os.path.getsize(file) > 0
         return file
 
     def dont_expect_out_file(self, filename):
-        file = os.path.join(self.output_dir, filename)
+        file = self.get_out_path(filename)
         assert not os.path.isfile(file)
 
     def run(self, cmd, ret_val=None, extra=None, use_a_tty=False):
@@ -83,8 +94,8 @@ class TestContext(object):
         if extra is not None:
             cmd = cmd+extra
         logging.debug(cmd)
-        out_filename = os.path.join(self.output_dir, 'output.txt')
-        err_filename = os.path.join(self.output_dir, 'error.txt')
+        out_filename = self.get_out_path('output.txt')
+        err_filename = self.get_out_path('error.txt')
         if use_a_tty:
             # This is used to test the coloured logs, we need stderr to be a TTY
             master, slave = openpty()
@@ -133,7 +144,7 @@ class TestContext(object):
 
     def search_in_file(self, file, texts):
         logging.debug('Searching in "'+file+'" output')
-        with open(os.path.join(self.output_dir, file)) as f:
+        with open(self.get_out_path(file)) as f:
             txt = f.read()
         for t in texts:
             logging.debug('- r"'+t+'"')
@@ -145,9 +156,9 @@ class TestContext(object):
         if reference is None:
             reference = image
         cmd = ['compare', '-metric', 'MSE',
-               os.path.join(self.output_dir, image),
+               self.get_out_path(image),
                os.path.join(REF_DIR, reference),
-               os.path.join(self.output_dir, diff)]
+               self.get_out_path(diff)]
         logging.debug('Comparing images with: '+str(cmd))
         res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         m = re.match(r'([\d\.]+) \(([\d\.]+)\)', res.decode())
@@ -164,25 +175,25 @@ class TestContext(object):
         logging.debug('Splitting '+reference)
         cmd = ['convert', '-density', '150',
                os.path.join(REF_DIR, reference),
-               os.path.join(self.output_dir, 'ref-%d.png')]
+               self.get_out_path('ref-%d.png')]
         subprocess.check_call(cmd)
         # Split the generated
         logging.debug('Splitting '+gen)
         cmd = ['convert', '-density', '150',
-               os.path.join(self.output_dir, gen),
-               os.path.join(self.output_dir, 'gen-%d.png')]
+               self.get_out_path(gen),
+               self.get_out_path('gen-%d.png')]
         subprocess.check_call(cmd)
         # Chek number of pages
-        ref_pages = glob(os.path.join(self.output_dir, 'ref-*.png'))
-        gen_pages = glob(os.path.join(self.output_dir, 'gen-*.png'))
+        ref_pages = glob(self.get_out_path('ref-*.png'))
+        gen_pages = glob(self.get_out_path('gen-*.png'))
         logging.debug('Pages {} vs {}'.format(len(gen_pages), len(ref_pages)))
         assert len(ref_pages) == len(gen_pages)
         # Compare each page
         for page in range(len(ref_pages)):
             cmd = ['compare', '-metric', 'MSE',
-                   os.path.join(self.output_dir, 'ref-'+str(page)+'.png'),
-                   os.path.join(self.output_dir, 'gen-'+str(page)+'.png'),
-                   os.path.join(self.output_dir, diff.format(page))]
+                   self.get_out_path('ref-'+str(page)+'.png'),
+                   self.get_out_path('gen-'+str(page)+'.png'),
+                   self.get_out_path(diff.format(page))]
             logging.debug('Comparing images with: '+str(cmd))
             res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             m = re.match(r'([\d\.]+) \(([\d\.]+)\)', res.decode())
@@ -194,17 +205,33 @@ class TestContext(object):
         if reference is None:
             reference = text
         cmd = ['/bin/sh', '-c', 'diff -ub '+os.path.join(REF_DIR, reference)+' ' +
-               os.path.join(self.output_dir, text)+' > '+os.path.join(self.output_dir, diff)]
+               self.get_out_path(text)+' > '+self.get_out_path(diff)]
         logging.debug('Comparing texts with: '+str(cmd))
         res = subprocess.call(cmd)
         assert res == 0
 
     def filter_txt(self, file, pattern, repl):
-        fname = os.path.join(self.output_dir, file)
+        fname = self.get_out_path(file)
         with open(fname) as f:
             txt = f.read()
         with open(fname, 'w') as f:
             f.write(re.sub(pattern, repl, txt))
+
+    @contextmanager
+    def start_kicad(self, cmd):
+        """ Context manager to run a command under a virual X server.
+            Use like this: with context.start_kicad('command'): """
+        xvfb_kwargs = {'width': 800, 'height': 600, 'colordepth': 24, }
+        with recorded_xvfb(None, None, **xvfb_kwargs):
+            with PopenContext([cmd], stderr=subprocess.DEVNULL, close_fds=True) as self.proc:
+                logging.debug('Started '+cmd+' with PID: '+str(self.proc.pid))
+                assert pid_exists(self.proc.pid)
+                yield
+
+    def stop_kicad(self):
+        if self.proc:
+            self.proc.terminate()
+            self.proc = None
 
 
 class TestContextSCH(TestContext):

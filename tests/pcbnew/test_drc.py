@@ -24,11 +24,9 @@ OUT_REX = r'(\d+) DRC errors and (\d+) unconnected pads'
 
 def test_drc_ok():
     ctx = context.TestContext('DRC_Ok', 'good-project')
-    cmd = [PROG, '-vv']
-    ctx.run(cmd, use_a_tty=True)
+    cmd = [PROG]
+    ctx.run(cmd)
     ctx.expect_out_file(REPORT)
-    logging.debug('Checking for colors in DEBUG logs')
-    assert ctx.search_err(r"\[36;1mDEBUG:") is not None
     ctx.clean_up()
 
 
@@ -66,4 +64,21 @@ def test_drc_unco_ok():
     assert m is not None
     assert m.group(1) == '0'
     assert m.group(2) == '1'
+    ctx.clean_up()
+
+
+def test_drc_ok_pcbnew_running():
+    ctx = context.TestContext('DRC_Ok_pcbnew_running', 'good-project')
+    # Create a report to force and overwrite
+    with open(ctx.get_out_path(REPORT), 'w') as f:
+        f.write('dummy')
+    # Run pcbnew in parallel to get 'Dismiss pcbnew already running'
+    with ctx.start_kicad('pcbnew'):
+        cmd = [PROG, '-vv', '--wait_start', '5']
+        ctx.run(cmd, use_a_tty=True)
+        ctx.stop_kicad()
+    ctx.expect_out_file(REPORT)
+    logging.debug('Checking for colors in DEBUG logs')
+    assert ctx.search_err(r"\[36;1mDEBUG:") is not None
+    assert ctx.search_err(r"Dismiss pcbnew already running") is not None
     ctx.clean_up()
