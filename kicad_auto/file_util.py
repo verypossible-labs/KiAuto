@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import errno
 import os
 import time
 # python3-psutil
@@ -8,16 +7,6 @@ import psutil
 
 from kicad_auto import log
 logger = log.get_logger(__name__)
-
-
-def mkdir_p(path):
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
 
 
 def wait_for_file_created_by_process(pid, file, timeout=5):

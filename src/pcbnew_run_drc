@@ -93,7 +93,7 @@ def dismiss_warning():
 
 def run_drc(pcb_file, output_dir, record=True, save=False):
 
-    file_util.mkdir_p(output_dir)
+    os.makedirs(output_dir)
 
     drc_output_file = os.path.join(os.path.abspath(output_dir), args.output_name[0])
     if os.path.exists(drc_output_file):
@@ -102,7 +102,7 @@ def run_drc(pcb_file, output_dir, record=True, save=False):
     xvfb_kwargs = { 'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
     with recorded_xvfb(output_dir if record else None, 'pcbnew_run_drc_screencast.ogv', **xvfb_kwargs):
-        with PopenContext(['pcbnew', pcb_file], stderr=open(os.devnull, 'wb'), close_fds=True) as pcbnew_proc:
+        with PopenContext(['pcbnew', pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
 
             clipboard_store(drc_output_file)
 
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
     if not os.path.isdir(kicad_cfg_dir):
        logger.debug('Creating KiCad config dir')
-       file_util.mkdir_p(kicad_cfg_dir)
+       os.makedirs(kicad_cfg_dir)
     config_file = os.path.join(kicad_cfg_dir, 'pcbnew')
     old_config_file = config_file + '.pre_run_drc'
     logger.debug('PCBnew config: '+config_file)
