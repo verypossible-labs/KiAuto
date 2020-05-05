@@ -47,6 +47,8 @@ from kicad_auto.ui_automation import (
 # Return error codes
 NO_PCB=1
 PCBNEW_CFG_PRESENT=2
+# Wait 25 s to pcbnew window to be present
+WAIT_START=25
 
 def dismiss_already_running():
     # The "Confirmation" modal pops up if pcbnew is already running
@@ -102,7 +104,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
 
             failed_focuse = False
             try:
-               wait_for_window('Main pcbnew window', 'Pcbnew', 25)
+               wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start)
             except RuntimeError:
                failed_focuse = True
                pass
@@ -212,6 +214,7 @@ if __name__ == '__main__':
     parser.add_argument('--verbose','-v',action='count',default=0)
     parser.add_argument('--version','-V',action='version', version='%(prog)s '+__version__+' - '+
                         __copyright__+' - License: '+__license__)
+    parser.add_argument('--wait_start',help='Timeout to pcbnew start ['+str(WAIT_START)+']',type=int,default=WAIT_START)
 
     args = parser.parse_args()
 
