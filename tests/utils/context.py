@@ -6,6 +6,7 @@ import subprocess
 import re
 import pytest
 from glob import glob
+from pty import openpty
 
 COVERAGE_SCRIPT = 'python3-coverage'
 KICAD_PCB_EXT = '.kicad_pcb'
@@ -72,7 +73,7 @@ class TestContext(object):
         file = os.path.join(self.output_dir, filename)
         assert not os.path.isfile(file)
 
-    def run(self, cmd, ret_val=None, extra=None):
+    def run(self, cmd, ret_val=None, extra=None, use_a_tty=False):
         logging.debug('Running '+self.test_name)
         # Change the command to be local and add the board and output arguments
         cmd[0] = os.path.abspath(os.path.dirname(os.path.abspath(__file__))+'/../../src/'+cmd[0])
@@ -82,27 +83,45 @@ class TestContext(object):
         if extra is not None:
             cmd = cmd+extra
         logging.debug(cmd)
-        # Redirect stdout and stderr to files
         out_filename = os.path.join(self.output_dir, 'output.txt')
-        f_out = os.open(out_filename, os.O_RDWR | os.O_CREAT)
         err_filename = os.path.join(self.output_dir, 'error.txt')
-        f_err = os.open(err_filename, os.O_RDWR | os.O_CREAT)
+        if use_a_tty:
+            # This is used to test the coloured logs, we need stderr to be a TTY
+            master, slave = openpty()
+            f_err = slave
+            f_out = slave
+        else:
+            # Redirect stdout and stderr to files
+            f_out = os.open(out_filename, os.O_RDWR | os.O_CREAT)
+            f_err = os.open(err_filename, os.O_RDWR | os.O_CREAT)
         # Run the process
         process = subprocess.Popen(cmd, stdout=f_out, stderr=f_err)
         ret_code = process.wait()
         logging.debug('ret_code '+str(ret_code))
+        if use_a_tty:
+            self.err = os.read(master, 10000)
+            self.err = self.err.decode()
+            self.out = self.err
         exp_ret = 0 if ret_val is None else ret_val
         assert ret_code == exp_ret
-        # Read stdout
-        os.lseek(f_out, 0, os.SEEK_SET)
-        self.out = os.read(f_out, 10000)
-        os.close(f_out)
-        self.out = self.out.decode()
-        # Read stderr
-        os.lseek(f_err, 0, os.SEEK_SET)
-        self.err = os.read(f_err, 10000)
-        os.close(f_err)
-        self.err = self.err.decode()
+        if use_a_tty:
+            os.close(master)
+            os.close(slave)
+            with open(out_filename, 'w') as f:
+                f.write(self.out)
+            with open(err_filename, 'w') as f:
+                f.write(self.out)
+        else:
+            # Read stdout
+            os.lseek(f_out, 0, os.SEEK_SET)
+            self.out = os.read(f_out, 10000)
+            os.close(f_out)
+            self.out = self.out.decode()
+            # Read stderr
+            os.lseek(f_err, 0, os.SEEK_SET)
+            self.err = os.read(f_err, 10000)
+            os.close(f_err)
+            self.err = self.err.decode()
 
     def search_out(self, text):
         m = re.search(text, self.out, re.MULTILINE)

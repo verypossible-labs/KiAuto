@@ -48,3 +48,11 @@ def test_print_pcb_layers():
     ctx.run(cmd)
     ctx.compare_txt(CMD_OUT, 'good_pcb_layers.txt')
     ctx.clean_up()
+
+
+def test_print_pcb_layers_log():
+    ctx = context.TestContext('Print_Layers_log', 'good-project')
+    cmd = [PROG, '--list']
+    ctx.run(cmd)
+    ctx.compare_txt(CMD_OUT, 'good_pcb_layers.txt')
+    ctx.clean_up()

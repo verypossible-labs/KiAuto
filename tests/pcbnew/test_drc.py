@@ -8,6 +8,7 @@ pytest-3 --log-cli-level debug
 
 import os
 import sys
+import logging
 # import re
 # import logging
 # Look for the 'utils' module from where the script is running
@@ -23,15 +24,18 @@ OUT_REX = r'(\d+) DRC errors and (\d+) unconnected pads'
 
 def test_drc_ok():
     ctx = context.TestContext('DRC_Ok', 'good-project')
-    cmd = [PROG]
-    ctx.run(cmd)
+    cmd = [PROG, '-vv']
+    ctx.run(cmd, use_a_tty=True)
     ctx.expect_out_file(REPORT)
+    logging.debug('Checking for colors in DEBUG logs')
+    assert ctx.search_err(r"\[36;1mDEBUG:") is not None
     ctx.clean_up()
 
 
 def test_drc_fail():
     ctx = context.TestContext('DRC_Error', 'fail-project')
-    cmd = [PROG]
+    # Here we use -v to cover "info" log level
+    cmd = [PROG, '-v']
     ctx.run(cmd, 254)
     ctx.expect_out_file(REPORT)
     m = ctx.search_err(OUT_REX)
