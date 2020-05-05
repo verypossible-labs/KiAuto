@@ -40,8 +40,7 @@ from kicad_auto.ui_automation import (
     xdotool,
     wait_for_window,
     recorded_xvfb,
-    clipboard_store,
-    clipboard_retrieve
+    clipboard_store
 )
 
 # Return error codes
@@ -360,8 +359,9 @@ if __name__ == '__main__':
     with recorded_xvfb(output_dir if args.record else None, args.command+'_eeschema_screencast.ogv',
                        width=args.rec_width, height=args.rec_height, colordepth=24):
          with PopenContext(['eeschema', args.schematic], close_fds=True,
-                           stderr=open(os.devnull, 'wb'), stdout=open(os.devnull, 'wb')) as eeschema_proc:
+                           stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL) as eeschema_proc:
               eeschema_skip_errors()
+              logger.debug('stdout: '+str(eeschema_proc.stdout)+' bool: '+str(bool(eeschema_proc.stdout)))
               if args.command == 'export':
                  # Export
                  output_file = output_file_no_ext+'.'+args.file_format.lower()

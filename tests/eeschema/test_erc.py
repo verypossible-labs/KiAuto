@@ -24,9 +24,10 @@ OUT_WAR_REX = r'(\d+) ERC warnings'
 def test_erc_ok():
     prj = 'good-project'
     ctx = context.TestContextSCH('ERC_Ok', prj)
-    cmd = [PROG, 'run_erc']
+    cmd = [PROG, '-vv', '--record', 'run_erc']
     ctx.run(cmd)
     ctx.expect_out_file(prj+'.erc')
+    ctx.expect_out_file('run_erc_eeschema_screencast.ogv')
     ctx.clean_up()
 
 

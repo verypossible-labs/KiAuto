@@ -36,16 +36,18 @@ logger = log.get_logger(__name__)
 
 
 class PopenContext(subprocess.Popen):
-    def __enter__(self):
-        return self
 
     def __exit__(self, type, value, traceback):
+        # Note: currently we don't communicate with the child so these cases are never used.
+        # I keep them in case they are needed, but excluded from the coverage.
+        # Also note that closing stdin needs extra handling, implemented in the parent class
+        # but not here.
         if self.stdout:
-            self.stdout.close()
+            self.stdout.close()  # pragma: no cover
         if self.stderr:
-            self.stderr.close()
+            self.stderr.close()  # pragma: no cover
         if self.stdin:
-            self.stdin.close()
+            self.stdin.close()   # pragma: no cover
         if type:
             self.terminate()
         # Wait for the process to terminate, to avoid zombies.
@@ -58,9 +60,9 @@ def wait_xserver():
     logger.debug('Waiting for virtual X server ...')
     if shutil.which('setxkbmap'):
         cmd = ['setxkbmap', '-query']
-    elif shutil.which('setxkbmap'):
+    elif shutil.which('setxkbmap'):  # pragma: no cover
         cmd = ['xset', 'q']
-    else:
+    else:  # pragma: no cover
         cmd = ['ls']
         logger.warning('No setxkbmap nor xset available, unable to verify if X is running')
     for i in range(int(timeout/DELAY)):
@@ -81,7 +83,6 @@ def recorded_xvfb(video_dir, video_name, **xvfb_args):
         video_filename = os.path.join(video_dir, video_name)
         with Xvfb(**xvfb_args):
             wait_xserver()
-            fnull = open(os.devnull, 'w')
             logger.debug('Recording session to %s', video_filename)
             with PopenContext(['recordmydesktop',
                                '--overwrite',
@@ -89,8 +90,8 @@ def recorded_xvfb(video_dir, video_name, **xvfb_args):
                                '--no-frame',
                                '--on-the-fly-encoding',
                                '-o', video_filename],
-                              stdout=fnull,
-                              stderr=subprocess.STDOUT,
+                              stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL,
                               close_fds=True) as screencast_proc:
                 yield
                 screencast_proc.terminate()
@@ -124,23 +125,23 @@ def clipboard_store(string):
     os.close(fd_out)
     os.remove(temp_out)
     ret_text = ret_text.decode()
-    if ret_text:
+    if ret_text:  # pragma: no cover
         logger.error('Failed to store string in clipboard')
         logger.error(ret_text)
         raise
-    if ret_code:
+    if ret_code:  # pragma: no cover
         logger.error('Failed to store string in clipboard')
         logger.error('xclip returned %d' % ret_code)
         raise
 
 
-def clipboard_retrieve():
-    p = subprocess.Popen(['xclip', '-o', '-selection', 'clipboard'], stdout=subprocess.PIPE)
-    output = ''
-    for line in p.stdout:
-        output += line.decode()
-    logger.debug('Clipboard retrieve "'+output+'"')
-    return output
+# def clipboard_retrieve():
+#     p = subprocess.Popen(['xclip', '-o', '-selection', 'clipboard'], stdout=subprocess.PIPE)
+#     output = ''
+#     for line in p.stdout:
+#         output += line.decode()
+#     logger.debug('Clipboard retrieve "'+output+'"')
+#     return output
 
 
 def wait_focused(id, timeout=10):
