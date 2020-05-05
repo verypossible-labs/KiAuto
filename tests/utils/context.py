@@ -49,7 +49,7 @@ class TestContext(object):
     def _set_up_output_dir(self, test_dir):
         if test_dir:
             self.output_dir = os.path.join(test_dir, self.test_name)
-            os.makedirs(self.output_dir)
+            os.makedirs(self.output_dir, exist_ok=True)
             self._del_dir_after = False
         else:
             # create a tmp dir
