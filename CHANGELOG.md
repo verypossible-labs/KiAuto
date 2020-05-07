@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- Support for PS, DXF and HPGL to the schematic export.
+
+### Changed
+- pcbnew_print_layers to "pcbnew_do export" to be coherent with "eeschema_do"
+- pcbnew_run_drc to "pcbnew_do run_drc" ditto
+
 ### Fixed
 - --ignore_unconnected of pcbnew_run_drc wasn't implemented.
 - ERC omitted warnings if errors were detected.
