@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Utils import
 from utils import context
 
-PROG = 'pcbnew_print_layers'
+PROG = 'pcbnew_do'
 DEFAULT = 'printed.pdf'
 CMD_OUT = 'output.txt'
 
@@ -24,7 +24,7 @@ CMD_OUT = 'output.txt'
 def test_print_pcb_good_dwg():
     ctx = context.TestContext('Print_Good_with_Dwg', 'good-project')
     pdf = 'good_pcb_with_dwg.pdf'
-    cmd = [PROG, '--output_name', pdf]
+    cmd = [PROG, 'export', '--output_name', pdf]
     layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(pdf)
@@ -34,7 +34,7 @@ def test_print_pcb_good_dwg():
 
 def test_print_pcb_good_inner():
     ctx = context.TestContext('Print_Good_Inner', 'good-project')
-    cmd = [PROG]
+    cmd = [PROG, 'export']
     layers = ['F.Cu', 'F.SilkS', 'GND.Cu', 'Signal1.Cu', 'Signal2.Cu', 'Power.Cu', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(DEFAULT)
@@ -44,7 +44,7 @@ def test_print_pcb_good_inner():
 
 def test_print_pcb_layers():
     ctx = context.TestContext('Print_Layers', 'good-project')
-    cmd = [PROG, '--list']
+    cmd = [PROG, 'export', '--list']
     ctx.run(cmd)
     ctx.compare_txt(CMD_OUT, 'good_pcb_layers.txt')
     ctx.clean_up()
@@ -58,7 +58,7 @@ def test_print_pcb_good_dwg_dism():
         f.write('dummy')
     # Run pcbnew in parallel to get 'Dismiss pcbnew already running'
     with ctx.start_kicad('pcbnew'):
-        cmd = [PROG, '-v', '--output_name', pdf, '--wait_start', '5']
+        cmd = [PROG, '-v', '--wait_start', '5', 'export', '--output_name', pdf]
         layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
         ctx.run(cmd, extra=layers)
         ctx.stop_kicad()
