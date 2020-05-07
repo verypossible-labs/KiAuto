@@ -48,62 +48,62 @@ EESCHEMA_CFG_PRESENT = 2
 KICAD_CFG_PRESENT = 3
 
 
-def dismiss_library_error():
-    # The "Error" modal pops up if libraries required by the schematic have
-    # not been found. This can be ignored as all symbols are placed inside the
-    # *-cache.lib file:
-    # There -should- be a way to disable it, but I haven't the magic to drop in the config file yet
-    try:
-        nf_title = 'Error'
-        wait_for_window(nf_title, nf_title, 3)
-
-        logger.info('Dismiss eeschema library warning modal')
-        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        xdotool(['key', 'Escape'])
-    except RuntimeError:
-        pass
-
-
-def dismiss_library_warning():
-    # The "Not Found" window pops up if libraries required by the schematic have
-    # not been found. This can be ignored as all symbols are placed inside the
-    # *-cache.lib file:
-    try:
-        nf_title = 'Not Found'
-        wait_for_window(nf_title, nf_title, 3)
-
-        logger.info('Dismiss eeschema library warning window')
-        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        xdotool(['key', 'Return'])
-    except RuntimeError:
-        pass
+# def dismiss_library_error():
+#     # The "Error" modal pops up if libraries required by the schematic have
+#     # not been found. This can be ignored as all symbols are placed inside the
+#     # *-cache.lib file:
+#     # There -should- be a way to disable it, but I haven't the magic to drop in the config file yet
+#     try:
+#         nf_title = 'Error'
+#         wait_for_window(nf_title, nf_title, 3)
+# 
+#         logger.info('Dismiss eeschema library warning modal')
+#         xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+#         xdotool(['key', 'Escape'])
+#     except RuntimeError:
+#         pass
 
 
-def dismiss_newer_version():
-    # The "Not Found" window pops up if libraries required by the schematic have
-    # not been found. This can be ignored as all symbols are placed inside the
-    # *-cache.lib file:
-    try:
-        logger.info('Dismiss schematic version notification')
-        wait_for_window('Newer schematic version notification', 'Info', 3)
+# def dismiss_library_warning():
+#     # The "Not Found" window pops up if libraries required by the schematic have
+#     # not been found. This can be ignored as all symbols are placed inside the
+#     # *-cache.lib file:
+#     try:
+#         nf_title = 'Not Found'
+#         wait_for_window(nf_title, nf_title, 3)
+# 
+#         logger.info('Dismiss eeschema library warning window')
+#         xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+#         xdotool(['key', 'Return'])
+#     except RuntimeError:
+#         pass
 
-        xdotool(['key', 'Return'])
-    except RuntimeError:
-        pass
+
+# def dismiss_newer_version():
+#     # The "Not Found" window pops up if libraries required by the schematic have
+#     # not been found. This can be ignored as all symbols are placed inside the
+#     # *-cache.lib file:
+#     try:
+#         logger.info('Dismiss schematic version notification')
+#         wait_for_window('Newer schematic version notification', 'Info', 3)
+# 
+#         xdotool(['key', 'Return'])
+#     except RuntimeError:
+#         pass
 
 
-def dismiss_remap_helper():
-    # The "Remap Symbols" windows pop up if the uses the project symbol library
-    # the older list look up method for loading library symbols.
-    # This can be ignored as we're just trying to output data and don't
-    # want to mess with the actual project.
-    try:
-        logger.info('Dismiss schematic symbol remapping')
-        wait_for_window('Remap Symbols', 'Remap', 3)
-
-        xdotool(['key', 'Escape'])
-    except RuntimeError:
-        pass
+# def dismiss_remap_helper():
+#     # The "Remap Symbols" windows pop up if the uses the project symbol library
+#     # the older list look up method for loading library symbols.
+#     # This can be ignored as we're just trying to output data and don't
+#     # want to mess with the actual project.
+#     try:
+#         logger.info('Dismiss schematic symbol remapping')
+#         wait_for_window('Remap Symbols', 'Remap', 3)
+# 
+#         xdotool(['key', 'Escape'])
+#     except RuntimeError:
+#         pass
 
 
 def eeschema_skip_errors():
