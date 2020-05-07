@@ -72,7 +72,7 @@ After running it *./YOUR_SCHEMATIC.xml* will be updated. You'll also get *DESTIN
 
 To run the Distance Rules Check:
 ```
-pcbnew_run_drc YOUR_PCB.kicad_pcb DESTINATION/
+pcbnew_do run_drc YOUR_PCB.kicad_pcb DESTINATION/
 ```
 If an error is detected you'll get a message and the script will return a negative error level. Additionally you'll get *DESTINATION/drc_result.rpt* containing KiCad's report. You can select the name of the report using *--output_name* and you can ignore unconneted nets using *--ignore_unconnected*.
 
@@ -80,14 +80,14 @@ If an error is detected you'll get a message and the script will return a negati
 
 This is useful to complement your gerber files including some extra information in the *Dwgs.User* or *Cmts.User* layer.
 ```
-pcbnew_print_layers YOUR_PCB.kicad_pcb DESTINATION/ LAYER1 LAYER2
+pcbnew_do export YOUR_PCB.kicad_pcb DESTINATION/ LAYER1 LAYER2
 ```
 Will generate *DESTINATION/printed.pdf* containing LAYER1 and LAYER2 overlapped. You can list as many layers as you want. I use things like ```F.Cu Dwgs.User```. The name of the layers is the same you see in the GUI, if your first inner layer is GND you just need to use ```GND.Cu```.
 
 If you need to get a list of valid layers run:
 
 ```
-pcbnew_print_layers --list YOUR_PCB.kicad_pcb
+pcbnew_do export --list YOUR_PCB.kicad_pcb
 ```
 
 ### Common options
