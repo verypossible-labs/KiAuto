@@ -114,10 +114,10 @@ def eeschema_skip_errors():
     return 0
 
 
-def eeschema_plot_schematic(output_dir, output_file, all_pages, pid):
+def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
     clipboard_store(output_dir)
 
-    wait_for_window('Main eeschema window', r'Eeschema.*\.sch')
+    wait_for_window('Main eeschema window', r'Eeschema.*\.sch', 30)
 
     logger.info('Open File->pLot')
     xdotool(['key', 'alt+f', 'l'])
@@ -128,10 +128,20 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid):
     xdotool(['key', 'ctrl+v'])
 
     logger.info('Move to the "plot" button')
+    # We try to select the "print all" button.
+    # Lamentably this is the default, so we can be confused because "Return" will press it anyways.
     command_list = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
                     'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', ]
-    if not all_pages:   # all pages is default option
-        command_list.extend(['Tab'])
+    if ext == 'dxf':
+        # DXF greys one widget (net result)
+        command_list.pop()
+    if ext == 'plt':
+        # HPGL enables one widget (net result)
+        command_list.append('Tab')
+    if not all_pages:
+        # If "print all" is selected one more tab is "print current"
+        command_list.append('Tab')
+    logger.debug(str(command_list)+'   '+str(len(command_list)))
     xdotool(command_list)
 
     logger.info('Plot')
@@ -142,6 +152,9 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid):
 
     logger.info('Closing window')
     xdotool(['key', 'Escape'])
+
+    # Wait until the dialog is closed, useful when more than one file are created
+    wait_for_window('Main eeschema window', r'Eeschema.*\.sch')
 
 
 def eeschema_parse_erc(erc_file, warning_as_error=False):
@@ -269,7 +282,8 @@ if __name__ == '__main__':
                         __copyright__+' - License: '+__license__)
 
     export_parser = subparsers.add_parser('export', help='Export a schematic')
-    export_parser.add_argument('--file_format', '-f', help='Export file format', choices=['svg', 'pdf'], default='pdf')
+    export_parser.add_argument('--file_format', '-f', help='Export file format',
+                               choices=['svg', 'pdf', 'ps', 'dxf', 'hpgl'], default='pdf')
     export_parser.add_argument('--all_pages', '-a', help='Plot all schematic pages in one file', action='store_true')
 
     erc_parser = subparsers.add_parser('run_erc', help='Run Electrical Rules Checker on a schematic')
@@ -366,11 +380,14 @@ if __name__ == '__main__':
             logger.debug('stdout: '+str(eeschema_proc.stdout)+' bool: '+str(bool(eeschema_proc.stdout)))
             if args.command == 'export':
                 # Export
-                output_file = output_file_no_ext+'.'+args.file_format.lower()
+                ext = args.file_format.lower()
+                if ext == 'hpgl':
+                    ext = 'plt'
+                output_file = output_file_no_ext+'.'+ext
                 if os.path.exists(output_file):
                     logger.debug('Removing old file')
                     os.remove(output_file)
-                eeschema_plot_schematic(output_dir, output_file, args.all_pages, eeschema_proc.pid)
+                eeschema_plot_schematic(output_dir, output_file, args.all_pages, eeschema_proc.pid, ext)
             elif args.command == 'netlist':
                 # Netlist
                 eeschema_netlist_commands(output_file_no_ext, eeschema_proc.pid)

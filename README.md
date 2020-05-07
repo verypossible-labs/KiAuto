@@ -1,7 +1,7 @@
 KiCad automation scripts
 ========================
 
-![Python application](https://github.com/INTI-CMNB/kicad-automation-scripts/workflows/Python%20application/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/kicad-automation-scripts/badge.svg?branch=master)](https://coveralls.io/github/INTI-CMNB/kicad-automation-scripts?branch=master)
+![Python application](https://github.com/INTI-CMNB/kicad-automation-scripts/workflows/Python%20application/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/kicad-automation-scripts/badge.svg?branch=master&service=github)](https://coveralls.io/github/INTI-CMNB/kicad-automation-scripts?branch=master)
 
 A bunch of scripts to automate [KiCad](https://www.kicad-pcb.org/) processes using UI automation with [xdotool](https://www.semicomplete.com/projects/xdotool/).
 
@@ -11,7 +11,7 @@ For more info see his [excellent blog posts][scot's blog].
 
 Currently tested and working:
 
-- Exporting schematics to PDF and SVG
+- Exporting schematics to PDF, SVG, PS, DXF and HPGL
 - Exporting layouts to PDF 
 - Running ERC on schematics
 - Running DRC on layouts
