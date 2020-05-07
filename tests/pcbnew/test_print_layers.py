@@ -1,5 +1,5 @@
 """
-Tests for pcbnew_print_layers
+Tests for 'pcbnew_do export'
 
 For debug information use:
 pytest-3 --log-cli-level debug
