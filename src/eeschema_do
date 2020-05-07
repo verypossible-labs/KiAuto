@@ -316,13 +316,14 @@ if __name__ == '__main__':
     logger.debug('Creating an eeschema config')
     text_file = open(config_file, "w")
     text_file.write('RescueNeverShow=1\n')
-    try:
-        # HPGL:0 ??:1 PS:2 DXF:3 PDF:4 SVG:5
-        index = ['hpgl', '---', 'ps', 'dxf', 'pdf', 'svg'].index(args.file_format.lower())
-        logger.debug('Selecting plot format %s (%d)', args.file_format, index)
-    except ValueError:
-        index = 4
-    text_file.write('PlotFormat=%d\n' % index)
+    if args.command == 'export':
+        try:
+            # HPGL:0 ??:1 PS:2 DXF:3 PDF:4 SVG:5
+            index = ['hpgl', '---', 'ps', 'dxf', 'pdf', 'svg'].index(args.file_format.lower())
+            logger.debug('Selecting plot format %s (%d)', args.file_format, index)
+        except ValueError:
+            index = 4
+        text_file.write('PlotFormat=%d\n' % index)
     text_file.close()
 
     # Back-up the current kicad_common configuration
