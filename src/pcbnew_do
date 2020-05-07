@@ -50,6 +50,29 @@ PCBNEW_CFG_PRESENT=2
 # Wait 25 s to pcbnew window to be present
 WAIT_START=25
 
+
+def parse_drc(drc_file):
+    with open(drc_file, 'r') as f:
+        lines = f.read().splitlines()
+
+    drc_errors = None
+    unconnected_pads = None
+
+    for line in lines:
+        if drc_errors != None and unconnected_pads != None:
+            break;
+        m = re.search('^\*\* Found ([0-9]+) DRC errors \*\*$', line)
+        if m != None:
+            drc_errors = m.group(1);
+            continue
+        m = re.search('^\*\* Found ([0-9]+) unconnected pads \*\*$', line)
+        if m != None:
+            unconnected_pads = m.group(1);
+            continue
+
+    return int(drc_errors), int(unconnected_pads)
+
+
 def dismiss_already_running():
     # The "Confirmation" modal pops up if pcbnew is already running
     try:
@@ -62,6 +85,7 @@ def dismiss_already_running():
     except RuntimeError:
         pass
 
+
 def dismiss_warning():
     try:
         nf_title = 'Warning'
@@ -72,6 +96,7 @@ def dismiss_warning():
         xdotool(['key', 'Return'])
     except RuntimeError:
         pass
+
 
 def dismiss_pcbNew_Error():
     try:
@@ -84,6 +109,7 @@ def dismiss_pcbNew_Error():
         xdotool(['key', 'Return'])
     except RuntimeError:
         pass
+
 
 def print_layers(pcb_file, output_dir, output_filename, record=True):
 
@@ -163,6 +189,59 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
     return print_output_file
 
 
+def run_drc(pcb_file, output_dir, record=True, save=False):
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    drc_output_file = os.path.join(os.path.abspath(output_dir), args.output_name[0])
+    if os.path.exists(drc_output_file):
+        os.remove(drc_output_file)
+
+    xvfb_kwargs = { 'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
+
+    with recorded_xvfb(output_dir if record else None, 'pcbnew_run_drc_screencast.ogv', **xvfb_kwargs):
+        with PopenContext(['pcbnew', pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
+
+            clipboard_store(drc_output_file)
+
+            failed_focuse = False
+            try:
+               wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start)
+            except RuntimeError:
+               failed_focuse = True
+               pass
+            if failed_focuse:
+               dismiss_already_running()
+               dismiss_warning()
+               wait_for_window('Main pcbnew window', 'Pcbnew', 5)
+
+            logger.info('Open Inspect->DRC')
+            xdotool(['key', 'alt+i', 'd'])
+
+            wait_for_window('DRC modal window', 'DRC Control')
+            # Note: Refill zones on DRC gets saved in ~/.config/kicad/pcbnew as RefillZonesBeforeDrc
+            # The space here is to enable the report of all errors for tracks
+            logger.info('Enable reporting all errors for tracks')
+            xdotool(['key','Tab','Tab','Tab','Tab','space','Tab','Tab','Tab','Tab'])
+            logger.info('Pasting output dir')
+            xdotool(['key', 'ctrl+v', 'Return'])
+
+            wait_for_window('Report completed dialog', 'Disk File Report Completed')
+            xdotool(['key', 'Return'])
+
+            if save:
+               xdotool(['key', 'Escape'])
+               wait_for_window('Main pcbnew window', 'Pcbnew')
+               logger.info('Saving PCB')
+               os.rename(pcb_file, pcb_file + '-bak')
+               xdotool(['key', 'ctrl+s'])
+               file_util.wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
+
+            pcbnew_proc.terminate()
+
+    return drc_output_file
+
+
 def load_layers(kicad_pcb_file):
     layer_names=['-']*50
     pcb_file = open(kicad_pcb_file,"r")
@@ -194,11 +273,13 @@ class ListLayers(argparse.Action):
                print(layer)
         parser.exit() # exits the program with no more arg parsing and checking
 
+
 # Restore the pcbnew configuration
 def restore_config():
     if os.path.exists(old_config_file):
        os.remove(config_file)
        os.rename(old_config_file,config_file)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
@@ -245,8 +326,9 @@ if __name__ == '__main__':
        logger.error(args.kicad_pcb_file+' does not exist')
        exit(NO_PCB)
 
-    # Read the layer names from the PCB
-    layer_names=load_layers(args.kicad_pcb_file)
+    if args.command == 'export':
+        # Read the layer names from the PCB
+        layer_names=load_layers(args.kicad_pcb_file)
 
     # Back-up the current pcbnew configuration
     kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
@@ -271,33 +353,35 @@ if __name__ == '__main__':
     text_file.write('canvas_type=2\n')
     text_file.write('RefillZonesBeforeDrc=1\n')
     text_file.write('PcbFrameFirstRunShown=1\n')
-    # Color
-    text_file.write('PrintMonochrome=0\n')
-    # Include frame
-    text_file.write('PrintPageFrame=1\n')
-    # Real drill marks
-    text_file.write('PrintPadsDrillOpt=2\n')
-    # Only one file
-    text_file.write('PrintSinglePage=1\n')
-    # Mark which layers are requested
-    used_layers=[0]*50
-    for layer in args.layers:
-        try:
-            # Support for kiplot inner layers
-            if layer.startswith("Inner"):
-               m = re.match(r"^Inner\.([0-9]+)$", layer)
-               if not m:
-                  logger.error('Malformed inner layer name: '+layer+', use Inner.N')
-                  sys.exit(1)
-               used_layers[int(m.group(1))]=1
-            else:
-               used_layers[layer_names.index(layer)]=1
-        except:
-            logger.error('Unknown layer '+layer)
-            sys.exit(1)
-    # List all posible layers, indicating which ones are requested
-    for x in range(0,50):
-        text_file.write('PlotLayer_%d=%d\n' % (x,used_layers[x]))
+    text_file.write('DrcTrackToZoneTest=1\n')
+    if args.command == 'export':
+        # Color
+        text_file.write('PrintMonochrome=0\n')
+        # Include frame
+        text_file.write('PrintPageFrame=1\n')
+        # Real drill marks
+        text_file.write('PrintPadsDrillOpt=2\n')
+        # Only one file
+        text_file.write('PrintSinglePage=1\n')
+        # Mark which layers are requested
+        used_layers=[0]*50
+        for layer in args.layers:
+            try:
+                # Support for kiplot inner layers
+                if layer.startswith("Inner"):
+                   m = re.match(r"^Inner\.([0-9]+)$", layer)
+                   if not m:
+                      logger.error('Malformed inner layer name: '+layer+', use Inner.N')
+                      sys.exit(1)
+                   used_layers[int(m.group(1))]=1
+                else:
+                   used_layers[layer_names.index(layer)]=1
+            except:
+                logger.error('Unknown layer '+layer)
+                sys.exit(1)
+        # List all posible layers, indicating which ones are requested
+        for x in range(0,50):
+            text_file.write('PlotLayer_%d=%d\n' % (x,used_layers[x]))
     text_file.close()
 
     # Make sure the user has fp-lib-table
@@ -310,6 +394,18 @@ if __name__ == '__main__':
        else:
           logger.warning('Missing default system footprint table '+system_lib_table+' KiCad will most probably fail')
 
-    print_layers(args.kicad_pcb_file, args.output_dir, args.output_name[0], args.record)
-
+    if args.command == 'export':
+        print_layers(args.kicad_pcb_file, args.output_dir, args.output_name[0], args.record)
+    else:  # run_drc
+        drc_errors, unconnected_pads = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record, args.save))
+        logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+    
+        if drc_errors == 0 and unconnected_pads == 0:
+           logger.info('No errors');
+           exit(0)
+        else:
+           logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+           if args.ignore_unconnected:
+               unconnected_pads = 0
+           exit(-(drc_errors+unconnected_pads))
     

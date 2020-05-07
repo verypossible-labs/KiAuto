@@ -1,5 +1,5 @@
 """
-Tests for pcbnew_run_drc
+Tests for 'pcbnew_do run_drc'
 
 For debug information use:
 pytest-3 --log-cli-level debug
@@ -17,14 +17,14 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Utils import
 from utils import context
 
-PROG = 'pcbnew_run_drc'
+PROG = 'pcbnew_do'
 REPORT = 'drc_result.rpt'
 OUT_REX = r'(\d+) DRC errors and (\d+) unconnected pads'
 
 
-def test_drc_ok():
+def test_drc_ok_1():
     ctx = context.TestContext('DRC_Ok', 'good-project')
-    cmd = [PROG]
+    cmd = [PROG, '-vv', 'run_drc']
     ctx.run(cmd)
     ctx.expect_out_file(REPORT)
     ctx.clean_up()
@@ -33,7 +33,7 @@ def test_drc_ok():
 def test_drc_fail():
     ctx = context.TestContext('DRC_Error', 'fail-project')
     # Here we use -v to cover "info" log level
-    cmd = [PROG, '-v']
+    cmd = [PROG, '-v', 'run_drc']
     ctx.run(cmd, 254)
     ctx.expect_out_file(REPORT)
     m = ctx.search_err(OUT_REX)
@@ -45,7 +45,7 @@ def test_drc_fail():
 
 def test_drc_unco():
     ctx = context.TestContext('DRC_Unconnected', 'warning-project')
-    cmd = [PROG, '--output_name', 'drc.txt']
+    cmd = [PROG, 'run_drc', '--output_name', 'drc.txt']
     ctx.run(cmd, 255)
     ctx.expect_out_file('drc.txt')
     m = ctx.search_err(OUT_REX)
@@ -57,7 +57,7 @@ def test_drc_unco():
 
 def test_drc_unco_ok():
     ctx = context.TestContext('DRC_Unconnected_Ok', 'warning-project')
-    cmd = [PROG, '--output_name', 'drc.txt', '--ignore_unconnected']
+    cmd = [PROG, 'run_drc', '--output_name', 'drc.txt', '--ignore_unconnected']
     ctx.run(cmd)
     ctx.expect_out_file('drc.txt')
     m = ctx.search_err(OUT_REX)
@@ -75,7 +75,7 @@ def test_drc_ok_pcbnew_running():
     # Run pcbnew in parallel to get 'Dismiss pcbnew already running'
     with ctx.start_kicad('pcbnew'):
         # Enable DEBUG logs
-        cmd = [PROG, '-vv', '--wait_start', '5']
+        cmd = [PROG, '-vv', '--wait_start', '5', 'run_drc']
         # Use a TTY to get colors in the DEBUG logs
         ctx.run(cmd, use_a_tty=True)
         ctx.stop_kicad()
