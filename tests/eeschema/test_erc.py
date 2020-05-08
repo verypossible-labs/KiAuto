@@ -20,6 +20,9 @@ OUT_WAR_REX = r'(\d+) ERC warnings'
 
 
 def test_erc_ok():
+    """ 1) Test a project with 0 ERC errors/warnings.
+        2) Test the --record option.
+        3) Test the case when the .erc report aready exists. """
     prj = 'good-project'
     erc = prj+'.erc'
     ctx = context.TestContextSCH('ERC_Ok', prj)
@@ -33,6 +36,7 @@ def test_erc_ok():
 
 
 def test_erc_fail():
+    """ Test a project with 1 ERC error and 2 ERC warnings """
     prj = 'fail-project'
     ctx = context.TestContextSCH('ERC_Error', prj)
     cmd = [PROG, 'run_erc']
