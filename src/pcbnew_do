@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(script_dir))
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from kicad_auto import file_util
-from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START)
+from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -364,13 +364,17 @@ if __name__ == '__main__':
                     m = re.match(r"^Inner\.([0-9]+)$", layer)
                     if not m:
                         logger.error('Malformed inner layer name: '+layer+', use Inner.N')
-                        sys.exit(1)
-                    used_layers[int(m.group(1))] = 1
+                        sys.exit(WRONG_LAYER_NAME)
+                    layer_n = int(m.group(1))
+                    if layer_n > 49 or layer_names[layer_n] == '-':
+                        logger.error(layer+" isn't a valid layer")
+                        sys.exit(WRONG_LAYER_NAME)
+                    used_layers[layer_n] = 1
                 else:
                     used_layers[layer_names.index(layer)] = 1
             except ValueError:
                 logger.error('Unknown layer '+layer)
-                sys.exit(1)
+                sys.exit(WRONG_LAYER_NAME)
         # List all posible layers, indicating which ones are requested
         for x in range(0, 50):
             text_file.write('PlotLayer_%d=%d\n' % (x, used_layers[x]))

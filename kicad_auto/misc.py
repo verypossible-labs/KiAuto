@@ -9,6 +9,7 @@ EESCHEMA_CFG_PRESENT = 2
 KICAD_CFG_PRESENT = 3
 NO_PCB = 4
 PCBNEW_CFG_PRESENT = 5
+WRONG_LAYER_NAME = 6
 # Wait 25 s to pcbnew/eeschema window to be present
 WAIT_START = 25
 
