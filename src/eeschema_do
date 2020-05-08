@@ -46,6 +46,8 @@ from kicad_auto.ui_automation import (
 NO_SCHEMATIC = 1
 EESCHEMA_CFG_PRESENT = 2
 KICAD_CFG_PRESENT = 3
+# Wait 25 s to pcbnew window to be present
+WAIT_START = 25
 
 
 # def dismiss_library_error():
@@ -114,10 +116,26 @@ def eeschema_skip_errors():
     return 0
 
 
+def wait_eeschema(time):
+    wait_for_window('Main eeschema window', r'Eeschema.*\.sch', time)
+
+
+def wait_eeschema_start():
+    failed_focuse = False
+    try:
+        wait_eeschema(args.wait_start)
+    except RuntimeError:
+        failed_focuse = True
+        pass
+    if failed_focuse:
+        eeschema_skip_errors()
+        wait_eeschema(5)
+
+
 def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
     clipboard_store(output_dir)
 
-    wait_for_window('Main eeschema window', r'Eeschema.*\.sch', 30)
+    wait_eeschema_start()
 
     logger.info('Open File->pLot')
     xdotool(['key', 'alt+f', 'l'])
@@ -154,7 +172,7 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
     xdotool(['key', 'Escape'])
 
     # Wait until the dialog is closed, useful when more than one file are created
-    wait_for_window('Main eeschema window', r'Eeschema.*\.sch')
+    wait_eeschema(10)
 
 
 def eeschema_parse_erc(erc_file, warning_as_error=False):
@@ -174,11 +192,10 @@ def eeschema_parse_erc(erc_file, warning_as_error=False):
 
 
 def eeschema_run_erc_schematic(erc_file, pid):
-
     # Do this now since we have to wait for KiCad anyway
     clipboard_store(erc_file)
 
-    wait_for_window('Main eeschema window', r'Eeschema.*\.sch', 25)
+    wait_eeschema_start()
 
     logger.info('Open Tools->Electrical Rules Checker')
     xdotool(['key', 'alt+i', 'c'])
@@ -210,7 +227,7 @@ def eeschema_netlist_commands(net_file, pid):
     # Do this now since we have to wait for KiCad anyway
     clipboard_store(net_file)
 
-    wait_for_window('Main eeschema window', r'Eeschema.*\.sch')
+    wait_eeschema_start()
 
     logger.info('Open Tools->Generate Netlist File')
     xdotool(['key', 'alt+t', 'n'])
@@ -236,9 +253,9 @@ def eeschema_netlist_commands(net_file, pid):
 
 
 def eeschema_bom_xml_commands(output_file, pid):
-    wait_for_window('Main eeschema window', r'Eeschema.*\.sch')
-
     clipboard_store('xsltproc -o "'+output_file + '" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
+
+    wait_eeschema_start()
 
     logger.info('Open Tools->Generate Bill of Materials')
     xdotool(['key', 'alt+t', 'm'])
@@ -320,6 +337,7 @@ if __name__ == '__main__':
     parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('--version', '-V', action='version', version='%(prog)s '+__version__+' - ' +
                         __copyright__+' - License: '+__license__)
+    parser.add_argument('--wait_start', help='Timeout to pcbnew start ['+str(WAIT_START)+']', type=int, default=WAIT_START)
 
     export_parser = subparsers.add_parser('export', help='Export a schematic')
     export_parser.add_argument('--file_format', '-f', help='Export file format',
@@ -418,7 +436,6 @@ if __name__ == '__main__':
                        width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', args.schematic], close_fds=True,
                           stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL) as eeschema_proc:
-            eeschema_skip_errors()
             if args.command == 'export':
                 # Export
                 ext = args.file_format.lower()
