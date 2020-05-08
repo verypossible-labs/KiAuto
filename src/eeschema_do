@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(script_dir))
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from kicad_auto import file_util
-from kicad_auto.misc import (REC_W, REC_H, __version__)
+from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, WAIT_START)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -40,14 +40,6 @@ from kicad_auto.ui_automation import (
     recorded_xvfb,
     clipboard_store
 )
-
-# Return error codes
-# Positive values are ERC errors
-NO_SCHEMATIC = 1
-EESCHEMA_CFG_PRESENT = 2
-KICAD_CFG_PRESENT = 3
-# Wait 25 s to pcbnew window to be present
-WAIT_START = 25
 
 
 # def dismiss_library_error():
@@ -391,12 +383,9 @@ if __name__ == '__main__':
     text_file = open(config_file, "w")
     text_file.write('RescueNeverShow=1\n')
     if args.command == 'export':
-        try:
-            # HPGL:0 ??:1 PS:2 DXF:3 PDF:4 SVG:5
-            index = ['hpgl', '---', 'ps', 'dxf', 'pdf', 'svg'].index(args.file_format.lower())
-            logger.debug('Selecting plot format %s (%d)', args.file_format, index)
-        except ValueError:
-            index = 4
+        # HPGL:0 ??:1 PS:2 DXF:3 PDF:4 SVG:5
+        index = ['hpgl', '---', 'ps', 'dxf', 'pdf', 'svg'].index(args.file_format.lower())
+        logger.debug('Selecting plot format %s (%d)', args.file_format, index)
         text_file.write('PlotFormat=%d\n' % index)
     text_file.close()
 

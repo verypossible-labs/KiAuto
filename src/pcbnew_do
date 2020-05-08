@@ -32,7 +32,7 @@ sys.path.insert(0, os.path.dirname(script_dir))
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from kicad_auto import file_util
-from kicad_auto.misc import (REC_W, REC_H, __version__)
+from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -41,12 +41,6 @@ from kicad_auto.ui_automation import (
     recorded_xvfb,
     clipboard_store
 )
-
-# Return error codes
-NO_PCB = 1
-PCBNEW_CFG_PRESENT = 2
-# Wait 25 s to pcbnew window to be present
-WAIT_START = 25
 
 
 def parse_drc(drc_file):
@@ -334,7 +328,7 @@ if __name__ == '__main__':
         logger.debug('Creating KiCad config dir')
         os.makedirs(kicad_cfg_dir, exist_ok=True)
     config_file = os.path.join(kicad_cfg_dir, 'pcbnew')
-    old_config_file = config_file + '.pre_run_drc'
+    old_config_file = config_file + '.pre_script'
     logger.debug('PCBnew config: '+config_file)
     # If we have an old back-up ask for the user to solve it
     if os.path.isfile(old_config_file):
