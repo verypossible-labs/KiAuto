@@ -470,4 +470,11 @@ if __name__ == '__main__':
                     exit(-errors)
                 logger.info('No errors')
             eeschema_proc.terminate()
+    # The following code is here only to make coverage tool properly meassure atexit code.
+    atexit.unregister(restore_project)
+    restore_project()
+    atexit.unregister(restore_config)
+    restore_config()
+    atexit.unregister(restore_common_config)
+    restore_common_config()
     exit(0)

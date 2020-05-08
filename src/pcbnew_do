@@ -386,6 +386,7 @@ if __name__ == '__main__':
         else:
             logger.warning('Missing default system footprint table '+system_lib_table+' KiCad will most probably fail')
 
+    error_level = 0
     if args.command == 'export':
         print_layers(args.kicad_pcb_file, args.output_dir, args.output_name[0], args.record)
     else:  # run_drc
@@ -394,9 +395,13 @@ if __name__ == '__main__':
 
         if drc_errors == 0 and unconnected_pads == 0:
             logger.info('No errors')
-            exit(0)
         else:
             logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
             if args.ignore_unconnected:
                 unconnected_pads = 0
-            exit(-(drc_errors+unconnected_pads))
+            error_level = -(drc_errors+unconnected_pads)
+
+    # The following code is here only to make coverage tool properly meassure atexit code.
+    atexit.unregister(restore_config)
+    restore_config()
+    exit(error_level)
