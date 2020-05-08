@@ -84,6 +84,11 @@ class TestContext(object):
         file = self.get_out_path(filename)
         assert not os.path.isfile(file)
 
+    def create_dummy_out_file(self, filename):
+        file = self.get_out_path(filename)
+        with open(file, 'w') as f:
+            f.write('Dummy file\n')
+
     def get_pro_filename(self):
         return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+'.pro')
 

@@ -21,6 +21,8 @@ def test_netlist():
     prj = 'good-project'
     net = prj+'.net'
     ctx = context.TestContextSCH('Netlist', prj)
+    # Force removing the .net
+    ctx.create_dummy_out_file(net)
     cmd = [PROG, 'netlist']
     ctx.run(cmd)
     ctx.expect_out_file(net)

@@ -21,10 +21,13 @@ OUT_WAR_REX = r'(\d+) ERC warnings'
 
 def test_erc_ok():
     prj = 'good-project'
+    erc = prj+'.erc'
     ctx = context.TestContextSCH('ERC_Ok', prj)
+    # Force removing the .erc
+    ctx.create_dummy_out_file(erc)
     cmd = [PROG, '-vv', '--record', 'run_erc']
     ctx.run(cmd)
-    ctx.expect_out_file(prj+'.erc')
+    ctx.expect_out_file(erc)
     ctx.expect_out_file('run_erc_eeschema_screencast.ogv')
     ctx.clean_up()
 
