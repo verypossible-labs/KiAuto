@@ -16,7 +16,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT)
+from kicad_auto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC)
 
 PROG = 'eeschema_do'
 
@@ -69,5 +69,16 @@ def test_kicad_common_config_backup():
     ctx.run(cmd, KICAD_CFG_PRESENT)
     os.remove(old_config_file)
     m = ctx.search_err('KiCad common config back-up found')
+    assert m is not None
+    ctx.clean_up()
+
+
+def test_sch_not_found():
+    """ When the provided .sch isn't there """
+    prj = 'good-project'
+    ctx = context.TestContextSCH('Schematic_not_found', prj)
+    cmd = [PROG, 'run_erc']
+    ctx.run(cmd, NO_SCHEMATIC, filename='dummy')
+    m = ctx.search_err(r'ERROR:.* does not exist')
     assert m is not None
     ctx.clean_up()

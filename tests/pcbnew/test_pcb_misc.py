@@ -16,7 +16,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (PCBNEW_CFG_PRESENT)
+from kicad_auto.misc import (PCBNEW_CFG_PRESENT, NO_PCB)
 
 PROG = 'pcbnew_do'
 
@@ -43,5 +43,16 @@ def test_pcbnew_config_backup():
     ctx.run(cmd, PCBNEW_CFG_PRESENT)
     os.remove(old_config_file)
     m = ctx.search_err('PCBnew config back-up found')
+    assert m is not None
+    ctx.clean_up()
+
+
+def test_pcb_not_found():
+    """ When the provided .sch isn't there """
+    prj = 'good-project'
+    ctx = context.TestContextSCH('Schematic_not_found', prj)
+    cmd = [PROG, 'run_drc']
+    ctx.run(cmd, NO_PCB, filename='dummy')
+    m = ctx.search_err(r'ERROR:.* does not exist')
     assert m is not None
     ctx.clean_up()

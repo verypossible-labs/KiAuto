@@ -95,12 +95,12 @@ class TestContext(object):
     def get_pro_mtime(self):
         return os.path.getmtime(self.get_pro_filename())
 
-    def run(self, cmd, ret_val=None, extra=None, use_a_tty=False):
+    def run(self, cmd, ret_val=None, extra=None, use_a_tty=False, filename=None):
         logging.debug('Running '+self.test_name)
         # Change the command to be local and add the board and output arguments
         cmd[0] = os.path.abspath(os.path.dirname(os.path.abspath(__file__))+'/../../src/'+cmd[0])
         cmd = [COVERAGE_SCRIPT, 'run', '-a']+cmd
-        cmd.append(self.board_file)
+        cmd.append(filename if filename else self.board_file)
         cmd.append(self.output_dir)
         if extra is not None:
             cmd = cmd+extra
