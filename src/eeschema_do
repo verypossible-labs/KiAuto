@@ -56,7 +56,7 @@ KICAD_CFG_PRESENT = 3
 #     try:
 #         nf_title = 'Error'
 #         wait_for_window(nf_title, nf_title, 3)
-# 
+#
 #         logger.info('Dismiss eeschema library warning modal')
 #         xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
 #         xdotool(['key', 'Escape'])
@@ -71,7 +71,7 @@ KICAD_CFG_PRESENT = 3
 #     try:
 #         nf_title = 'Not Found'
 #         wait_for_window(nf_title, nf_title, 3)
-# 
+#
 #         logger.info('Dismiss eeschema library warning window')
 #         xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
 #         xdotool(['key', 'Return'])
@@ -86,7 +86,7 @@ KICAD_CFG_PRESENT = 3
 #     try:
 #         logger.info('Dismiss schematic version notification')
 #         wait_for_window('Newer schematic version notification', 'Info', 3)
-# 
+#
 #         xdotool(['key', 'Return'])
 #     except RuntimeError:
 #         pass
@@ -100,7 +100,7 @@ KICAD_CFG_PRESENT = 3
 #     try:
 #         logger.info('Dismiss schematic symbol remapping')
 #         wait_for_window('Remap Symbols', 'Remap', 3)
-# 
+#
 #         xdotool(['key', 'Escape'])
 #     except RuntimeError:
 #         pass
