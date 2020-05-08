@@ -37,6 +37,7 @@ from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
     wait_for_window,
+    wait_not_focused,
     recorded_xvfb,
     clipboard_store
 )
@@ -109,7 +110,7 @@ def eeschema_skip_errors():
 
 
 def wait_eeschema(time):
-    wait_for_window('Main eeschema window', r'Eeschema.*\.sch', time)
+    return wait_for_window('Main eeschema window', r'Eeschema.*\.sch', time)
 
 
 def wait_eeschema_start():
@@ -164,7 +165,23 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
     xdotool(['key', 'Escape'])
 
     # Wait until the dialog is closed, useful when more than one file are created
-    wait_eeschema(10)
+    id = wait_eeschema(10)
+
+    logger.info('Exiting eeschema')
+    xdotool(['key', 'ctrl+q'])
+    try:
+        wait_not_focused(id[0], 5)
+    except RuntimeError:
+        logger.debug('EEschema not exiting, will retry')
+        pass
+    # Dismiss any dialog. I.e. failed to write the project
+    xdotool(['key', 'Return', 'ctrl+q'])
+    try:
+        wait_not_focused(id[0], 5)
+    except RuntimeError:
+        logger.debug('EEschema not exiting, will kill')
+        pass
+    # If we failed to exit we will kill it anyways
 
 
 def eeschema_parse_erc(erc_file, warning_as_error=False):
