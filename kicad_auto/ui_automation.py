@@ -147,8 +147,12 @@ def clipboard_store(string):
 def debug_window(id=None):
     if shutil.which('xprop'):
         if id is None:
-            id = xdotool(['getwindowfocus']).rstrip()
-        subprocess.call(['xprop', '-id', id])
+            try:
+                id = xdotool(['getwindowfocus']).rstrip()
+            except subprocess.CalledProcessError:
+                pass
+        if id:
+            subprocess.call(['xprop', '-id', id])
 
 
 def wait_focused(id, timeout=10):
