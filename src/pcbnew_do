@@ -32,7 +32,8 @@ sys.path.insert(0, os.path.dirname(script_dir))
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from kicad_auto import file_util
-from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME)
+from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
+                             WRONG_PCB_NAME)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -288,7 +289,7 @@ if __name__ == '__main__':
     export_parser = subparsers.add_parser('export', help='Export PCB layers')
     export_parser.add_argument('--list', '-l', help='Print a list of layers in LIST PCB and exit', nargs=1, action=ListLayers)
     export_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['printed.pdf'])
-    export_parser.add_argument('kicad_pcb_file', help='KiCad schematic file')
+    export_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     export_parser.add_argument('output_dir', help='Output directory')
     export_parser.add_argument('layers', nargs='+', help='Which layers to include')
 
@@ -296,7 +297,7 @@ if __name__ == '__main__':
     drc_parser.add_argument('--ignore_unconnected', '-i', help='Ignore unconnected paths', action='store_true')
     drc_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['drc_result.rpt'])
     drc_parser.add_argument('--save', '-s', help='Save after DRC (updating filled zones)', action='store_true')
-    drc_parser.add_argument('kicad_pcb_file', help='KiCad schematic file')
+    drc_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     drc_parser.add_argument('output_dir', help='Output directory')
 
     args = parser.parse_args()
@@ -314,9 +315,15 @@ if __name__ == '__main__':
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
 
+    # Check the file exists
     if not os.path.isfile(args.kicad_pcb_file):
         logger.error(args.kicad_pcb_file+' does not exist')
         exit(NO_PCB)
+
+    # If we pass a name without extension KiCad will try to create a ".kicad_pcb"
+    if os.path.splitext(args.kicad_pcb_file)[1] == '':
+        logger.error('PCB files must use kicad_pcb extension')
+        exit(WRONG_PCB_NAME)
 
     if args.command == 'export':
         # Read the layer names from the PCB

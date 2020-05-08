@@ -32,7 +32,8 @@ sys.path.insert(0, os.path.dirname(script_dir))
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from kicad_auto import file_util
-from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, WAIT_START)
+from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
+                             WAIT_START, WRONG_SCH_NAME)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -367,6 +368,11 @@ if __name__ == '__main__':
     if not os.path.isfile(args.schematic):
         logger.error(args.schematic+' does not exist')
         exit(NO_SCHEMATIC)
+
+    # If we pass a name without extension KiCad will try to create a ".sch"
+    if os.path.splitext(args.schematic)[1] == '':
+        logger.error('Schematic files must use sch extension')
+        exit(WRONG_SCH_NAME)
 
     memorize_project(args.schematic)
 

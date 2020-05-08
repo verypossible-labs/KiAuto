@@ -16,7 +16,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC)
+from kicad_auto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC, WRONG_SCH_NAME)
 
 PROG = 'eeschema_do'
 
@@ -80,5 +80,16 @@ def test_sch_not_found():
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, NO_SCHEMATIC, filename='dummy')
     m = ctx.search_err(r'ERROR:.* does not exist')
+    assert m is not None
+    ctx.clean_up()
+
+
+def test_sch_no_extension():
+    """ KiCad can't load a schematic file without extension """
+    prj = 'good-project'
+    ctx = context.TestContextSCH('SCH_no_extension', prj)
+    cmd = [PROG, 'run_erc']
+    ctx.run(cmd, WRONG_SCH_NAME, filename='Makefile')
+    m = ctx.search_err(r'Schematic files must use sch extension')
     assert m is not None
     ctx.clean_up()
