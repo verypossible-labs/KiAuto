@@ -62,11 +62,15 @@ def test_export_all_svg():
 
 
 def test_export_svg():
+    """ 1) Test single SVG export.
+        2) Output already exists. """
     prj = 'good-project'
+    svg = prj+'.svg'
     ctx = context.TestContextSCH('Export_SVG', prj)
+    ctx.create_dummy_out_file(svg)
     cmd = [PROG, 'export', '--file_format', 'svg']
     ctx.run(cmd)
-    do_test_svg(ctx, 'good-project.svg')
+    do_test_svg(ctx, svg)
     ctx.dont_expect_out_file('logic-logic.svg')
     ctx.dont_expect_out_file('power-Power.svg')
     ctx.clean_up()
