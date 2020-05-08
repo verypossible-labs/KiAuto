@@ -267,6 +267,46 @@ def restore_common_config():
         logger.debug('Restoring old KiCad common config')
 
 
+# Variables used to memorize .pro state
+pro_name = None
+pro_stat = None
+pro_content = None
+
+
+def memorize_project(sch):
+    """ Detect the .pro filename and try to read it and its mtime.
+        If KiCad changes it then will try to revert the changes """
+    global pro_name
+    global pro_stat
+    global pro_content
+    pro_name = os.path.splitext(sch)[0]+'.pro'
+    if not os.path.isfile(pro_name):
+        logger.warning('KiCad project file not found')
+        return
+    pro_stat = os.stat(pro_name)
+    with open(pro_name) as f:
+        pro_content = f.read()
+    atexit.register(restore_project)
+
+
+def restore_project():
+    """ If the .pro was modified try to restore it """
+    logger.debug('Checking if .pro was modified')
+    if pro_stat and pro_content:
+        pro_found = False
+        if os.path.isfile(pro_name):
+            new_stat = os.stat(pro_name)
+            pro_found = True
+        else:
+            logger.warning('Project file lost')
+        if not pro_found or new_stat.st_mtime != pro_stat.st_mtime:
+            logger.debug('Restoring the project file')
+            os.rename(pro_name, pro_name+'-bak')
+            with open(pro_name, 'w') as f:
+                f.write(pro_content)
+            os.utime(pro_name, times=(pro_stat.st_atime, pro_stat.st_mtime))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad schematic automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
@@ -300,6 +340,8 @@ if __name__ == '__main__':
     if not os.path.isfile(args.schematic):
         logger.error(args.schematic+' does not exist')
         exit(NO_SCHEMATIC)
+
+    memorize_project(args.schematic)
 
     # Create output dir if it doesn't exist
     output_dir = os.path.abspath(args.output_dir)+'/'
@@ -377,7 +419,6 @@ if __name__ == '__main__':
         with PopenContext(['eeschema', args.schematic], close_fds=True,
                           stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL) as eeschema_proc:
             eeschema_skip_errors()
-            logger.debug('stdout: '+str(eeschema_proc.stdout)+' bool: '+str(bool(eeschema_proc.stdout)))
             if args.command == 'export':
                 # Export
                 ext = args.file_format.lower()

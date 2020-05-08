@@ -8,6 +8,7 @@ pytest-3 --log-cli-level debug
 
 import os
 import sys
+import logging
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(script_dir))
@@ -32,10 +33,14 @@ def test_export_pdf():
     prj = 'good-project'
     pdf = prj+'.pdf'
     ctx = context.TestContextSCH('Export_PDF', prj)
+    mtime = ctx.get_pro_mtime()
     cmd = [PROG, 'export', '--file_format', 'pdf']
     ctx.run(cmd)
     ctx.expect_out_file(pdf)
     ctx.compare_image(pdf, 'good_sch_top.pdf')
+    # Check the .pro wasn't altered
+    logging.debug("Checking .pro wasn't altered")
+    assert mtime == ctx.get_pro_mtime()
     ctx.clean_up()
 
 

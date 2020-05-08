@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - --ignore_unconnected of pcbnew_run_drc wasn't implemented.
 - ERC omitted warnings if errors were detected.
+- The project file could be altered, or even lost, during schematic export.
 
 ## [1.1.6] - 2020-04-23
 ### Changed

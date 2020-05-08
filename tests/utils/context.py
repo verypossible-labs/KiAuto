@@ -26,13 +26,13 @@ MODE_PCB = 0
 
 class TestContext(object):
 
-    def __init__(self, test_name, board_name):
+    def __init__(self, test_name, prj_name):
         # We are using PCBs
         self.mode = MODE_PCB
         # The name used for the test output dirs and other logging
         self.test_name = test_name
         # The name of the PCB board file
-        self.board_name = board_name
+        self.prj_name = prj_name
         # The actual board file that will be loaded
         self._get_board_name()
         # The actual output dir for this run
@@ -48,8 +48,8 @@ class TestContext(object):
 
     def _get_board_name(self):
         self.board_file = os.path.join(self._get_board_cfg_dir(),
-                                       self.board_name,
-                                       self.board_name +
+                                       self.prj_name,
+                                       self.prj_name +
                                        (KICAD_PCB_EXT if self.mode == MODE_PCB else KICAD_SCH_EXT))
         logging.info('PCB file: '+self.board_file)
         assert os.path.isfile(self.board_file)
@@ -83,6 +83,12 @@ class TestContext(object):
     def dont_expect_out_file(self, filename):
         file = self.get_out_path(filename)
         assert not os.path.isfile(file)
+
+    def get_pro_filename(self):
+        return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+'.pro')
+
+    def get_pro_mtime(self):
+        return os.path.getmtime(self.get_pro_filename())
 
     def run(self, cmd, ret_val=None, extra=None, use_a_tty=False):
         logging.debug('Running '+self.test_name)
@@ -236,7 +242,7 @@ class TestContext(object):
 
 class TestContextSCH(TestContext):
 
-    def __init__(self, test_name, board_name):
-        super().__init__(test_name, board_name)
+    def __init__(self, test_name, prj_name):
+        super().__init__(test_name, prj_name)
         self.mode = MODE_SCH
         self._get_board_name()
