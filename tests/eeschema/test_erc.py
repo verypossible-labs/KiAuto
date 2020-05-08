@@ -8,8 +8,6 @@ pytest-3 --log-cli-level debug
 
 import os
 import sys
-# import re
-# import logging
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(script_dir))
