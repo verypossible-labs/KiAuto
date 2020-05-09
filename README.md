@@ -1,7 +1,7 @@
 KiCad automation scripts
 ========================
 
-![Python application](https://github.com/INTI-CMNB/kicad-automation-scripts/workflows/Python%20application/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/kicad-automation-scripts/badge.svg?branch=master&service=github)](https://coveralls.io/github/INTI-CMNB/kicad-automation-scripts?branch=master)
+![Python application](https://github.com/INTI-CMNB/kicad-automation-scripts/workflows/Python%20application/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/kicad-automation-scripts/badge.svg?branch=master)](https://coveralls.io/github/INTI-CMNB/kicad-automation-scripts?branch=master)
 
 A bunch of scripts to automate [KiCad](https://www.kicad-pcb.org/) processes using UI automation with [xdotool](https://www.semicomplete.com/projects/xdotool/).
 
