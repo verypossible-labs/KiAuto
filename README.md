@@ -22,7 +22,26 @@ If you are looking for Gerbers, Drill and Position take a look at [KiPlot](https
 
 If you are looking for STEP files creation take a look at *kicad2step*, part of KiCad.
 
-## Instalation
+## Installation
+
+### No installation
+
+You can use the scripts without installing. The scripts are located at the *src/* directory.
+
+You can also define a bash aliases:
+
+```
+alias pcbnew_do=PATH_TO_REPO/src/pcbnew_do
+alias eeschema_do=PATH_TO_REPO/src/eeschema_do
+```
+
+### Python style installation
+
+Just run the setup, like with any other Python tool:
+
+```
+sudo python3 setup.py install
+```
 
 ### Installation on Ubuntu/Debian:
 
