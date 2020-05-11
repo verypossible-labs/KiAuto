@@ -33,7 +33,7 @@ from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from kicad_auto import file_util
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
-                             WRONG_PCB_NAME)
+                             WRONG_PCB_NAME, PCBNEW_ERROR)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -91,17 +91,41 @@ def dismiss_warning():
         pass
 
 
-def dismiss_pcbNew_Error():
+def dismiss_error():
     try:
-        nf_title = 'pcbnew Error'
-        wait_for_window(nf_title, nf_title, 3)
+        logger.debug('Error')
+        nf_title = 'Error'
+        wait_for_window(nf_title, nf_title, 1)
 
-        logger.error('Dismiss pcbnew error')
+        logger.debug('Dismiss pcbnew error')
         xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        logger.error('Found, sending Return')
+        logger.debug('Found, sending Return')
         xdotool(['key', 'Return'])
+        return True
     except RuntimeError:
         pass
+    return False
+
+
+def wait_for_pcbnew():
+    failed_focuse = False
+    try:
+        wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start)
+    except RuntimeError:
+        logger.debug('Time-out waiting for pcbnew, will retry')
+        failed_focuse = True
+        pass
+    if failed_focuse:
+        if dismiss_error():
+            logger.error('pcbnew reported an error')
+            exit(PCBNEW_ERROR)
+        dismiss_already_running()
+        dismiss_warning()
+        try:
+            wait_for_window('Main pcbnew window', 'Pcbnew', 5)
+        except RuntimeError:
+            logger.error('Time-out waiting for pcbnew, giving up')
+            raise
 
 
 def print_layers(pcb_file, output_dir, output_filename, record=True):
@@ -119,18 +143,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
 
             clipboard_store(print_output_file)
 
-            # dismiss_pcbNew_Error()
-
-            failed_focuse = False
-            try:
-                wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start)
-            except RuntimeError:
-                failed_focuse = True
-                pass
-            if failed_focuse:
-                dismiss_already_running()
-                dismiss_warning()
-                wait_for_window('Main pcbnew window', 'Pcbnew', 5)
+            wait_for_pcbnew()
 
             logger.info('Open File->Print')
             xdotool(['key', 'alt+f', 'p'])
@@ -197,16 +210,7 @@ def run_drc(pcb_file, output_dir, record=True, save=False):
 
             clipboard_store(drc_output_file)
 
-            failed_focuse = False
-            try:
-                wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start)
-            except RuntimeError:
-                failed_focuse = True
-                pass
-            if failed_focuse:
-                dismiss_already_running()
-                dismiss_warning()
-                wait_for_window('Main pcbnew window', 'Pcbnew', 5)
+            wait_for_pcbnew()
 
             logger.info('Open Inspect->DRC')
             xdotool(['key', 'alt+i', 'd'])

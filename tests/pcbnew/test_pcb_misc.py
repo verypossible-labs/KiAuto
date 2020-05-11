@@ -16,9 +16,10 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (PCBNEW_CFG_PRESENT, NO_PCB, WRONG_PCB_NAME)
+from kicad_auto.misc import (PCBNEW_CFG_PRESENT, NO_PCB, WRONG_PCB_NAME, PCBNEW_ERROR)
 
 PROG = 'pcbnew_do'
+BOGUS_PCB = 'bogus.kicad_pcb'
 
 
 def test_pcbnew_config_backup():
@@ -66,4 +67,17 @@ def test_pcb_no_extension():
     ctx.run(cmd, WRONG_PCB_NAME, filename='Makefile')
     m = ctx.search_err(r'PCB files must use kicad_pcb extension')
     assert m is not None
+    ctx.clean_up()
+
+
+def test_bogus_pcb():
+    """ A broken PCB file """
+    ctx = context.TestContext('Bogus_PCB', 'good-project')
+    pcb = ctx.get_out_path(BOGUS_PCB)
+    # Create an invalid PCB
+    with open(pcb, 'w') as f:
+        f.write('dummy')
+    cmd = [PROG, '--wait_start', '5', 'run_drc']
+    ctx.run(cmd, PCBNEW_ERROR, filename=pcb)
+    assert ctx.search_err(r"pcbnew reported an error") is not None
     ctx.clean_up()

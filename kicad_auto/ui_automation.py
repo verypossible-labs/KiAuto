@@ -102,7 +102,7 @@ def recorded_xvfb(video_dir, video_name, **xvfb_args):
 
 
 def xdotool(command):
-    return subprocess.check_output(['xdotool'] + command)
+    return subprocess.check_output(['xdotool'] + command, stderr=subprocess.DEVNULL)
 
 
 def clipboard_store(string):
@@ -150,6 +150,7 @@ def debug_window(id=None):
             try:
                 id = xdotool(['getwindowfocus']).rstrip()
             except subprocess.CalledProcessError:
+                logger.debug('xdotool getwindowfocus failed!')
                 pass
         if id:
             subprocess.call(['xprop', '-id', id])

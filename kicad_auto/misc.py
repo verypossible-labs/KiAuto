@@ -12,6 +12,7 @@ PCBNEW_CFG_PRESENT = 5
 WRONG_LAYER_NAME = 6
 WRONG_PCB_NAME = 7
 WRONG_SCH_NAME = 8
+PCBNEW_ERROR = 9
 # Wait 25 s to pcbnew/eeschema window to be present
 WAIT_START = 25
 
