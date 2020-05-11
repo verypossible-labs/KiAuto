@@ -93,7 +93,6 @@ def dismiss_warning():
 
 def dismiss_error():
     try:
-        logger.debug('Error')
         nf_title = 'Error'
         wait_for_window(nf_title, nf_title, 1)
 
