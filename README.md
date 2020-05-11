@@ -18,7 +18,9 @@ Currently tested and working:
 - Netlist generation
 - Basic BoM generation (mainly the XML needed for [KiBoM](https://github.com/SchrodingersGat/KiBoM))
 
-Note that this version is more oriented to support running the scripts in your main system, instead of a docker image.
+If you are looking for Gerbers, Drill and Position take a look at [KiPlot](https://github.com/INTI-CMNB/kiplot).
+
+If you are looking for STEP files creation take a look at *kicad2step*, part of KiCad.
 
 ## Instalation
 
