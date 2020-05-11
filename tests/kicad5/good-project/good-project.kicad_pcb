@@ -138,7 +138,7 @@
       (net 1 /Power/VCC))
     (pad 2 smd roundrect (at 0.485 0 90) (size 0.59 0.64) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25)
       (net 2 GND))
-    (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0402_1005Metric.wrl
+    (model ${KIPRJMOD}/3D/C_0402_1005Metric.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -172,7 +172,7 @@
       (net 2 GND))
     (pad 1 smd roundrect (at -0.485 0 90) (size 0.59 0.64) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25)
       (net 3 "Net-(C2-Pad1)"))
-    (model ${KISYS3DMOD}/Capacitor_SMD.3dshapes/C_0402_1005Metric.wrl
+    (model ${KIPRJMOD}/3D/C_0402_1005Metric.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
@@ -219,10 +219,10 @@
     (pad 2 thru_hole oval (at 0 2) (size 2 1.3) (drill 1) (layers *.Cu *.Mask)
       (net 1 /Power/VCC))
     (pad "" np_thru_hole circle (at -1.5 4.05) (size 1.15 1.15) (drill 1.15) (layers *.Cu *.Mask))
-    (model ${KISYS3DMOD}/Connector_JST.3dshapes/JST_JWPF_B02B-JWPF-SK-R_1x02_P2.00mm_Vertical.wrl
-      (at (xyz 0 0 0))
+    (model ${KIPRJMOD}/3D/B02B-JWPF-SK-R.step
+      (offset (xyz -3.2 -4.5 -8))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz 0 0 -90))
     )
   )
 
@@ -253,7 +253,7 @@
       (net 1 /Power/VCC))
     (pad 2 smd roundrect (at 0.485 0) (size 0.59 0.64) (layers F.Cu F.Paste F.Mask) (roundrect_rratio 0.25)
       (net 3 "Net-(C2-Pad1)"))
-    (model ${KISYS3DMOD}/Resistor_SMD.3dshapes/R_0402_1005Metric.wrl
+    (model ${KIPRJMOD}/3D/R_0402_1005Metric.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
       (rotate (xyz 0 0 0))
