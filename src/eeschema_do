@@ -44,48 +44,22 @@ from kicad_auto.ui_automation import (
 )
 
 
-# def dismiss_library_error():
-#     # The "Error" modal pops up if libraries required by the schematic have
-#     # not been found. This can be ignored as all symbols are placed inside the
-#     # *-cache.lib file:
-#     # There -should- be a way to disable it, but I haven't the magic to drop in the config file yet
-#     try:
-#         nf_title = 'Error'
-#         wait_for_window(nf_title, nf_title, 3)
-#
-#         logger.info('Dismiss eeschema library warning modal')
-#         xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-#         xdotool(['key', 'Escape'])
-#     except RuntimeError:
-#         pass
+def dismiss_library_error():
+    # The "Error" modal pops up if libraries required by the schematic have
+    # not been found. This can be ignored as all symbols are placed inside the
+    # *-cache.lib file:
+    # There -should- be a way to disable it, but I haven't the magic to drop in the config file yet
+    try:
+        nf_title = 'Error'
+        wait_for_window(nf_title, nf_title, 3)
 
-
-# def dismiss_library_warning():
-#     # The "Not Found" window pops up if libraries required by the schematic have
-#     # not been found. This can be ignored as all symbols are placed inside the
-#     # *-cache.lib file:
-#     try:
-#         nf_title = 'Not Found'
-#         wait_for_window(nf_title, nf_title, 3)
-#
-#         logger.info('Dismiss eeschema library warning window')
-#         xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-#         xdotool(['key', 'Return'])
-#     except RuntimeError:
-#         pass
-
-
-# def dismiss_newer_version():
-#     # The "Not Found" window pops up if libraries required by the schematic have
-#     # not been found. This can be ignored as all symbols are placed inside the
-#     # *-cache.lib file:
-#     try:
-#         logger.info('Dismiss schematic version notification')
-#         wait_for_window('Newer schematic version notification', 'Info', 3)
-#
-#         xdotool(['key', 'Return'])
-#     except RuntimeError:
-#         pass
+        logger.warning('Missing library, please fix it')
+        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+        xdotool(['key', 'Escape'])
+        xdotool(['key', 'Escape'])
+        xdotool(['key', 'Escape'])
+    except RuntimeError:
+        pass
 
 
 def dismiss_remap_helper():
@@ -100,14 +74,6 @@ def dismiss_remap_helper():
         logger.warning('Schematic needs update')
     except RuntimeError:
         pass
-
-
-def eeschema_skip_errors():
-    # dismiss_newer_version()
-    dismiss_remap_helper()
-    # dismiss_library_warning()
-    # dismiss_library_error()
-    return 0
 
 
 def dismiss_already_running():
@@ -131,7 +97,7 @@ def wait_eeschema_start():
     failed_focuse = False
     other = None
     try:
-        wait_eeschema(args.wait_start, others=['Confirmation', 'Remap Symbols'])
+        wait_eeschema(args.wait_start, others=['Confirmation', 'Remap Symbols', 'Error'])
     except RuntimeError:
         logger.debug('Time-out waiting for eeschema, will retry')
         failed_focuse = True
@@ -144,7 +110,8 @@ def wait_eeschema_start():
     if failed_focuse:
         if other == 'Remap Symbols':
             dismiss_remap_helper()
-        eeschema_skip_errors()
+        if other == 'Error':
+            dismiss_library_error()
         if other == 'Confirmation':
             dismiss_already_running()
         try:

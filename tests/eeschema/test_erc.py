@@ -106,3 +106,15 @@ def test_erc_remap():
     ctx.expect_out_file(rep)
     assert ctx.search_err(r"Schematic needs update") is not None
     ctx.clean_up()
+
+
+def test_erc_error():
+    """ Here we have a missing library """
+    prj = 'missing-lib'
+    rep = prj+'.erc'
+    ctx = context.TestContextSCH('ERC_Error', prj)
+    cmd = [PROG, 'run_erc']
+    ctx.run(cmd)
+    ctx.expect_out_file(rep)
+    assert ctx.search_err(r"Missing library") is not None
+    ctx.clean_up()
