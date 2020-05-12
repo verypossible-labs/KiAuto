@@ -49,17 +49,13 @@ def dismiss_library_error():
     # not been found. This can be ignored as all symbols are placed inside the
     # *-cache.lib file:
     # There -should- be a way to disable it, but I haven't the magic to drop in the config file yet
-    try:
-        nf_title = 'Error'
-        wait_for_window(nf_title, nf_title, 3)
-
-        logger.warning('Missing library, please fix it')
-        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        xdotool(['key', 'Escape'])
-        xdotool(['key', 'Escape'])
-        xdotool(['key', 'Escape'])
-    except RuntimeError:
-        pass
+    nf_title = 'Error'
+    wait_for_window(nf_title, nf_title, 3)
+    logger.warning('Missing library, please fix it')
+    xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+    xdotool(['key', 'Escape'])
+    xdotool(['key', 'Escape'])
+    xdotool(['key', 'Escape'])
 
 
 def dismiss_remap_helper():
@@ -67,41 +63,29 @@ def dismiss_remap_helper():
     # the older list look up method for loading library symbols.
     # This can be ignored as we're just trying to output data and don't
     # want to mess with the actual project.
-    try:
-        logger.debug('Check for symbol remapping')
-        wait_for_window('Remap Symbols', 'Remap', 3)
-        xdotool(['key', 'Escape'])
-        logger.warning('Schematic needs update')
-    except RuntimeError:
-        pass
+    logger.debug('Check for symbol remapping')
+    wait_for_window('Remap Symbols', 'Remap', 3)
+    xdotool(['key', 'Escape'])
+    logger.warning('Schematic needs update')
 
 
 def dismiss_warning():
-    try:
-        nf_title = 'Warning'
-        wait_for_window(nf_title, nf_title, 1)
+    nf_title = 'Warning'
+    wait_for_window(nf_title, nf_title, 1)
 
-        logger.debug('Dismiss eeschema warning')
-        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        logger.debug('Found, sending Return')
-        xdotool(['key', 'Return'])
-        return True
-    except RuntimeError:
-        pass
-    return False
+    logger.debug('Dismiss eeschema warning')
+    xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+    logger.debug('Found, sending Return')
+    xdotool(['key', 'Return'])
 
 
 def dismiss_already_running():
     # The "Confirmation" modal pops up if eeschema is already running
-    try:
-        nf_title = 'Confirmation'
-        wait_for_window(nf_title, nf_title, 1)
-
-        logger.info('Dismiss eeschema already running')
-        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        xdotool(['key', 'Return'])
-    except RuntimeError:
-        pass
+    nf_title = 'Confirmation'
+    wait_for_window(nf_title, nf_title, 1)
+    logger.info('Dismiss eeschema already running')
+    xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+    xdotool(['key', 'Return'])
 
 
 def wait_eeschema(time, others=None):
@@ -113,7 +97,7 @@ def wait_eeschema_start():
     other = None
     try:
         wait_eeschema(args.wait_start, others=['Confirmation', 'Remap Symbols', 'Error', 'Warning'])
-    except RuntimeError:
+    except RuntimeError:  # pragma: no cover
         logger.debug('Time-out waiting for eeschema, will retry')
         failed_focuse = True
         pass
@@ -129,14 +113,15 @@ def wait_eeschema_start():
             dismiss_library_error()
         if other == 'Confirmation':
             dismiss_already_running()
-        if other == 'Warning' and dismiss_warning():
+        if other == 'Warning':
+            dismiss_warning()
             # This is crazy, if we miss a lib we get an "Error", pressing ESC solves it
             # If we have a damaged file we get a "Warning", pressing ESC fails ...
             logger.error('eeschema reported an error')
             exit(EESCHEMA_ERROR)
         try:
             wait_eeschema(5)
-        except RuntimeError:
+        except RuntimeError:  # pragma: no cover
             logger.error('Time-out waiting for eeschema, giving up')
             raise
 
@@ -187,14 +172,14 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
     xdotool(['key', 'ctrl+q'])
     try:
         wait_not_focused(id[0], 5)
-    except RuntimeError:
+    except RuntimeError:  # pragma: no cover
         logger.debug('EEschema not exiting, will retry')
         pass
     # Dismiss any dialog. I.e. failed to write the project
     xdotool(['key', 'Return', 'ctrl+q'])
     try:
         wait_not_focused(id[0], 5)
-    except RuntimeError:
+    except RuntimeError:  # pragma: no cover
         logger.debug('EEschema not exiting, will kill')
         pass
     # If we failed to exit we will kill it anyways
@@ -339,7 +324,7 @@ def restore_project():
         if os.path.isfile(pro_name):
             new_stat = os.stat(pro_name)
             pro_found = True
-        else:
+        else:  # pragma: no cover
             logger.warning('Project file lost')
         if not pro_found or new_stat.st_mtime != pro_stat.st_mtime:
             logger.debug('Restoring the project file')
@@ -455,7 +440,7 @@ if __name__ == '__main__':
         system_lib_table = '/usr/share/kicad/template/sym-lib-table'
         if os.path.isfile(system_lib_table):
             shutil.copy2(system_lib_table, user_lib_table)
-        else:
+        else:  # pragma: no cover
             logger.warning('Missing default system symbol table '+system_lib_table+' KiCad will most probably fail')
 
     output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(args.schematic))[0])
