@@ -68,42 +68,31 @@ def parse_drc(drc_file):
 
 def dismiss_already_running():
     # The "Confirmation" modal pops up if pcbnew is already running
-    try:
-        nf_title = 'Confirmation'
-        wait_for_window(nf_title, nf_title, 1)
+    nf_title = 'Confirmation'
+    wait_for_window(nf_title, nf_title, 1)
 
-        logger.info('Dismiss pcbnew already running')
-        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        xdotool(['key', 'Return'])
-    except RuntimeError:
-        pass
+    logger.info('Dismiss pcbnew already running')
+    xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+    xdotool(['key', 'Return'])
 
 
-def dismiss_warning():
-    try:
-        nf_title = 'Warning'
-        wait_for_window(nf_title, nf_title, 1)
+def dismiss_warning():  # pragma: no cover
+    nf_title = 'Warning'
+    wait_for_window(nf_title, nf_title, 1)
 
-        logger.error('Dismiss pcbnew warning, will fail')
-        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        xdotool(['key', 'Return'])
-    except RuntimeError:
-        pass
+    logger.error('Dismiss pcbnew warning, will fail')
+    xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+    xdotool(['key', 'Return'])
 
 
 def dismiss_error():
-    try:
-        nf_title = 'Error'
-        wait_for_window(nf_title, nf_title, 1)
+    nf_title = 'Error'
+    wait_for_window(nf_title, nf_title, 1)
 
-        logger.debug('Dismiss pcbnew error')
-        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
-        logger.debug('Found, sending Return')
-        xdotool(['key', 'Return'])
-        return True
-    except RuntimeError:
-        pass
-    return False
+    logger.debug('Dismiss pcbnew error')
+    xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+    logger.debug('Found, sending Return')
+    xdotool(['key', 'Return'])
 
 
 def wait_for_pcbnew():
@@ -112,7 +101,7 @@ def wait_for_pcbnew():
     try:
         wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start,
                         others=['Confirmation', 'Warning', 'Error'])
-    except RuntimeError:
+    except RuntimeError:  # pragma: no cover
         logger.debug('Time-out waiting for pcbnew, will retry')
         failed_focuse = True
         pass
@@ -122,16 +111,17 @@ def wait_for_pcbnew():
         failed_focuse = True
         pass
     if failed_focuse:
-        if other == 'Error' and dismiss_error():
+        if other == 'Error':
+            dismiss_error()
             logger.error('pcbnew reported an error')
             exit(PCBNEW_ERROR)
         if other == 'Confirmation':
             dismiss_already_running()
-        if other == 'Warning':
+        if other == 'Warning':  # pragma: no cover
             dismiss_warning()
         try:
             wait_for_window('Main pcbnew window', 'Pcbnew', 5)
-        except RuntimeError:
+        except RuntimeError:  # pragma: no cover
             logger.error('Time-out waiting for pcbnew, giving up')
             raise
 
@@ -406,7 +396,7 @@ if __name__ == '__main__':
         system_lib_table = '/usr/share/kicad/template/fp-lib-table'
         if os.path.isfile(system_lib_table):
             shutil.copy2(system_lib_table, user_lib_table)
-        else:
+        else:  # pragma: no cover
             logger.warning('Missing default system footprint table '+system_lib_table+' KiCad will most probably fail')
 
     error_level = 0
