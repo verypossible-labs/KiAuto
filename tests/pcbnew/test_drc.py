@@ -9,6 +9,7 @@ pytest-3 --log-cli-level debug
 import os
 import sys
 import logging
+import shutil
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(script_dir))
@@ -18,6 +19,7 @@ from utils import context
 PROG = 'pcbnew_do'
 REPORT = 'drc_result.rpt'
 OUT_REX = r'(\d+) DRC errors and (\d+) unconnected pads'
+DEFAULT = 'printed.pdf'
 
 
 def test_drc_ok_1():
@@ -84,4 +86,23 @@ def test_drc_ok_pcbnew_running():
     logging.debug('Checking for colors in DEBUG logs')
     assert ctx.search_err(r"\[36;1mDEBUG:") is not None
     assert ctx.search_err(r"Dismiss pcbnew already running") is not None
+    ctx.clean_up()
+
+
+def test_drc_save():
+    """ Here we test a PCB with outdated zone fills.
+        We run the DRC refilling, save it and then print. """
+    ctx = context.TestContext('DRC_Save_1', 'zone-refill')
+    shutil.copy2(ctx.board_file+'.ok', ctx.board_file)
+    cmd = [PROG, 'run_drc', '-s']
+    ctx.run(cmd)
+    ctx.expect_out_file(REPORT)
+    ctx.clean_up()
+
+    ctx = context.TestContext('DRC_Save_2', 'zone-refill')
+    cmd = [PROG, 'export']
+    layers = ['F.Cu', 'B.Cu', 'Edge.Cuts']
+    ctx.run(cmd, extra=layers)
+    ctx.expect_out_file(DEFAULT)
+    ctx.compare_image(DEFAULT, 'zone-refill.pdf')
     ctx.clean_up()
