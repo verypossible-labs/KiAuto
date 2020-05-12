@@ -16,9 +16,11 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC, WRONG_SCH_NAME)
+from kicad_auto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC, WRONG_SCH_NAME, EESCHEMA_ERROR,
+                             WRONG_ARGUMENTS)
 
 PROG = 'eeschema_do'
+BOGUS_SCH = 'bogus.sch'
 
 
 def test_eeschema_config_backup():
@@ -92,4 +94,25 @@ def test_sch_no_extension():
     ctx.run(cmd, WRONG_SCH_NAME, filename='Makefile')
     m = ctx.search_err(r'Schematic files must use sch extension')
     assert m is not None
+    ctx.clean_up()
+
+
+def test_bogus_sch():
+    """ A broken SCH file """
+    ctx = context.TestContextSCH('Bogus_SCH', 'good-project')
+    sch = ctx.get_out_path(BOGUS_SCH)
+    # Create an invalid SCH
+    with open(sch, 'w') as f:
+        f.write('dummy')
+    cmd = [PROG, 'run_erc']
+    ctx.run(cmd, EESCHEMA_ERROR, filename=sch)
+    assert ctx.search_err(r"eeschema reported an error") is not None
+    ctx.clean_up()
+
+
+def test_sch_wrong_command():
+    """ Wrong command line arguments """
+    ctx = context.TestContextSCH('SCH_Wrong_Command', 'good-project')
+    cmd = [PROG, 'bogus']
+    ctx.run(cmd, WRONG_ARGUMENTS)
     ctx.clean_up()

@@ -33,7 +33,7 @@ from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 from kicad_auto import file_util
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
-                             WAIT_START, WRONG_SCH_NAME)
+                             WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -76,6 +76,21 @@ def dismiss_remap_helper():
         pass
 
 
+def dismiss_warning():
+    try:
+        nf_title = 'Warning'
+        wait_for_window(nf_title, nf_title, 1)
+
+        logger.debug('Dismiss eeschema warning')
+        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+        logger.debug('Found, sending Return')
+        xdotool(['key', 'Return'])
+        return True
+    except RuntimeError:
+        pass
+    return False
+
+
 def dismiss_already_running():
     # The "Confirmation" modal pops up if eeschema is already running
     try:
@@ -97,7 +112,7 @@ def wait_eeschema_start():
     failed_focuse = False
     other = None
     try:
-        wait_eeschema(args.wait_start, others=['Confirmation', 'Remap Symbols', 'Error'])
+        wait_eeschema(args.wait_start, others=['Confirmation', 'Remap Symbols', 'Error', 'Warning'])
     except RuntimeError:
         logger.debug('Time-out waiting for eeschema, will retry')
         failed_focuse = True
@@ -114,6 +129,11 @@ def wait_eeschema_start():
             dismiss_library_error()
         if other == 'Confirmation':
             dismiss_already_running()
+        if other == 'Warning' and dismiss_warning():
+            # This is crazy, if we miss a lib we get an "Error", pressing ESC solves it
+            # If we have a damaged file we get a "Warning", pressing ESC fails ...
+            logger.error('eeschema reported an error')
+            exit(EESCHEMA_ERROR)
         try:
             wait_eeschema(5)
         except RuntimeError:

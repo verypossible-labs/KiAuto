@@ -16,7 +16,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (PCBNEW_CFG_PRESENT, NO_PCB, WRONG_PCB_NAME, PCBNEW_ERROR)
+from kicad_auto.misc import (PCBNEW_CFG_PRESENT, NO_PCB, WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS)
 
 PROG = 'pcbnew_do'
 BOGUS_PCB = 'bogus.kicad_pcb'
@@ -80,4 +80,12 @@ def test_bogus_pcb():
     cmd = [PROG, '--wait_start', '5', 'run_drc']
     ctx.run(cmd, PCBNEW_ERROR, filename=pcb)
     assert ctx.search_err(r"pcbnew reported an error") is not None
+    ctx.clean_up()
+
+
+def test_pcb_wrong_command():
+    """ Wrong command line arguments """
+    ctx = context.TestContext('PCB_Wrong_Command', 'good-project')
+    cmd = [PROG, 'bogus']
+    ctx.run(cmd, WRONG_ARGUMENTS)
     ctx.clean_up()
