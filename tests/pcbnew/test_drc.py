@@ -66,6 +66,9 @@ def test_drc_unco_ok():
 
 
 def test_drc_ok_pcbnew_running():
+    """ 1) Test to overwrite the .erc file
+        2) Test pcbnew already running
+        3) Test logger colors on TTYs """
     ctx = context.TestContext('DRC_Ok_pcbnew_running', 'good-project')
     # Create a report to force and overwrite
     with open(ctx.get_out_path(REPORT), 'w') as f:

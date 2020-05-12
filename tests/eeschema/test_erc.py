@@ -8,6 +8,7 @@ pytest-3 --log-cli-level debug
 
 import os
 import sys
+import logging
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(script_dir))
@@ -72,4 +73,28 @@ def test_erc_warning_fail():
     m = ctx.search_err(OUT_ERR_REX)
     assert m is not None
     assert m.group(1) == '1'
+    ctx.clean_up()
+
+
+def test_erc_ok_eeschema_running():
+    """ 1) Test to overwrite the .erc file
+        2) Test eeschema already running
+        3) Test logger colors on TTYs """
+    prj = 'good-project'
+    rep = prj+'.erc'
+    ctx = context.TestContextSCH('ERC_Ok_eeschema_running', prj)
+    # Create a report to force and overwrite
+    with open(ctx.get_out_path(rep), 'w') as f:
+        f.write('dummy')
+    # Run eeschema in parallel to get 'Dismiss eeschema already running'
+    with ctx.start_kicad('eeschema'):
+        # Enable DEBUG logs
+        cmd = [PROG, '-vv', '--wait_start', '5', 'run_erc']
+        # Use a TTY to get colors in the DEBUG logs
+        ctx.run(cmd, use_a_tty=True)
+        ctx.stop_kicad()
+    ctx.expect_out_file(rep)
+    logging.debug('Checking for colors in DEBUG logs')
+    assert ctx.search_err(r"\[36;1mDEBUG:") is not None
+    assert ctx.search_err(r"Dismiss eeschema already running") is not None
     ctx.clean_up()

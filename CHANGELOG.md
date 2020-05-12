@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Added
 - Support for PS, DXF and HPGL to the schematic export.
+- Support for eeschema already running.
 
 ### Changed
 - pcbnew_print_layers to "pcbnew_do export" to be coherent with "eeschema_do"

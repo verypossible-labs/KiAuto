@@ -110,6 +110,19 @@ def eeschema_skip_errors():
     return 0
 
 
+def dismiss_already_running():
+    # The "Confirmation" modal pops up if eeschema is already running
+    try:
+        nf_title = 'Confirmation'
+        wait_for_window(nf_title, nf_title, 1)
+
+        logger.info('Dismiss eeschema already running')
+        xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
+        xdotool(['key', 'Return'])
+    except RuntimeError:
+        pass
+
+
 def wait_eeschema(time):
     return wait_for_window('Main eeschema window', r'Eeschema.*\.sch', time)
 
@@ -119,11 +132,17 @@ def wait_eeschema_start():
     try:
         wait_eeschema(args.wait_start)
     except RuntimeError:
+        logger.debug('Time-out waiting for eeschema, will retry')
         failed_focuse = True
         pass
     if failed_focuse:
         eeschema_skip_errors()
-        wait_eeschema(5)
+        dismiss_already_running()
+        try:
+            wait_eeschema(5)
+        except RuntimeError:
+            logger.error('Time-out waiting for eeschema, giving up')
+            raise
 
 
 def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
