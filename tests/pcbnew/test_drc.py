@@ -105,4 +105,5 @@ def test_drc_save():
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(DEFAULT)
     ctx.compare_image(DEFAULT, 'zone-refill.pdf')
+    shutil.copy2(ctx.board_file+'.ok', ctx.board_file)
     ctx.clean_up()
