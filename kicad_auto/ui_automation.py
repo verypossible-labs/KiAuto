@@ -182,7 +182,7 @@ def wait_not_focused(id, timeout=10):
     raise RuntimeError('Timed out waiting for %s window to lose focus' % id)
 
 
-def wait_for_window(name, window_regex, timeout=10, focus=True, skip_id=0):
+def wait_for_window(name, window_regex, timeout=10, focus=True, skip_id=0, others=None):
     DELAY = 0.5
     logger.info('Waiting for "%s" ...', name)
     if skip_id:
@@ -208,6 +208,15 @@ def wait_for_window(name, window_regex, timeout=10, focus=True, skip_id=0):
                 logger.debug('Skipped')
         except subprocess.CalledProcessError:
             pass
+        # Check if we have a list of alternative windows
+        if others:
+            for other in others:
+                cmd = ['search', '--onlyvisible', '--name', other]
+                try:
+                    xdotool(cmd)
+                    raise ValueError(other)
+                except subprocess.CalledProcessError:
+                    pass
         time.sleep(DELAY)
     debug_window()
     raise RuntimeError('Timed out waiting for %s window' % name)

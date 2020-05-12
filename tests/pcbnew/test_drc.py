@@ -76,7 +76,7 @@ def test_drc_ok_pcbnew_running():
     # Run pcbnew in parallel to get 'Dismiss pcbnew already running'
     with ctx.start_kicad('pcbnew'):
         # Enable DEBUG logs
-        cmd = [PROG, '-vv', '--wait_start', '5', 'run_drc']
+        cmd = [PROG, '-vv', 'run_drc']
         # Use a TTY to get colors in the DEBUG logs
         ctx.run(cmd, use_a_tty=True)
         ctx.stop_kicad()

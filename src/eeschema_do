@@ -88,23 +88,23 @@ from kicad_auto.ui_automation import (
 #         pass
 
 
-# def dismiss_remap_helper():
-#     # The "Remap Symbols" windows pop up if the uses the project symbol library
-#     # the older list look up method for loading library symbols.
-#     # This can be ignored as we're just trying to output data and don't
-#     # want to mess with the actual project.
-#     try:
-#         logger.info('Dismiss schematic symbol remapping')
-#         wait_for_window('Remap Symbols', 'Remap', 3)
-#
-#         xdotool(['key', 'Escape'])
-#     except RuntimeError:
-#         pass
+def dismiss_remap_helper():
+    # The "Remap Symbols" windows pop up if the uses the project symbol library
+    # the older list look up method for loading library symbols.
+    # This can be ignored as we're just trying to output data and don't
+    # want to mess with the actual project.
+    try:
+        logger.debug('Check for symbol remapping')
+        wait_for_window('Remap Symbols', 'Remap', 3)
+        xdotool(['key', 'Escape'])
+        logger.warning('Schematic needs update')
+    except RuntimeError:
+        pass
 
 
 def eeschema_skip_errors():
     # dismiss_newer_version()
-    # dismiss_remap_helper();
+    dismiss_remap_helper()
     # dismiss_library_warning()
     # dismiss_library_error()
     return 0
@@ -123,21 +123,30 @@ def dismiss_already_running():
         pass
 
 
-def wait_eeschema(time):
-    return wait_for_window('Main eeschema window', r'Eeschema.*\.sch', time)
+def wait_eeschema(time, others=None):
+    return wait_for_window('Main eeschema window', r'Eeschema.*\.sch', time, others=others)
 
 
 def wait_eeschema_start():
     failed_focuse = False
+    other = None
     try:
-        wait_eeschema(args.wait_start)
+        wait_eeschema(args.wait_start, others=['Confirmation', 'Remap Symbols'])
     except RuntimeError:
         logger.debug('Time-out waiting for eeschema, will retry')
         failed_focuse = True
         pass
+    except ValueError as err:
+        other = str(err)
+        logger.debug('Found "'+other+'" window instead of eeschema')
+        failed_focuse = True
+        pass
     if failed_focuse:
+        if other == 'Remap Symbols':
+            dismiss_remap_helper()
         eeschema_skip_errors()
-        dismiss_already_running()
+        if other == 'Confirmation':
+            dismiss_already_running()
         try:
             wait_eeschema(5)
         except RuntimeError:

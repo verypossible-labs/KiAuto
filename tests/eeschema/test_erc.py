@@ -77,19 +77,15 @@ def test_erc_warning_fail():
 
 
 def test_erc_ok_eeschema_running():
-    """ 1) Test to overwrite the .erc file
-        2) Test eeschema already running
-        3) Test logger colors on TTYs """
+    """ 1) Test eeschema already running
+        2) Test logger colors on TTYs """
     prj = 'good-project'
     rep = prj+'.erc'
     ctx = context.TestContextSCH('ERC_Ok_eeschema_running', prj)
-    # Create a report to force and overwrite
-    with open(ctx.get_out_path(rep), 'w') as f:
-        f.write('dummy')
     # Run eeschema in parallel to get 'Dismiss eeschema already running'
     with ctx.start_kicad('eeschema'):
         # Enable DEBUG logs
-        cmd = [PROG, '-vv', '--wait_start', '5', 'run_erc']
+        cmd = [PROG, '-vv', 'run_erc']
         # Use a TTY to get colors in the DEBUG logs
         ctx.run(cmd, use_a_tty=True)
         ctx.stop_kicad()
@@ -97,4 +93,16 @@ def test_erc_ok_eeschema_running():
     logging.debug('Checking for colors in DEBUG logs')
     assert ctx.search_err(r"\[36;1mDEBUG:") is not None
     assert ctx.search_err(r"Dismiss eeschema already running") is not None
+    ctx.clean_up()
+
+
+def test_erc_remap():
+    """ Here we use a KiCad 4 .sch that needs symbol remapping """
+    prj = 'kicad4-project'
+    rep = prj+'.erc'
+    ctx = context.TestContextSCH('ERC_Remap', prj)
+    cmd = [PROG, 'run_erc']
+    ctx.run(cmd)
+    ctx.expect_out_file(rep)
+    assert ctx.search_err(r"Schematic needs update") is not None
     ctx.clean_up()

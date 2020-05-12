@@ -108,18 +108,27 @@ def dismiss_error():
 
 def wait_for_pcbnew():
     failed_focuse = False
+    other = None
     try:
-        wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start)
+        wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start,
+                        others=['Confirmation', 'Warning', 'Error'])
     except RuntimeError:
         logger.debug('Time-out waiting for pcbnew, will retry')
         failed_focuse = True
         pass
+    except ValueError as err:
+        other = str(err)
+        logger.debug('Found "'+other+'" window instead of pcbnew')
+        failed_focuse = True
+        pass
     if failed_focuse:
-        if dismiss_error():
+        if other == 'Error' and dismiss_error():
             logger.error('pcbnew reported an error')
             exit(PCBNEW_ERROR)
-        dismiss_already_running()
-        dismiss_warning()
+        if other == 'Confirmation':
+            dismiss_already_running()
+        if other == 'Warning':
+            dismiss_warning()
         try:
             wait_for_window('Main pcbnew window', 'Pcbnew', 5)
         except RuntimeError:
