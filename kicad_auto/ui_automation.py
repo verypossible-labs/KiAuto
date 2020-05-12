@@ -144,7 +144,7 @@ def clipboard_store(string):
 #     return output
 
 
-def debug_window(id=None):
+def debug_window(id=None):  # pragma: no cover
     if shutil.which('xprop'):
         if id is None:
             try:
@@ -165,7 +165,7 @@ def wait_focused(id, timeout=10):
         if cur_id == id:
             return
         time.sleep(DELAY)
-    debug_window(cur_id)
+    debug_window(cur_id)  # pragma: no cover
     raise RuntimeError('Timed out waiting for %s window to get focus' % id)
 
 
@@ -178,7 +178,7 @@ def wait_not_focused(id, timeout=10):
         if cur_id != id:
             return
         time.sleep(DELAY)
-    debug_window(cur_id)
+    debug_window(cur_id)  # pragma: no cover
     raise RuntimeError('Timed out waiting for %s window to lose focus' % id)
 
 
@@ -218,5 +218,5 @@ def wait_for_window(name, window_regex, timeout=10, focus=True, skip_id=0, other
                 except subprocess.CalledProcessError:
                     pass
         time.sleep(DELAY)
-    debug_window()
+    debug_window()  # pragma: no cover
     raise RuntimeError('Timed out waiting for %s window' % name)
