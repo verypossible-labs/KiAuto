@@ -1,8 +1,21 @@
+kicad-automation-scripts.inti-cmnb (1.2.0-1) stable; urgency=medium
+
+  * Added support for PS, DXF and HPGL to the schematic export.
+  * Added support for eeschema already running.
+  * Added support for loading KiCad 4 schematics (asking for Remap symbols)
+  * Changed pcbnew_print_layers to "pcbnew_do export" to be coherent with "eeschema_do"
+  * Changed pcbnew_run_drc to "pcbnew_do run_drc" ditto
+  * Fixed --ignore_unconnected of pcbnew_run_drc wasn't implemented.
+  * Fixed ERC omitted warnings if errors were detected.
+  * Fixed  The project file could be altered, or even lost, during schematic export.
+
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Wed, 13 May 2020 15:14:07 -0300
+
 kicad-automation-scripts.inti-cmnb (1.1.6-1) stable; urgency=medium
 
   *  Modified to remove x11-xserver-utils dependency
 
- -- Salvador E. Tropea <salvador@kaira.inti.gov.ar>  Thu, 23 Apr 2020 16:36:03 -0300
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Thu, 23 Apr 2020 16:36:03 -0300
 
 kicad-automation-scripts.inti-cmnb (1.1.5-1) stable; urgency=medium
 

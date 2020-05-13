@@ -19,4 +19,4 @@ EESCHEMA_ERROR = 10
 WAIT_START = 25
 
 
-__version__ = '1.1.6'
+__version__ = '1.2.0'
