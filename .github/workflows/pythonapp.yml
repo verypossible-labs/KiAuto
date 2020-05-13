@@ -9,6 +9,8 @@ on:
     - '**.py'
     - 'src/*_do'
     - 'tests/**'
+    tags-ignore:
+    - "v*"
   pull_request:
     paths:
     - '**.py'
@@ -16,7 +18,7 @@ on:
     - 'tests/**'
 
 jobs:
-  build:
+  test:
 
     runs-on: ubuntu-latest
     container: setsoft/kicad_auto_test:latest
