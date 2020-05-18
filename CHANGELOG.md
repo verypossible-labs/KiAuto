@@ -8,6 +8,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [1.3.0] - 2020-05-18
+### Added
+- --wait_key/-w option to send the commands step by step (debug)
+- --start_x11vnc/-s option to start a server so we can monitor what's going on (debug)
+- --use_wm/-m option to start a window manager (fluxbox) so we can interact better (debug)
+
+### Changed
+- Now we exit eeschema and pcbnew without killing the application.
+- Default record height now is 960.
+
+### Fixed
+- Error and Warning dialog detection. Now we use more specific regular expressions.
+- Sometimes the 'Plot Schematic Options' starts with the browse button selected and we
+must move left.
+- Sometimes the netlist dialog starts with the generation button selected and we move to
+the plugin button instead. Now we detect it and go back to the generate button.
+
 ## [1.2.0] - 2020-05-13
 ### Added
 - Support for PS, DXF and HPGL to the schematic export.

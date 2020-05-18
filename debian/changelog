@@ -1,6 +1,15 @@
-kicad-automation-scripts.inti-cmnb (1.3.0-1) UNRELEASED; urgency=medium
+kicad-automation-scripts.inti-cmnb (1.3.0-1) stable; urgency=medium
 
-  * Next release will be 1.3.0, now testing
+  * Added --wait_key/-w option to send the commands step by step (debug)
+  * Added --start_x11vnc/-s option to start a server so we can monitor what's going on (debug)
+  * Added --use_wm/-m option to start a window manager (fluxbox) so we can interact better (debug)
+  * Changed Now we exit eeschema and pcbnew without killing the application.
+  * Changed Default record height now is 960.
+  * Fixed Error and Warning dialog detection. Now we use more specific regular expressions.
+  * Fixed Sometimes the 'Plot Schematic Options' starts with the browse button selected and we
+    must move left.
+  * Fixed Sometimes the netlist dialog starts with the generation button selected and we move to
+    the plugin button instead. Now we detect it and go back to the generate button.
 
  -- Salvador E. Tropea <salvador@kaira.inti.gov.ar>  Mon, 18 May 2020 09:04:46 -0300
 
