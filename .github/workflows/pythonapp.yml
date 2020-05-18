@@ -3,10 +3,12 @@
 
 name: Python application
 
-on:
-  push:
-    tags-ignore:
-      - "v*"
+on: [ push ]
+
+# on:
+#   push:
+#     tags-ignore:
+#       - "v*"
 
 # on:
 #   push:
