@@ -98,3 +98,15 @@ def test_wrong_layer_bogus():
     m = ctx.search_err(r"Unknown layer GND_Cu")
     assert m is not None
     ctx.clean_up()
+
+
+def test_print_pcb_good_wm():
+    """ Here we test the window manager """
+    ctx = context.TestContext('Print_Good_with_WM', 'good-project')
+    pdf = 'good_pcb_with_dwg.pdf'
+    cmd = [PROG, '-ms', 'export', '--output_name', pdf]
+    layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
+    ctx.run(cmd, extra=layers)
+    ctx.expect_out_file(pdf)
+    ctx.compare_image(pdf)
+    ctx.clean_up()
