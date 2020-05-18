@@ -5,17 +5,22 @@ name: Python application
 
 on:
   push:
-    paths:
-    - '**.py'
-    - 'src/*_do'
-    - 'tests/**'
     tags-ignore:
-    - "v*"
-  pull_request:
-    paths:
-    - '**.py'
-    - 'src/*_do'
-    - 'tests/**'
+      - "v*"
+
+# on:
+#   push:
+#     paths:
+#     - '**.py'
+#     - 'src/*_do'
+#     - 'tests/**'
+#     tags-ignore:
+#     - "v*"
+#   pull_request:
+#     paths:
+#     - '**.py'
+#     - 'src/*_do'
+#     - 'tests/**'
 
 jobs:
   test:
