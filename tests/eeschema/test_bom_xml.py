@@ -1,5 +1,5 @@
 """
-Tests for eeschema_do bom_xml
+Tests for eeschema_do bom_xml.
 
 For debug information use:
 pytest-3 --log-cli-level debug
