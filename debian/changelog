@@ -1,3 +1,9 @@
+kicad-automation-scripts.inti-cmnb (1.3.0-1) UNRELEASED; urgency=medium
+
+  * Next release will be 1.3.0, now testing
+
+ -- Salvador E. Tropea <salvador@kaira.inti.gov.ar>  Mon, 18 May 2020 09:04:46 -0300
+
 kicad-automation-scripts.inti-cmnb (1.2.0-1) stable; urgency=medium
 
   * Added support for PS, DXF and HPGL to the schematic export.
