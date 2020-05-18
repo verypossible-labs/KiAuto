@@ -24,6 +24,21 @@ If you are looking for STEP files creation take a look at *kicad2step*, part of 
 
 ## Installation
 
+### Dependencies
+
+If you are installing from a Debian package you don't need to worry about dependencies, otherwise you need to install:
+
+- [**KiCad**](http://kicad-pcb.org/) 5.1.x
+- [**xsltproc**](http://xmlsoft.org/xslt/) (usually installed as a KiCad dependency). Only needed for BoMs.
+- [**xdotool**](https://github.com/jordansissel/xdotool)
+- [**xclip**](https://github.com/astrand/xclip)
+
+If you want to debug problems you could also need:
+
+- [**recordmydesktop**](http://recordmydesktop.sourceforge.net/about.php), to create a video of the KiCad session.
+- [**x11vnc**](http://www.karlrunge.com/x11vnc/) and a client like [**ssvnc**](http://www.karlrunge.com/x11vnc/ssvnc.html), to see the KiCad live interaction.
+- [**fluxbox**](http://fluxbox.org/) and [**wmctrl**](http://tripie.sweb.cz/utils/wmctrl/) if you want to have a window manager when using **x11vnc**. Othewise windows can't be moved.
+
 ### No installation
 
 You can use the scripts without installing. The scripts are located at the *src/* directory.
@@ -34,6 +49,11 @@ You can also define a bash aliases:
 alias pcbnew_do=PATH_TO_REPO/src/pcbnew_do
 alias eeschema_do=PATH_TO_REPO/src/eeschema_do
 ```
+
+Note that the following Python 3 packages must be installed:
+
+- [**xvfbwrapper**](https://pypi.org/project/xvfbwrapper/)
+- [**psutil**](https://pypi.org/project/psutil/)
 
 ### Python style installation
 
@@ -118,15 +138,13 @@ By default all the scripts run very quiet. If you want to get some information a
 The nature of these scripts make them very fragile. In particular when you run them in your every day desktop. You must avoid having *eeschema* and/or *pcbnew* windows opened while running the scripts. If you need to debug a problem you can:
 1. Use the *-vv* option to get debug information
 2. Use the *-r* option to record a video (OGV format) containing the GUI session. The file will be stored in the output directory and its name will begin with the name of the requested command.
+3. Use the *-s* and *-w* options to start **x11vnc**. The execution will stop asking for a keypress. At this time you can start a VNC client like this: ```ssvncviewer :0```. You'll be able to see KiCad running and also interact with it.
+4. Same as 3 but also using *-m*, in this case you'll get a window manager to move the windows and other stuff.
 
 ## Useful references
-
-KiCad: http://kicad-pcb.org/
-
-xdotool: https://github.com/jordansissel/xdotool
 
 split-flap: https://github.com/scottbez1/splitflap
 
 scot's blog: https://scottbezek.blogspot.be/2016/04/scripting-kicad-pcbnew-exports.html
 
-Dockerhub: https://hub.docker.com/r/productize/kicad-automation-scripts
+Dockerhub: https://hub.docker.com/repository/docker/setsoft/kicad_auto
