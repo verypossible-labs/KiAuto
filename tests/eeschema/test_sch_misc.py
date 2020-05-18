@@ -1,5 +1,5 @@
 """
-Tests for eeschema_do miscellaneous stuff
+Tests for eeschema_do miscellaneous stuff.
 
 For debug information use:
 pytest-3 --log-cli-level debug
