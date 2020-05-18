@@ -233,7 +233,7 @@ class TestContext(object):
         """ Context manager to run a command under a virual X server.
             Use like this: with context.start_kicad('command'): """
         xvfb_kwargs = {'width': 800, 'height': 600, 'colordepth': 24, }
-        with recorded_xvfb(None, None, **xvfb_kwargs):
+        with recorded_xvfb(None, None, False, False, **xvfb_kwargs):
             with PopenContext([cmd], stderr=subprocess.DEVNULL, close_fds=True) as self.proc:
                 logging.debug('Started '+cmd+' with PID: '+str(self.proc.pid))
                 assert pid_exists(self.proc.pid)

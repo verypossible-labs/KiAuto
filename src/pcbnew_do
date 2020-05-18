@@ -40,8 +40,14 @@ from kicad_auto.ui_automation import (
     wait_not_focused,
     wait_for_window,
     recorded_xvfb,
-    clipboard_store
+    clipboard_store,
+    set_wait,
+    wait_point
 )
+
+TITLE_CONFIRMATION = '^Confirmation$'
+TITLE_ERROR = '^Error$'
+TITLE_WARNING = '^Warning$'
 
 
 def parse_drc(drc_file):
@@ -68,7 +74,7 @@ def parse_drc(drc_file):
 
 def dismiss_already_running():
     # The "Confirmation" modal pops up if pcbnew is already running
-    nf_title = 'Confirmation'
+    nf_title = TITLE_CONFIRMATION
     wait_for_window(nf_title, nf_title, 1)
 
     logger.info('Dismiss pcbnew already running')
@@ -77,7 +83,7 @@ def dismiss_already_running():
 
 
 def dismiss_warning():  # pragma: no cover
-    nf_title = 'Warning'
+    nf_title = TITLE_WARNING
     wait_for_window(nf_title, nf_title, 1)
 
     logger.error('Dismiss pcbnew warning, will fail')
@@ -86,7 +92,7 @@ def dismiss_warning():  # pragma: no cover
 
 
 def dismiss_error():
-    nf_title = 'Error'
+    nf_title = TITLE_ERROR
     wait_for_window(nf_title, nf_title, 1)
 
     logger.debug('Dismiss pcbnew error')
@@ -95,12 +101,15 @@ def dismiss_error():
     xdotool(['key', 'Return'])
 
 
-def wait_for_pcbnew():
+def wait_pcbnew(time=10, others=None):
+    return wait_for_window('Main pcbnew window', r'Pcbnew', time, others=others)
+
+
+def wait_pcbew_start():
     failed_focuse = False
     other = None
     try:
-        wait_for_window('Main pcbnew window', 'Pcbnew', args.wait_start,
-                        others=['Confirmation', 'Warning', 'Error'])
+        wait_pcbnew(args.wait_start, [TITLE_CONFIRMATION, TITLE_WARNING, TITLE_ERROR])
     except RuntimeError:  # pragma: no cover
         logger.debug('Time-out waiting for pcbnew, will retry')
         failed_focuse = True
@@ -111,19 +120,42 @@ def wait_for_pcbnew():
         failed_focuse = True
         pass
     if failed_focuse:
-        if other == 'Error':
+        if other == TITLE_ERROR:
             dismiss_error()
             logger.error('pcbnew reported an error')
             exit(PCBNEW_ERROR)
-        if other == 'Confirmation':
+        if other == TITLE_CONFIRMATION:
             dismiss_already_running()
-        if other == 'Warning':  # pragma: no cover
+        if other == TITLE_WARNING:  # pragma: no cover
             dismiss_warning()
         try:
-            wait_for_window('Main pcbnew window', 'Pcbnew', 5)
+            wait_pcbnew(5)
         except RuntimeError:  # pragma: no cover
             logger.error('Time-out waiting for pcbnew, giving up')
             raise
+
+
+def exit_pcbnew():
+    # Wait until the dialog is closed, useful when more than one file are created
+    id = wait_pcbnew(10)
+
+    logger.info('Exiting pcbnew')
+    wait_point()
+    xdotool(['key', 'ctrl+q'])
+    try:
+        wait_not_focused(id[0], 5)
+    except RuntimeError:  # pragma: no cover
+        logger.debug('PCBnew not exiting, will retry')
+        pass
+    # Dismiss any dialog. I.e. failed to write the project
+    xdotool(['key', 'Return', 'ctrl+q'])
+    try:
+        wait_not_focused(id[0], 5)
+    except RuntimeError:  # pragma: no cover
+        logger.debug('PCBnew not exiting, will kill')
+        pass
+    # If we failed to exit we will kill it anyways
+    wait_point()
 
 
 def print_layers(pcb_file, output_dir, output_filename, record=True):
@@ -136,21 +168,28 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
 
     xvfb_kwargs = {'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
-    with recorded_xvfb(output_dir if record else None, 'pcbnew_print_layers_screencast.ogv', **xvfb_kwargs):
+    with recorded_xvfb(output_dir if record else None, 'pcbnew_print_layers_screencast.ogv',
+                       args.start_x11vnc, use_wm, **xvfb_kwargs):
         with PopenContext(['pcbnew', pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
 
             clipboard_store(print_output_file)
 
-            wait_for_pcbnew()
+            wait_pcbew_start()
 
             logger.info('Open File->Print')
+            wait_point()
             xdotool(['key', 'alt+f', 'p'])
 
             id = wait_for_window('Print dialog', 'Print')
+            wait_point()
             # The color option is selected (not with a WM)
-            xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
+            keys = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return']
+            if use_wm:
+                keys.insert(1, 'Tab')
+            xdotool(keys)
 
             id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
+            wait_point()
             # List of printers
             xdotool(['key', 'Tab',
                      # Go up to the top
@@ -161,6 +200,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
                      'Return'])
             id_sel_f = wait_for_window('Select a filename', '(Select a filename|%s)' % select_a_filename, 2)
             logger.info('Pasting output dir')
+            wait_point()
             xdotool(['key',
                      # Select all
                      'ctrl+a',
@@ -171,6 +211,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
             # Back to print
             wait_not_focused(id_sel_f[0])
             wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
+            wait_point()
             xdotool(['key',
                      # Format options
                      'Tab',
@@ -183,11 +224,12 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
 
             wait_not_focused(id2[1])
             id = wait_for_window('Print dialog', 'Print')
+            wait_point()
             # Close button
             xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
 
             wait_not_focused(id2[0])
-            wait_for_window('Main pcbnew window', 'Pcbnew')
+            exit_pcbnew()
             pcbnew_proc.terminate()
 
     return print_output_file
@@ -203,35 +245,44 @@ def run_drc(pcb_file, output_dir, record=True, save=False):
 
     xvfb_kwargs = {'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
 
-    with recorded_xvfb(output_dir if record else None, 'pcbnew_run_drc_screencast.ogv', **xvfb_kwargs):
+    with recorded_xvfb(output_dir if record else None, 'pcbnew_run_drc_screencast.ogv',
+                       args.start_x11vnc, use_wm, **xvfb_kwargs):
         with PopenContext(['pcbnew', pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
 
             clipboard_store(drc_output_file)
 
-            wait_for_pcbnew()
+            wait_pcbew_start()
 
             logger.info('Open Inspect->DRC')
+            wait_point()
             xdotool(['key', 'alt+i', 'd'])
 
             wait_for_window('DRC modal window', 'DRC Control')
             # Note: Refill zones on DRC gets saved in ~/.config/kicad/pcbnew as RefillZonesBeforeDrc
             # The space here is to enable the report of all errors for tracks
             logger.info('Enable reporting all errors for tracks')
+            wait_point()
             xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'space', 'Tab', 'Tab', 'Tab', 'Tab'])
             logger.info('Pasting output dir')
+            wait_point()
             xdotool(['key', 'ctrl+v', 'Return'])
 
             wait_for_window('Report completed dialog', 'Disk File Report Completed')
+            wait_point()
             xdotool(['key', 'Return'])
 
             if save:
                 xdotool(['key', 'Escape'])
-                wait_for_window('Main pcbnew window', 'Pcbnew')
+                wait_pcbnew()
                 logger.info('Saving PCB')
+                wait_point()
                 os.rename(pcb_file, pcb_file + '-bak')
                 xdotool(['key', 'ctrl+s'])
+                logger.info('Wait for PCB file creation')
+                wait_point()
                 file_util.wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
 
+            exit_pcbnew()
             pcbnew_proc.terminate()
 
     return drc_output_file
@@ -283,9 +334,12 @@ if __name__ == '__main__':
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
     parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)
+    parser.add_argument('--start_x11vnc', '-s', help='Start x11vnc (debug)', action='store_true')
+    parser.add_argument('--use_wm', '-m', help='Use a window manager (fluxbox)', action='store_true')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('--version', '-V', action='version', version='%(prog)s '+__version__+' - ' +
                         __copyright__+' - License: '+__license__)
+    parser.add_argument('--wait_key', '-w', help='Wait for key to advance (debug)', action='store_true')
     parser.add_argument('--wait_start', help='Timeout to pcbnew start ['+str(WAIT_START)+']', type=int, default=WAIT_START)
 
     export_parser = subparsers.add_parser('export', help='Export PCB layers')
@@ -306,6 +360,11 @@ if __name__ == '__main__':
 
     # Create a logger with the specified verbosity
     logger = log.init(args.verbose)
+
+    # Used to debug the GUI steps
+    set_wait(args.wait_key)
+    # Use a Window Manager, dialogs behaves in a different way
+    use_wm = args.use_wm
 
     # Get local versions for the GTK window names
     gettext.textdomain('gtk30')

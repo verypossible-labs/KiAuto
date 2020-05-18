@@ -40,8 +40,15 @@ from kicad_auto.ui_automation import (
     wait_for_window,
     wait_not_focused,
     recorded_xvfb,
-    clipboard_store
+    clipboard_store,
+    set_wait,
+    wait_point
 )
+
+TITLE_CONFIRMATION = '^Confirmation$'
+TITLE_REMAP_SYMBOLS = '^Remap Symbols$'
+TITLE_ERROR = '^Error$'
+TITLE_WARNING = '^Warning$'
 
 
 def dismiss_library_error():
@@ -49,7 +56,7 @@ def dismiss_library_error():
     # not been found. This can be ignored as all symbols are placed inside the
     # *-cache.lib file:
     # There -should- be a way to disable it, but I haven't the magic to drop in the config file yet
-    nf_title = 'Error'
+    nf_title = TITLE_ERROR
     wait_for_window(nf_title, nf_title, 3)
     logger.warning('Missing library, please fix it')
     xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
@@ -64,13 +71,13 @@ def dismiss_remap_helper():
     # This can be ignored as we're just trying to output data and don't
     # want to mess with the actual project.
     logger.debug('Check for symbol remapping')
-    wait_for_window('Remap Symbols', 'Remap', 3)
+    wait_for_window('Remap Symbols', TITLE_REMAP_SYMBOLS, 3)
     xdotool(['key', 'Escape'])
     logger.warning('Schematic needs update')
 
 
 def dismiss_warning():
-    nf_title = 'Warning'
+    nf_title = TITLE_WARNING
     wait_for_window(nf_title, nf_title, 1)
 
     logger.debug('Dismiss eeschema warning')
@@ -81,7 +88,7 @@ def dismiss_warning():
 
 def dismiss_already_running():
     # The "Confirmation" modal pops up if eeschema is already running
-    nf_title = 'Confirmation'
+    nf_title = TITLE_CONFIRMATION
     wait_for_window(nf_title, nf_title, 1)
     logger.info('Dismiss eeschema already running')
     xdotool(['search', '--onlyvisible', '--name', nf_title, 'windowfocus'])
@@ -96,7 +103,7 @@ def wait_eeschema_start():
     failed_focuse = False
     other = None
     try:
-        wait_eeschema(args.wait_start, others=['Confirmation', 'Remap Symbols', 'Error', 'Warning'])
+        wait_eeschema(args.wait_start, others=[TITLE_CONFIRMATION, TITLE_REMAP_SYMBOLS, TITLE_ERROR, TITLE_WARNING])
     except RuntimeError:  # pragma: no cover
         logger.debug('Time-out waiting for eeschema, will retry')
         failed_focuse = True
@@ -107,13 +114,13 @@ def wait_eeschema_start():
         failed_focuse = True
         pass
     if failed_focuse:
-        if other == 'Remap Symbols':
+        if other == TITLE_REMAP_SYMBOLS:
             dismiss_remap_helper()
-        if other == 'Error':
+        if other == TITLE_ERROR:
             dismiss_library_error()
-        if other == 'Confirmation':
+        if other == TITLE_CONFIRMATION:
             dismiss_already_running()
-        if other == 'Warning':
+        if other == TITLE_WARNING:
             dismiss_warning()
             # This is crazy, if we miss a lib we get an "Error", pressing ESC solves it
             # If we have a damaged file we get a "Warning", pressing ESC fails ...
@@ -126,20 +133,43 @@ def wait_eeschema_start():
             raise
 
 
+def exit_eeschema():
+    # Wait until the dialog is closed, useful when more than one file are created
+    id = wait_eeschema(10)
+
+    logger.info('Exiting eeschema')
+    wait_point()
+    xdotool(['key', 'ctrl+q'])
+    try:
+        wait_not_focused(id[0], 5)
+    except RuntimeError:  # pragma: no cover
+        logger.debug('EEschema not exiting, will retry')
+        pass
+    # Dismiss any dialog. I.e. failed to write the project
+    xdotool(['key', 'Return', 'ctrl+q'])
+    try:
+        wait_not_focused(id[0], 5)
+    except RuntimeError:  # pragma: no cover
+        logger.debug('EEschema not exiting, will kill')
+        pass
+    # If we failed to exit we will kill it anyways
+
+
 def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
+    wait_eeschema_start()
     clipboard_store(output_dir)
 
-    wait_eeschema_start()
-
     logger.info('Open File->pLot')
+    wait_point()
     xdotool(['key', 'alt+f', 'l'])
-
-    wait_for_window('plot', 'Plot')
+    wait_for_window('plot', 'Plot Schematic Options')
 
     logger.info('Paste output directory')
-    xdotool(['key', 'ctrl+v'])
+    wait_point()
+    xdotool(['key', 'Left', 'ctrl+v'])
 
     logger.info('Move to the "plot" button')
+    wait_point()
     # We try to select the "print all" button.
     # Lamentably this is the default, so we can be confused because "Return" will press it anyways.
     command_list = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
@@ -157,32 +187,18 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
     xdotool(command_list)
 
     logger.info('Plot')
+    wait_point()
     xdotool(['key', 'Return'])
 
     logger.info('Wait for plot file creation')
+    wait_point()
     file_util.wait_for_file_created_by_process(pid, output_file)
 
     logger.info('Closing window')
+    wait_point()
     xdotool(['key', 'Escape'])
 
-    # Wait until the dialog is closed, useful when more than one file are created
-    id = wait_eeschema(10)
-
-    logger.info('Exiting eeschema')
-    xdotool(['key', 'ctrl+q'])
-    try:
-        wait_not_focused(id[0], 5)
-    except RuntimeError:  # pragma: no cover
-        logger.debug('EEschema not exiting, will retry')
-        pass
-    # Dismiss any dialog. I.e. failed to write the project
-    xdotool(['key', 'Return', 'ctrl+q'])
-    try:
-        wait_not_focused(id[0], 5)
-    except RuntimeError:  # pragma: no cover
-        logger.debug('EEschema not exiting, will kill')
-        pass
-    # If we failed to exit we will kill it anyways
+    exit_eeschema()
 
 
 def eeschema_parse_erc(erc_file, warning_as_error=False):
@@ -202,19 +218,20 @@ def eeschema_parse_erc(erc_file, warning_as_error=False):
 
 
 def eeschema_run_erc_schematic(erc_file, pid):
-    # Do this now since we have to wait for KiCad anyway
+    wait_eeschema_start()
     clipboard_store(erc_file)
 
-    wait_eeschema_start()
-
     logger.info('Open Tools->Electrical Rules Checker')
+    wait_point()
     xdotool(['key', 'alt+i', 'c'])
 
     wait_for_window('Electrical Rules Checker dialog', 'Electrical Rules Checker')
+    wait_point()
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'space', 'Return'])
 
     wait_for_window('ERC File save dialog', 'ERC File')
     logger.info('Pasting output file')
+    wait_point()
     xdotool(['key', 'ctrl+v'])
     # KiCad adds .erc
     erc_file = erc_file + '.erc'
@@ -222,31 +239,54 @@ def eeschema_run_erc_schematic(erc_file, pid):
         os.remove(erc_file)
 
     logger.info('Run ERC')
+    wait_point()
     xdotool(['key', 'Return'])
 
     logger.info('Wait for ERC file creation')
+    wait_point()
     file_util.wait_for_file_created_by_process(pid, erc_file)
 
     logger.info('Exit ERC')
+    wait_point()
     xdotool(['key', 'shift+Tab', 'Return'])
+
+    exit_eeschema()
 
     return erc_file
 
 
 def eeschema_netlist_commands(net_file, pid):
-    # Do this now since we have to wait for KiCad anyway
+    wait_eeschema_start()
     clipboard_store(net_file)
 
-    wait_eeschema_start()
-
     logger.info('Open Tools->Generate Netlist File')
+    wait_point()
     xdotool(['key', 'alt+t', 'n'])
 
     wait_for_window('Netlist dialog', 'Netlist')
+    wait_point()
     xdotool(['key', 'Tab', 'Tab', 'Return'])
 
-    wait_for_window('Netlist File save dialog', 'Save Netlist File')
+    try:
+        wait_for_window('Netlist File save dialog', 'Save Netlist File', others=['Plugin Properties'])
+        failed_focuse = False
+    except ValueError as err:  # pragma: no cover
+        # Sometimes the dialog starts with the "Generate" button selected and we move to the
+        # 'Plugin Properties'. In this case we go back to the generate button.
+        # I exclude it from coverage because I can't reproduce it in the tests.
+        other = str(err)
+        logger.debug('Found "'+other+'" window instead of Netlist')
+        failed_focuse = True
+        pass
+    if failed_focuse:  # pragma: no cover
+        logger.debug('Closing the plugin properties window')
+        xdotool(['key', 'Escape'])
+        wait_for_window('Netlist dialog', 'Netlist')
+        logger.debug('Trying again')
+        xdotool(['key', 'shift+Tab', 'shift+Tab', 'Return'])
+        wait_for_window('Netlist File save dialog', 'Save Netlist File')
     logger.info('Pasting output file')
+    wait_point()
     xdotool(['key', 'ctrl+v'])
     # KiCad adds .net
     net_file = net_file + '.net'
@@ -254,28 +294,44 @@ def eeschema_netlist_commands(net_file, pid):
         os.remove(net_file)
 
     logger.info('Generate Netlist')
+    wait_point()
     xdotool(['key', 'Return'])
 
     logger.info('Wait for Netlist file creation')
+    wait_point()
     file_util.wait_for_file_created_by_process(pid, net_file)
+
+    exit_eeschema()
 
     return net_file
 
 
 def eeschema_bom_xml_commands(output_file, pid):
+    wait_eeschema_start()
     clipboard_store('xsltproc -o "'+output_file + '" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
 
-    wait_eeschema_start()
-
     logger.info('Open Tools->Generate Bill of Materials')
+    wait_point()
     xdotool(['key', 'alt+t', 'm'])
 
     wait_for_window('Bill of Material dialog', 'Bill of Material')
     logger.info('Paste xslt command')
-    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'ctrl+v', 'Return'])
+    wait_point()
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'ctrl+v'])
+
+    logger.info('Generating netlist')
+    wait_point()
+    xdotool(['key', 'Return'])
 
     logger.info('Wait for BoM file creation')
+    wait_point()
     file_util.wait_for_file_created_by_process(pid, output_file)
+
+    logger.info('Closing dialog')
+    wait_point()
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
+
+    exit_eeschema()
 
 
 # Restore the eeschema configuration
@@ -341,12 +397,16 @@ if __name__ == '__main__':
     parser.add_argument('schematic', help='KiCad schematic file')
     parser.add_argument('output_dir', help='Output directory')
 
+    # mrsvVw
     parser.add_argument('--record', '-r', help='Record the UI automation', action='store_true')
     parser.add_argument('--rec_width', help='Record width ['+str(REC_W)+']', type=int, default=REC_W)
     parser.add_argument('--rec_height', help='Record height ['+str(REC_H)+']', type=int, default=REC_H)
+    parser.add_argument('--start_x11vnc', '-s', help='Start x11vnc (debug)', action='store_true')
+    parser.add_argument('--use_wm', '-m', help='Use a window manager (fluxbox)', action='store_true')
     parser.add_argument('--verbose', '-v', action='count', default=0)
     parser.add_argument('--version', '-V', action='version', version='%(prog)s '+__version__+' - ' +
                         __copyright__+' - License: '+__license__)
+    parser.add_argument('--wait_key', '-w', help='Wait for key to advance (debug)', action='store_true')
     parser.add_argument('--wait_start', help='Timeout to pcbnew start ['+str(WAIT_START)+']', type=int, default=WAIT_START)
 
     export_parser = subparsers.add_parser('export', help='Export a schematic')
@@ -364,6 +424,11 @@ if __name__ == '__main__':
 
     # Create a logger with the specified verbosity
     logger = log.init(args.verbose)
+
+    # Used to debug the GUI steps
+    set_wait(args.wait_key)
+    # Use a Window Manager, dialogs behaves in a different way
+    use_wm = args.use_wm
 
     if not os.path.isfile(args.schematic):
         logger.error(args.schematic+' does not exist')
@@ -445,7 +510,7 @@ if __name__ == '__main__':
 
     output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(args.schematic))[0])
     with recorded_xvfb(output_dir if args.record else None, args.command+'_eeschema_screencast.ogv',
-                       width=args.rec_width, height=args.rec_height, colordepth=24):
+                       args.start_x11vnc, use_wm, width=args.rec_width, height=args.rec_height, colordepth=24):
         with PopenContext(['eeschema', args.schematic], close_fds=True,
                           stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL) as eeschema_proc:
             if args.command == 'export':
