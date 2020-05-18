@@ -1,6 +1,6 @@
 # Default W,H for recording
 REC_W = 1366
-REC_H = 768
+REC_H = 960
 
 # Return error codes
 # Positive values are ERC/DRC errors
