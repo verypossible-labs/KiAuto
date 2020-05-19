@@ -164,9 +164,13 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
     xdotool(['key', 'alt+f', 'l'])
     wait_for_window('plot', 'Plot Schematic Options')
 
+    logger.info('Clear input text')
+    wait_point()
+    xdotool(['key', 'Left', 'ctrl+a', 'Delete'])
+
     logger.info('Paste output directory')
     wait_point()
-    xdotool(['key', 'Left', 'ctrl+v'])
+    xdotool(['key', 'ctrl+v'])
 
     logger.info('Move to the "plot" button')
     wait_point()
