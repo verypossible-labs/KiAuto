@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 
+## [1.3.1] - 2020-05-19
+### Fixed
+- Under some situations the EEschema plot dialog failed to clear the old file path
+  and we pasted concatenated. Was introduced when fixing the browse button selected.
+
 ## [1.3.0] - 2020-05-18
 ### Added
 - --wait_key/-w option to send the commands step by step (debug)
