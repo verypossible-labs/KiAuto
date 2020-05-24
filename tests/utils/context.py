@@ -166,16 +166,56 @@ class TestContext(object):
         """ For images and single page PDFs """
         if reference is None:
             reference = image
-        cmd = ['compare', '-metric', 'MSE',
+        cmd = ['compare',
+               # Tolerate 5 % error in color
+               '-fuzz', '5%',
+               # Count how many pixels differ
+               '-metric', 'AE',
                self.get_out_path(image),
                os.path.join(REF_DIR, reference),
+               # Avoid the part where KiCad version is printed
+               '-crop', '100%x92%+0+0', '+repage',
                self.get_out_path(diff)]
         logging.debug('Comparing images with: '+str(cmd))
         res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-        m = re.match(r'([\d\.]+) \(([\d\.]+)\)', res.decode())
-        assert m
-        logging.debug('MSE={} ({})'.format(m.group(1), m.group(2)))
-        assert float(m.group(2)) == 0.0
+        # m = re.match(r'([\d\.e-]+) \(([\d\.e-]+)\)', res.decode())
+        # assert m
+        # logging.debug('MSE={} ({})'.format(m.group(1), m.group(2)))
+        ae = int(res.decode())
+        logging.debug('AE=%d' % ae)
+        assert ae == 0
+
+    def svg_to_png(self, svg):
+        png = os.path.splitext(svg)[0]+'.png'
+        logging.debug('Converting '+svg+' to '+png)
+        cmd = ['convert', '-density', '150', svg, png]
+        subprocess.check_call(cmd)
+        return os.path.basename(png)
+
+    def compare_svg(self, image, reference=None, diff='diff.png'):
+        """ For SVGs, rendering to PNG """
+        if reference is None:
+            reference = image
+        image_png = self.svg_to_png(self.get_out_path(image))
+        reference_png = self.svg_to_png(os.path.join(REF_DIR, reference))
+        self.compare_image(image_png, reference_png, diff)
+        os.remove(os.path.join(REF_DIR, reference_png))
+
+    def ps_to_png(self, ps):
+        png = os.path.splitext(ps)[0]+'.png'
+        logging.debug('Converting '+ps+' to '+png)
+        cmd = ['convert', '-density', '150', ps, '-rotate', '90', png]
+        subprocess.check_call(cmd)
+        return os.path.basename(png)
+
+    def compare_ps(self, image, reference=None, diff='diff.png'):
+        """ For PSs, rendering to PNG """
+        if reference is None:
+            reference = image
+        image_png = self.ps_to_png(self.get_out_path(image))
+        reference_png = self.ps_to_png(os.path.join(REF_DIR, reference))
+        self.compare_image(image_png, reference_png, diff)
+        os.remove(os.path.join(REF_DIR, reference_png))
 
     def compare_pdf(self, gen, reference=None, diff='diff-{}.png'):
         """ For multi-page PDFs """
@@ -204,6 +244,8 @@ class TestContext(object):
             cmd = ['compare', '-metric', 'MSE',
                    self.get_out_path('ref-'+str(page)+'.png'),
                    self.get_out_path('gen-'+str(page)+'.png'),
+                   # Avoid the part where KiCad version is printed
+                   '-crop', '100%x92%+0+0', '+repage',
                    self.get_out_path(diff.format(page))]
             logging.debug('Comparing images with: '+str(cmd))
             res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)

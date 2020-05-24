@@ -44,20 +44,14 @@ def test_export_pdf():
     ctx.clean_up()
 
 
-def do_test_svg(ctx, svg):
-    ctx.expect_out_file(svg)
-    ctx.filter_txt(svg, r"date \d+/\d+/\d+ \d+:\d+:\d+", 'DATE')
-    ctx.compare_txt(svg, diff=svg+'.diff')
-
-
 def test_export_all_svg():
     prj = 'good-project'
     ctx = context.TestContextSCH('Export_All_SVG', prj)
     cmd = [PROG, 'export', '--file_format', 'svg', '--all_pages']
     ctx.run(cmd)
-    do_test_svg(ctx, 'good-project.svg')
-    do_test_svg(ctx, 'logic-logic.svg')
-    do_test_svg(ctx, 'power-Power.svg')
+    ctx.compare_svg('good-project.svg')
+    ctx.compare_svg('logic-logic.svg')
+    ctx.compare_svg('power-Power.svg')
     ctx.clean_up()
 
 
@@ -70,17 +64,10 @@ def test_export_svg():
     ctx.create_dummy_out_file(svg)
     cmd = [PROG, 'export', '--file_format', 'svg']
     ctx.run(cmd)
-    do_test_svg(ctx, svg)
+    ctx.compare_svg(svg)
     ctx.dont_expect_out_file('logic-logic.svg')
     ctx.dont_expect_out_file('power-Power.svg')
     ctx.clean_up()
-
-
-def do_test_ps(ctx, ps):
-    ctx.expect_out_file(ps)
-    ctx.filter_txt(ps, r"%%CreationDate: .*", '%%CreationDate: DATE')
-    ctx.filter_txt(ps, r"%%Title: .*", '%%Title: TITLE')
-    ctx.compare_txt(ps, diff=ps+'.diff')
 
 
 def test_export_ps():
@@ -89,7 +76,7 @@ def test_export_ps():
     ctx = context.TestContextSCH('Export_PS', prj)
     cmd = [PROG, 'export', '--file_format', 'ps']
     ctx.run(cmd)
-    do_test_ps(ctx, ps)
+    ctx.compare_ps(ps)
     ctx.dont_expect_out_file('logic-logic.ps')
     ctx.dont_expect_out_file('power-Power.ps')
     ctx.clean_up()
@@ -101,9 +88,9 @@ def test_export_all_ps():
     ctx = context.TestContextSCH('Export_All_PS', prj)
     cmd = [PROG, 'export', '--file_format', 'ps', '--all_pages']
     ctx.run(cmd)
-    do_test_ps(ctx, ps)
-    do_test_ps(ctx, 'logic-logic.ps')
-    do_test_ps(ctx, 'power-Power.ps')
+    ctx.compare_ps(ps)
+    ctx.compare_ps('logic-logic.ps')
+    ctx.compare_ps('power-Power.ps')
     ctx.clean_up()
 
 
