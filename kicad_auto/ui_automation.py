@@ -250,7 +250,11 @@ def wait_not_focused(id, timeout=10):
     DELAY = 0.5
     logger.debug('Waiting for %s window to lose focus...', id)
     for i in range(int(timeout/DELAY)):
-        cur_id = xdotool(['getwindowfocus']).rstrip()
+        try:
+            cur_id = xdotool(['getwindowfocus']).rstrip()
+        except CalledProcessError:
+            # When no window is available xdotool receives ID=1 and exits with error
+            return
         logger.debug('Currently focused id: %s', cur_id)
         if cur_id != id:
             return
