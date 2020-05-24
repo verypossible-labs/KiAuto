@@ -182,10 +182,12 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
 
             id = wait_for_window('Print dialog', 'Print')
             wait_point()
-            # The color option is selected (not with a WM)
-            keys = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return']
-            if use_wm:
-                keys.insert(1, 'Tab')
+            # The "color" option is selected, send enough Tabs to go to the Print button
+            keys = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
+                    # When using a WM we have chances to be 1 tab before "color" (don't know why)
+                    # Here we add this Tab, but then we move to the right in case it wasn't necessary
+                    'Tab', 'Right',
+                    'Return']
             xdotool(keys)
 
             id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
