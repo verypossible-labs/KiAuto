@@ -49,6 +49,10 @@ TITLE_CONFIRMATION = '^Confirmation$'
 TITLE_ERROR = '^Error$'
 TITLE_WARNING = '^Warning$'
 
+# Collected errors and unconnecteds
+errs = []
+unco = []
+
 
 def parse_drc(drc_file):
     with open(drc_file, 'r') as f:
@@ -56,18 +60,40 @@ def parse_drc(drc_file):
 
     drc_errors = None
     unconnected_pads = None
+    in_errs = False
+    in_unco = False
 
     for line in lines:
-        if drc_errors is not None and unconnected_pads is not None:
-            break
         m = re.search(r'^\*\* Found ([0-9]+) DRC errors \*\*$', line)
         if m:
             drc_errors = m.group(1)
+            in_errs = True
             continue
         m = re.search(r'^\*\* Found ([0-9]+) unconnected pads \*\*$', line)
         if m:
             unconnected_pads = m.group(1)
+            in_errs = False
+            in_unco = True
             continue
+        m = re.search(r'^\*\* End of Report \*\*$', line)
+        if m:
+            break
+        if in_errs:
+            m = re.search(r'^ErrType\((\d+)\): (.*)', line)
+            if m:
+                errs.append('({}) {}'.format(m.group(1), m.group(2)))
+                continue
+            if len(line) > 4 and len(errs) > 0:
+                errs.append(errs.pop()+'\n'+line)
+                continue
+        if in_unco:
+            m = re.search(r'^ErrType\((\d+)\): (.*)', line)
+            if m:
+                unco.append('({}) {}'.format(m.group(1), m.group(2)))
+                continue
+            if len(line) > 4 and len(unco) > 0:
+                unco.append(unco.pop()+'\n'+line)
+                continue
 
     return int(drc_errors), int(unconnected_pads)
 
@@ -471,8 +497,15 @@ if __name__ == '__main__':
             logger.info('No errors')
         else:
             logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+            # List the errors
+            for err in errs:
+                logger.error(err)
             if args.ignore_unconnected:
                 unconnected_pads = 0
+            else:
+                # List the unconnected
+                for unc in unco:
+                    logger.warning(unc)
             error_level = -(drc_errors+unconnected_pads)
 
     # The following code is here only to make coverage tool properly meassure atexit code.
