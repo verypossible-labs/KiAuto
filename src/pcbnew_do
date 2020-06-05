@@ -479,7 +479,7 @@ if __name__ == '__main__':
         # Read the layer names from the PCB
         layer_names = load_layers(args.kicad_pcb_file)
 
-    if args.errors_filter:
+    if args.command == 'run_drc' and args.errors_filter:
         load_filters(args.errors_filter[0])
 
     # Back-up the current pcbnew configuration
