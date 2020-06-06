@@ -31,7 +31,12 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Log functionality first
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
-from kicad_auto import file_util
+from kicad_auto.file_util import (
+    load_filters,
+    wait_for_file_created_by_process,
+    apply_filters,
+    errs, wrns,
+)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                              WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR)
 from kicad_auto.ui_automation import (
@@ -196,7 +201,7 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
 
     logger.info('Wait for plot file creation')
     wait_point()
-    file_util.wait_for_file_created_by_process(pid, output_file)
+    wait_for_file_created_by_process(pid, output_file)
 
     logger.info('Closing window')
     wait_point()
@@ -209,6 +214,30 @@ def eeschema_parse_erc(erc_file, warning_as_error=False):
     with open(erc_file, 'r') as f:
         lines = f.read().splitlines()
         last_line = lines[-1]
+
+    cont = False
+    is_err = False
+    for line in lines:
+        m = re.search(r'^ErrType\((\d+)\): (.*)', line)
+        if m:
+            msg = '({}) {}'.format(m.group(1), m.group(2))
+            if r'Severity: error' in line:
+                is_err = True
+                errs.append(msg)
+            else:
+                is_err = False
+                wrns.append(msg)
+            cont = True
+            continue
+        if cont and line.startswith('    '):
+            if is_err:
+                if len(errs):
+                    errs.append(errs.pop()+'\n'+line)
+            else:
+                if len(wrns):
+                    wrns.append(wrns.pop()+'\n'+line)
+            continue
+        cont = False
 
     logger.debug('Last line: '+last_line)
     m = re.search(r'^ \*\* ERC messages: ([0-9]+) +Errors ([0-9]+) +Warnings ([0-9]+)+$', last_line)
@@ -248,7 +277,7 @@ def eeschema_run_erc_schematic(erc_file, pid):
 
     logger.info('Wait for ERC file creation')
     wait_point()
-    file_util.wait_for_file_created_by_process(pid, erc_file)
+    wait_for_file_created_by_process(pid, erc_file)
 
     logger.info('Exit ERC')
     wait_point()
@@ -303,7 +332,7 @@ def eeschema_netlist_commands(net_file, pid):
 
     logger.info('Wait for Netlist file creation')
     wait_point()
-    file_util.wait_for_file_created_by_process(pid, net_file)
+    wait_for_file_created_by_process(pid, net_file)
 
     exit_eeschema()
 
@@ -329,7 +358,7 @@ def eeschema_bom_xml_commands(output_file, pid):
 
     logger.info('Wait for BoM file creation')
     wait_point()
-    file_util.wait_for_file_created_by_process(pid, output_file)
+    wait_for_file_created_by_process(pid, output_file)
 
     logger.info('Closing dialog')
     wait_point()
@@ -419,6 +448,7 @@ if __name__ == '__main__':
     export_parser.add_argument('--all_pages', '-a', help='Plot all schematic pages in one file', action='store_true')
 
     erc_parser = subparsers.add_parser('run_erc', help='Run Electrical Rules Checker on a schematic')
+    erc_parser.add_argument('--errors_filter', '-f', nargs=1, help='File with filters to exclude errors')
     erc_parser.add_argument('--warnings_as_errors', '-w', help='Treat warnings as errors', action='store_true')
 
     netlist_parser = subparsers.add_parser('netlist', help='Create the netlist')
@@ -442,6 +472,9 @@ if __name__ == '__main__':
     if os.path.splitext(args.schematic)[1] == '':
         logger.error('Schematic files must use sch extension')
         exit(WRONG_SCH_NAME)
+
+    if args.command == 'run_erc' and args.errors_filter:
+        load_filters(args.errors_filter[0])
 
     memorize_project(args.schematic)
 
@@ -538,10 +571,19 @@ if __name__ == '__main__':
                 # Run ERC
                 erc_file = eeschema_run_erc_schematic(output_file_no_ext, eeschema_proc.pid)
                 errors, warnings = eeschema_parse_erc(erc_file, args.warnings_as_errors)
+                skip_err, skip_wrn = apply_filters('ERC error/s', 'ERC warning/s')
+                errors = errors-skip_err
+                warnings = warnings-skip_wrn
                 if warnings > 0:
                     logger.warning(str(warnings)+' ERC warnings detected')
+                    for wrn in wrns:
+                        if wrn:
+                            logger.warning(wrn)
                 if errors > 0:
                     logger.error(str(errors)+' ERC errors detected')
+                    for err in errs:
+                        if err:
+                            logger.error(err)
                     exit(-errors)
                 logger.info('No errors')
             eeschema_proc.terminate()
