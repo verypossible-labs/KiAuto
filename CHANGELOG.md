@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- An option to provide a file containing errors to ignore from DRC/ERC.
 ### Fixed
 - Some times when using a WM the "pcbnew_do export" failed to open the Printer dialog.
 - Some times when exiting xdotool didn't find any window and reported error.
