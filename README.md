@@ -141,6 +141,53 @@ The nature of these scripts make them very fragile. In particular when you run t
 3. Use the *-s* and *-w* options to start **x11vnc**. The execution will stop asking for a keypress. At this time you can start a VNC client like this: ```ssvncviewer :0```. You'll be able to see KiCad running and also interact with it.
 4. Same as 3 but also using *-m*, in this case you'll get a window manager to move the windows and other stuff.
 
+### Ignoring warnings and errors from ERC/DRC
+
+Sometimes we need to ignore some warnings and/or errors reported during the ERC and/or DRC test.
+
+To achieve it you need to create a *filters file*. Each line contains a rule to exclude one or more matching errors. The syntax is:
+
+```
+ERROR_NUMBER,REGULAR_EXPRESSION
+```
+
+The regular expression must follow the Python syntax. In the simplest case this can be just the text that the error must contain.
+
+The error number is just the KiCad internal number for the error you want to ignore.
+
+Here is an example, suppose our report says:
+
+```
+** Created on 2020-06-05 11:16:21 **
+
+** Found 2 DRC errors **
+ErrType(45): Courtyards overlap
+    @(144.361 mm, 101.752 mm): Footprint C16 on F.Cu
+    @(144.825 mm, 101.244 mm): Footprint C19 on F.Cu
+ErrType(45): Courtyards overlap
+    @(159.885 mm, 97.663 mm): Footprint R4 on F.Cu
+    @(160.393 mm, 97.191 mm): Footprint C21 on F.Cu
+
+** Found 0 unconnected pads **
+
+** End of Report **
+```
+
+Here we have two errors, both number 45. So lets suppose we want to ignore the first error, we could use the following filter:
+
+```
+45,Footprint C16
+```
+
+This will ignore any error of type 45 (Courtyards overlap) related to *Footprint C16*. To use
+it you just need mto use the *-f* command line option:
+
+
+```
+pcbnew_do run_drc -f FILTER_FILE YOUR_PCB.kicad_pcb DESTINATION/
+```
+
+
 ## Useful references
 
 split-flap: https://github.com/scottbez1/splitflap
