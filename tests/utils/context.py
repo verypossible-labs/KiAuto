@@ -92,6 +92,9 @@ class TestContext(object):
     def get_pro_filename(self):
         return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+'.pro')
 
+    def get_prodir_filename(self, file):
+        return os.path.join(self._get_board_cfg_dir(), self.prj_name, file)
+
     def get_pro_mtime(self):
         return os.path.getmtime(self.get_pro_filename())
 

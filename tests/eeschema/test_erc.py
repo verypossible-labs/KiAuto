@@ -18,6 +18,8 @@ from utils import context
 PROG = 'eeschema_do'
 OUT_ERR_REX = r'(\d+) ERC errors'
 OUT_WAR_REX = r'(\d+) ERC warnings'
+OUT_IG_ERR_REX = r'Ignoring (\d+) ERC error/s'
+OUT_IG_WAR_REX = r'Ignoring (\d+) ERC warning/s'
 
 
 def test_erc_ok():
@@ -117,4 +119,21 @@ def test_erc_error():
     ctx.run(cmd)
     ctx.expect_out_file(rep)
     assert ctx.search_err(r"Missing library") is not None
+    ctx.clean_up()
+
+
+def test_erc_filter():
+    """ Test a project with 1 ERC error and 2 ERC warnings.
+        But we are filtering all of them. """
+    prj = 'fail-project'
+    ctx = context.TestContextSCH('ERC_Filter', prj)
+    cmd = [PROG, '-v', 'run_erc', '-f', ctx.get_prodir_filename('fail.filter')]
+    ctx.run(cmd)
+    ctx.expect_out_file(prj+'.erc')
+    m = ctx.search_err(OUT_IG_ERR_REX)
+    assert m is not None
+    assert m.group(1) == '1'
+    m = ctx.search_err(OUT_IG_WAR_REX)
+    assert m is not None
+    assert m.group(1) == '2'
     ctx.clean_up()
