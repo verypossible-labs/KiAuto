@@ -11,9 +11,12 @@ import sys
 import logging
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(script_dir))
+prev_dir = os.path.dirname(script_dir)
+sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
+sys.path.insert(0, os.path.dirname(prev_dir))
+from kicad_auto.misc import (WRONG_ARGUMENTS)
 
 PROG = 'eeschema_do'
 OUT_ERR_REX = r'(\d+) ERC errors'
@@ -136,4 +139,26 @@ def test_erc_filter():
     m = ctx.search_err(OUT_IG_WAR_REX)
     assert m is not None
     assert m.group(1) == '2'
+    ctx.clean_up()
+
+
+def test_erc_filter_bad_name():
+    """ Wrong filter name. """
+    prj = 'fail-project'
+    ctx = context.TestContextSCH('ERC_Filter_Bad_Name', prj)
+    cmd = [PROG, '-v', 'run_erc', '-f', ctx.get_prodir_filename('bogus')]
+    ctx.run(cmd, WRONG_ARGUMENTS)
+    m = ctx.search_err(r"Filter file (.*) doesn't exist")
+    assert m is not None
+    ctx.clean_up()
+
+
+def test_erc_filter_bad_syntax():
+    """ Wrong filter name. """
+    prj = 'fail-project'
+    ctx = context.TestContextSCH('ERC_Filter_Bad_Syntax', prj)
+    cmd = [PROG, '-v', 'run_erc', '-f', ctx.get_prodir_filename('fail-project.sch')]
+    ctx.run(cmd, WRONG_ARGUMENTS)
+    m = ctx.search_err(r"Syntax error at line \d+ in filter file")
+    assert m is not None
     ctx.clean_up()
