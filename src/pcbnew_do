@@ -31,9 +31,14 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Log functionality first
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
-from kicad_auto import file_util
+from kicad_auto.file_util import (
+    load_filters,
+    wait_for_file_created_by_process,
+    apply_filters,
+    errs, wrns,
+)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
-                             WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS)
+                             WRONG_PCB_NAME, PCBNEW_ERROR)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -49,11 +54,6 @@ TITLE_CONFIRMATION = '^Confirmation$'
 TITLE_ERROR = '^Error$'
 TITLE_WARNING = '^Warning$'
 
-# Collected errors and unconnecteds
-errs = []
-unco = []
-err_filters = []
-
 
 def parse_drc(drc_file):
     with open(drc_file, 'r') as f:
@@ -62,7 +62,7 @@ def parse_drc(drc_file):
     drc_errors = None
     unconnected_pads = None
     in_errs = False
-    in_unco = False
+    in_wrns = False
 
     for line in lines:
         m = re.search(r'^\*\* Found ([0-9]+) DRC errors \*\*$', line)
@@ -74,7 +74,7 @@ def parse_drc(drc_file):
         if m:
             unconnected_pads = m.group(1)
             in_errs = False
-            in_unco = True
+            in_wrns = True
             continue
         m = re.search(r'^\*\* End of Report \*\*$', line)
         if m:
@@ -87,13 +87,13 @@ def parse_drc(drc_file):
             if len(line) > 4 and len(errs) > 0:
                 errs.append(errs.pop()+'\n'+line)
                 continue
-        if in_unco:
+        if in_wrns:
             m = re.search(r'^ErrType\((\d+)\): (.*)', line)
             if m:
-                unco.append('({}) {}'.format(m.group(1), m.group(2)))
+                wrns.append('({}) {}'.format(m.group(1), m.group(2)))
                 continue
-            if len(line) > 4 and len(unco) > 0:
-                unco.append(unco.pop()+'\n'+line)
+            if len(line) > 4 and len(wrns) > 0:
+                wrns.append(wrns.pop()+'\n'+line)
                 continue
 
     return int(drc_errors), int(unconnected_pads)
@@ -249,7 +249,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
                      # Print it
                      'Return'])
 
-            file_util.wait_for_file_created_by_process(pcbnew_proc.pid, print_output_file)
+            wait_for_file_created_by_process(pcbnew_proc.pid, print_output_file)
 
             wait_not_focused(id2[1])
             id = wait_for_window('Print dialog', 'Print')
@@ -309,7 +309,7 @@ def run_drc(pcb_file, output_dir, record=True, save=False):
                 xdotool(['key', 'ctrl+s'])
                 logger.info('Wait for PCB file creation')
                 wait_point()
-                file_util.wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
+                wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
 
             exit_pcbnew()
             pcbnew_proc.terminate()
@@ -354,63 +354,6 @@ def restore_config():
     if os.path.exists(old_config_file):
         os.remove(config_file)
         os.rename(old_config_file, config_file)
-
-
-def load_filters(file):
-    """ Load errors filters """
-    if not os.path.isfile(file):
-        logger.error("Filter file `{}` doesn't exist".format(file))
-        exit(WRONG_ARGUMENTS)
-    logger.debug('Loading filter errors')
-    with open(file, 'r') as f:
-        ln = 1
-        fl = 0
-        for line in f:
-            line = line.rstrip()
-            if len(line) > 0 and line[0] != '#':
-                m = re.search(r'^(\d+),(.*)$', line)
-                if m:
-                    err_filters.append([m.group(1), m.group(2)])
-                    fl = fl+1
-                else:
-                    logger.error('Syntax error at line {} in filter file `{}`: `{}`'.format(ln, file, line))
-                    logger.error('Use `ERROR_NUMBER,REGEX` format')
-                    exit(WRONG_ARGUMENTS)
-            ln = ln+1
-        logger.info('Loaded {} error filters from `{}`'.format(fl, file))
-
-
-def apply_filters():
-    """ Apply the error filters to the list of errors and unconnecteds """
-    if len(err_filters) == 0:
-        return (0, 0)
-    c = len(errs)
-    skip_err = 0
-    for i in range(c):
-        err = errs[i]
-        for f in err_filters:
-            if err.startswith('({})'.format(f[0])):
-                m = re.search(f[1], err)
-                if m:
-                    skip_err = skip_err+1
-                    errs[i] = None
-                    break
-    if skip_err:
-        logger.info('Ignoring {} DRC errors'.format(skip_err))
-    c = len(unco)
-    skip_unc = 0
-    for i in range(c):
-        unc = unco[i]
-        for f in err_filters:
-            if unc.startswith('({})'.format(f[0])):
-                m = re.search(f[1], unc)
-                if m:
-                    skip_unc = skip_unc+1
-                    unco[i] = None
-                    break
-    if skip_unc:
-        logger.info('Ignoring {} unconnected pads'.format(skip_unc))
-    return skip_err, skip_unc
 
 
 if __name__ == '__main__':
@@ -557,7 +500,7 @@ if __name__ == '__main__':
         drc_errors, unconnected_pads = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record, args.save))
         logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
 
-        skip_err, skip_unc = apply_filters()
+        skip_err, skip_unc = apply_filters('DRC error/s', 'unconnected pad/s')
         drc_errors = drc_errors-skip_err
         unconnected_pads = unconnected_pads-skip_unc
         if drc_errors == 0 and unconnected_pads == 0:
@@ -572,9 +515,9 @@ if __name__ == '__main__':
                 unconnected_pads = 0
             else:
                 # List the unconnected
-                for unc in unco:
-                    if unc:
-                        logger.warning(unc)
+                for wrn in wrns:
+                    if wrn:
+                        logger.warning(wrn)
             error_level = -(drc_errors+unconnected_pads)
 
     # The following code is here only to make coverage tool properly meassure atexit code.
