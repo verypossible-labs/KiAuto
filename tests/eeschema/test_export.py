@@ -45,9 +45,12 @@ def test_export_pdf():
 
 
 def test_export_all_svg():
+    """ 1) Test multiple SVG export.
+        2) One of the outputs already exists. """
     prj = 'good-project'
     ctx = context.TestContextSCH('Export_All_SVG', prj)
     cmd = [PROG, 'export', '--file_format', 'svg', '--all_pages']
+    ctx.create_dummy_out_file('logic-logic.svg')
     ctx.run(cmd)
     ctx.compare_svg('good-project.svg')
     ctx.compare_svg('logic-logic.svg')

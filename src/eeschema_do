@@ -559,6 +559,8 @@ if __name__ == '__main__':
                 if os.path.exists(output_file):
                     logger.debug('Removing old file')
                     os.remove(output_file)
+                    # Note: what if we are exporting multiple files and *all* of them exists?
+                    # No problem KiCad will overwrite them without even asking ;-)
                 eeschema_plot_schematic(output_dir, output_file, args.all_pages, eeschema_proc.pid, ext)
             elif args.command == 'netlist':
                 # Netlist
