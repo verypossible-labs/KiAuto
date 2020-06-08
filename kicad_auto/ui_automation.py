@@ -25,6 +25,7 @@ from subprocess import (Popen, CalledProcessError, TimeoutExpired, call, check_o
 import tempfile
 import time
 import shutil
+from logging import (DEBUG)
 
 from contextlib import contextmanager
 
@@ -222,6 +223,8 @@ def clipboard_store(string):
 
 
 def debug_window(id=None):  # pragma: no cover
+    if logger.level != DEBUG:
+        return
     if shutil.which('xprop'):
         if id is None:
             try:
