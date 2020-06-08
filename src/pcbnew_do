@@ -175,6 +175,8 @@ def exit_pcbnew():
         logger.debug('PCBnew not exiting, will retry')
         pass
     # Dismiss any dialog. I.e. failed to write the project
+    # Note: if we modified the PCB KiCad will ask for save using a broken dialog.
+    #       It doesn't have a name and only gets focus with a WM.
     xdotool(['key', 'Return', 'ctrl+q'])
     try:
         wait_not_focused(id[0], 5)
@@ -299,10 +301,14 @@ def run_drc(pcb_file, output_dir, record=True, save=False):
             wait_for_window('Report completed dialog', 'Disk File Report Completed')
             wait_point()
             xdotool(['key', 'Return'])
+            wait_for_window('DRC modal window', 'DRC Control')
+
+            logger.info('Closing the DRC dialog')
+            wait_point()
+            xdotool(['key', 'shift+Tab', 'Return'])
+            wait_pcbnew()
 
             if save:
-                xdotool(['key', 'Escape'])
-                wait_pcbnew()
                 logger.info('Saving PCB')
                 wait_point()
                 os.rename(pcb_file, pcb_file + '-bak')
