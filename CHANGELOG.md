@@ -6,11 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+
+## [1.4.0] - 2020-06-08
 ### Added
-- An option to provide a file containing errors to ignore from DRC/ERC.
+- --errors_filter/-f option to provide a file containing errors to ignore from DRC/ERC.
 ### Fixed
-- Some times when using a WM the "pcbnew_do export" failed to open the Printer dialog.
-- Some times when exiting xdotool didn't find any window and reported error.
+- Sometimes when using a WM the "pcbnew_do export" failed to open the Printer dialog.
+- Sometimes when exiting xdotool didn't find any window and reported error.
 - When the filled zones changed during DRC the PCB could be saved even when we didn't
   specify --save
 
