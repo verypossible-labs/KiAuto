@@ -20,7 +20,7 @@ import argparse
 import atexit
 import re
 import shutil
-
+from time import (asctime, localtime)
 import subprocess
 import gettext
 
@@ -177,6 +177,8 @@ def exit_pcbnew():
     # Dismiss any dialog. I.e. failed to write the project
     # Note: if we modified the PCB KiCad will ask for save using a broken dialog.
     #       It doesn't have a name and only gets focus with a WM.
+    logger.info('Retry pcbnew exit')
+    wait_point()
     xdotool(['key', 'Return', 'ctrl+q'])
     try:
         wait_not_focused(id[0], 5)
@@ -374,6 +376,42 @@ def list_warnings():
             logger.warning(wrn)
 
 
+pcb_size = -1
+pcb_date = -1
+pcb_file = None
+
+
+def restore_pcb():
+    if pcb_file and pcb_size >= 0 and pcb_date >= 0:
+        cur_date = os.path.getmtime(pcb_file)
+        if cur_date != pcb_date:
+            logger.debug('Current pcb date: {} (!={}), trying to restore it'.
+                         format(asctime(localtime(cur_date)), asctime(localtime(pcb_date))))
+            bkp = pcb_file+'-bak'
+            if os.path.isfile(bkp):
+                bkp_size = os.path.getsize(bkp)
+                if bkp_size == pcb_size:
+                    os.remove(pcb_file)
+                    os.rename(bkp, pcb_file)
+                    logger.debug('Moved {} -> {}'.format(bkp, pcb_file))
+                else:  # pragma: no cover
+                    logger.error('Corrupted back-up file! (size = {})'.format(bkp_size))
+            else:  # pragma: no cover
+                logger.error('No back-up available!')
+
+
+def memorize_pcb(file):
+    global pcb_size
+    global pcb_date
+    global pcb_file
+    pcb_size = os.path.getsize(file)
+    pcb_date = os.path.getmtime(file)
+    pcb_file = file
+    logger.debug('Current pcb ({}) size: {} date: {}'.
+                 format(pcb_file, pcb_size, asctime(localtime(pcb_date))))
+    atexit.register(restore_pcb)
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
@@ -435,6 +473,10 @@ if __name__ == '__main__':
     if os.path.splitext(args.kicad_pcb_file)[1] == '':
         logger.error('PCB files must use kicad_pcb extension')
         exit(WRONG_PCB_NAME)
+
+    will_save = args.command == 'run_drc' and args.save
+    if not will_save:
+        memorize_pcb(args.kicad_pcb_file)
 
     if args.command == 'export':
         # Read the layer names from the PCB
@@ -533,6 +575,9 @@ if __name__ == '__main__':
             error_level = -(drc_errors+unconnected_pads)
 
     # The following code is here only to make coverage tool properly meassure atexit code.
+    if not will_save:
+        atexit.unregister(restore_pcb)
+        restore_pcb()
     atexit.unregister(restore_config)
     restore_config()
     exit(error_level)

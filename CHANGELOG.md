@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Some times when using a WM the "pcbnew_do export" failed to open the Printer dialog.
 - Some times when exiting xdotool didn't find any window and reported error.
+- When the filled zones changed during DRC the PCB could be saved even when we didn't
+  specify --save
 
 ## [1.3.1] - 2020-05-19
 ### Fixed
