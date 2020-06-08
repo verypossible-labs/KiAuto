@@ -107,3 +107,16 @@ def test_drc_save():
     ctx.compare_image(DEFAULT, 'zone-refill.pdf')
     shutil.copy2(ctx.board_file+'.ok', ctx.board_file)
     ctx.clean_up()
+
+
+def test_drc_no_save():
+    """ Here we test a PCB with outdated zone fills.
+        We run the DRC refilling, but we don't save. """
+    ctx = context.TestContext('DRC_No_Save', 'zone-refill')
+    shutil.copy2(ctx.board_file+'.ok', ctx.board_file)
+    size = os.path.getsize(ctx.board_file)
+    cmd = [PROG, 'run_drc']
+    ctx.run(cmd)
+    ctx.expect_out_file(REPORT)
+    assert os.path.getsize(ctx.board_file) == size
+    ctx.clean_up()
