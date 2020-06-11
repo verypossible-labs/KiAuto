@@ -78,6 +78,8 @@ def apply_filters(err_name, wrn_name):
                 m = re.search(f[1], err)
                 if m:
                     skip_err = skip_err+1
+                    logger.warning('Ignoring '+errs[i])
+                    logger.debug('Matched regex `{}`'.format(f[1]))
                     errs[i] = None
                     break
     if skip_err:
@@ -91,6 +93,8 @@ def apply_filters(err_name, wrn_name):
                 m = re.search(f[1], wrn)
                 if m:
                     skip_wrn = skip_wrn+1
+                    logger.info('Ignoring '+wrns[i])
+                    logger.debug('Matched regex `{}`'.format(f[1]))
                     wrns[i] = None
                     break
     if skip_wrn:

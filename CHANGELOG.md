@@ -6,7 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
-
+### Changed
+- Filtered errors are displayed as warnings, but ignored.
+- Filtered warnings are displayed as information.
+- When an error/warning is filtered a debug message informs which regex matched.
 
 ## [1.4.0] - 2020-06-08
 ### Added
