@@ -49,7 +49,7 @@ test_docker_local:
 
 docker_shell:
 	docker run  -it --rm -v $(CWD):$(CWD) --workdir="$(CWD)" \
-	-v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY \
+	-v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$(DISPLAY) \
 	--user $(USER_ID):$(GROUP_ID) \
 	--volume="/etc/group:/etc/group:ro" \
 	--volume="/etc/passwd:/etc/passwd:ro" \
@@ -59,7 +59,7 @@ docker_shell:
 
 docker_deb_shell:
 	docker run  -it --rm -v $(CWD):$(CWD) --workdir="$(CWD)" \
-	-v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$DISPLAY \
+	-v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY=$(DISPLAY) \
 	--user $(USER_ID):$(GROUP_ID) \
 	--volume="/etc/group:/etc/group:ro" \
 	--volume="/etc/passwd:/etc/passwd:ro" \
@@ -69,8 +69,9 @@ docker_deb_shell:
 
 gen_ref:
 	# Reference outputs, must be manually inspected if regenerated
-	cp $(REFILL).refill $(REFILL)
+	cp -a $(REFILL).refill $(REFILL)
 	src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
+	cp -a $(REFILL).ok $(REFILL)
 	src/pcbnew_do export --output_name good_pcb_with_dwg.pdf $(GOOD) $(REFDIR) F.Cu F.SilkS Dwgs.User Edge.Cuts
 	src/pcbnew_do export --output_name good_pcb_inners.pdf   $(GOOD) $(REFDIR) F.Cu F.SilkS GND.Cu Signal1.Cu Signal2.Cu Power.Cu Edge.Cuts
 	src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
