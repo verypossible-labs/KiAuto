@@ -131,6 +131,20 @@ If you need to get a list of valid layers run:
 pcbnew_do export --list YOUR_PCB.kicad_pcb
 ```
 
+### Refilling copper zones
+
+When you run the DRC KiCad will refill all zones. If you didn't do it before saving it could lead to a situation where the PCB that passes DRC isn't the one saved to disk. To solve you can use *-s* option to save the PCB after DRC:
+
+```
+pcbnew_do run_drc -s YOUR_PCB.kicad_pcb DESTINATION/
+```
+
+Another option could be to avoid changing the file on disk, but fill the zones before printing. To achieve it you can invoke the export command like this:
+
+```
+pcbnew_do export -f YOUR_PCB.kicad_pcb DESTINATION/ LAYERs...
+```
+
 ### Common options
 
 By default all the scripts run very quiet. If you want to get some information about what's going on use *-v*. 
