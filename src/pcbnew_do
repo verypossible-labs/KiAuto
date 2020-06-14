@@ -20,7 +20,7 @@ import argparse
 import atexit
 import re
 import shutil
-from time import (asctime, localtime)
+from time import (asctime, localtime, sleep)
 import subprocess
 import gettext
 
@@ -189,7 +189,7 @@ def exit_pcbnew():
     wait_point()
 
 
-def print_layers(pcb_file, output_dir, output_filename, record=True):
+def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=False):
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -207,11 +207,30 @@ def print_layers(pcb_file, output_dir, output_filename, record=True):
 
             wait_pcbew_start()
 
+            if fill_zones:
+                logger.info('Fill zones')
+                wait_point()
+                xdotool(['key', 'b'])
+                # Wait for complation
+                sleep(1)
+
             logger.info('Open File->Print')
             wait_point()
             xdotool(['key', 'alt+f', 'p'])
 
-            id = wait_for_window('Print dialog', 'Print')
+            retry = False
+            try:
+                id = wait_for_window('Print dialog', 'Print')
+            except RuntimeError:
+                # Perhaps the fill took too muchm try again
+                retry = True
+
+            if retry:
+                logger.info('Open File->Print (retrying)')
+                wait_point()
+                xdotool(['key', 'alt+f', 'p'])
+                id = wait_for_window('Print dialog', 'Print')
+
             wait_point()
             # The "color" option is selected, send enough Tabs to go to the Print button
             keys = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
@@ -429,6 +448,7 @@ if __name__ == '__main__':
     parser.add_argument('--wait_start', help='Timeout to pcbnew start ['+str(WAIT_START)+']', type=int, default=WAIT_START)
 
     export_parser = subparsers.add_parser('export', help='Export PCB layers')
+    export_parser.add_argument('--fill_zones', '-f', help='Fill all zones before printing', action='store_true')
     export_parser.add_argument('--list', '-l', help='Print a list of layers in LIST PCB and exit', nargs=1, action=ListLayers)
     export_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['printed.pdf'])
     export_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
@@ -555,7 +575,7 @@ if __name__ == '__main__':
 
     error_level = 0
     if args.command == 'export':
-        print_layers(args.kicad_pcb_file, args.output_dir, args.output_name[0], args.record)
+        print_layers(args.kicad_pcb_file, args.output_dir, args.output_name[0], args.record, args.fill_zones)
     else:  # run_drc
         drc_errors, unconnected_pads = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record, args.save))
         logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))

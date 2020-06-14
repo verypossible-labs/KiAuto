@@ -110,3 +110,14 @@ def test_print_pcb_good_wm():
     ctx.expect_out_file(pdf)
     ctx.compare_image(pdf)
     ctx.clean_up()
+
+
+def test_print_pcb_refill():
+    ctx = context.TestContext('Print_Refill', 'zone-refill')
+    pdf = 'zone-refill.pdf'
+    cmd = [PROG, 'export', '-f', '--output_name', pdf]
+    layers = ['F.Cu', 'B.Cu', 'Edge.Cuts']
+    ctx.run(cmd, extra=layers)
+    ctx.expect_out_file(pdf)
+    ctx.compare_image(pdf)
+    ctx.clean_up()
