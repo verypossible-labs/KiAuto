@@ -221,11 +221,12 @@ def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=
             retry = False
             try:
                 id = wait_for_window('Print dialog', 'Print')
-            except RuntimeError:
+            except RuntimeError: # pragma: no cover
                 # Perhaps the fill took too muchm try again
                 retry = True
 
-            if retry:
+            if retry: # pragma: no cover
+                # Excluded from coverage, only happends under conditions hard to reproduce
                 logger.info('Open File->Print (retrying)')
                 wait_point()
                 xdotool(['key', 'alt+f', 'p'])
