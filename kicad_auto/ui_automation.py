@@ -150,17 +150,21 @@ def start_record(video_dir, video_name):
 @contextmanager
 def start_x11vnc(do_it, old_display):
     if do_it:
-        cmd = ['x11vnc', '-display', os.environ['DISPLAY'], '-localhost']
-        logger.debug('Starting VNC server: '+str(cmd))
-        with PopenContext(cmd, stdout=DEVNULL, stderr=DEVNULL, close_fds=True) as x11vnc_proc:
-            if old_display is None:
-                old_display = ':0'
-            logger.debug('To monitor the Xvfb now you can start: "ssvncviewer '+old_display+'"(or similar)')
-            try:
-                yield
-            finally:
-                logger.debug('Terminating the x11vnc server')
-                x11vnc_proc.terminate()
+        if not shutil.which('x11vnc'):
+            logger.error("x11vnc isn't installed, please install it")
+            yield
+        else:
+            cmd = ['x11vnc', '-display', os.environ['DISPLAY'], '-localhost']
+            logger.debug('Starting VNC server: '+str(cmd))
+            with PopenContext(cmd, stdout=DEVNULL, stderr=DEVNULL, close_fds=True) as x11vnc_proc:
+                if old_display is None:
+                    old_display = ':0'
+                logger.debug('To monitor the Xvfb now you can start: "ssvncviewer '+old_display+'"(or similar)')
+                try:
+                    yield
+                finally:
+                    logger.debug('Terminating the x11vnc server')
+                    x11vnc_proc.terminate()
     else:
         yield
 
