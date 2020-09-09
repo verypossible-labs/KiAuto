@@ -217,6 +217,8 @@ def eeschema_parse_erc(erc_file, warning_as_error=False):
 
     cont = False
     is_err = False
+    global errs
+    global wrns
     for line in lines:
         m = re.search(r'^ErrType\((\d+)\): (.*)', line)
         if m:
@@ -246,6 +248,8 @@ def eeschema_parse_erc(erc_file, warning_as_error=False):
     warnings = m.group(3)
 
     if warning_as_error:
+        errs += wrns
+        wrns = []
         return int(errors) + int(warnings), 0
     return int(errors), int(warnings)
 
