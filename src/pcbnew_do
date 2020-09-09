@@ -147,6 +147,7 @@ def wait_pcbew_start():
         failed_focuse = True
         pass
     if failed_focuse:
+        wait_point()
         if other == TITLE_ERROR:
             dismiss_error()
             logger.error('pcbnew reported an error')
