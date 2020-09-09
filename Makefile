@@ -1,5 +1,6 @@
 #!/usr/bin/make
 PY_COV=python3-coverage
+PYTEST=pytest-3
 REFDIR=tests/reference/
 GOOD=tests/kicad5/good-project/good-project.kicad_pcb
 REFILL=tests/kicad5/zone-refill/zone-refill.kicad_pcb
@@ -25,13 +26,13 @@ lint:
 
 test: lint
 	$(PY_COV) erase
-	pytest-3
+	$(PYTEST)
 	$(PY_COV) report
 
 test_local: lint
 	rm -rf output
 	$(PY_COV) erase
-	pytest-3 --test_dir output
+	$(PYTEST) --test_dir output
 	$(PY_COV) report
 	$(PY_COV) html
 	x-www-browser htmlcov/index.html
@@ -42,7 +43,7 @@ test_docker_local:
 	# Run in the same directory to make the __pycache__ valid
 	# Also change the owner of the files to the current user (we run as root like in GitHub)
 	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:latest \
-		/bin/bash -c "flake8 . --count --statistics ; pytest-3 --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/"
+		/bin/bash -c "flake8 . --count --statistics ; $(PYTEST) --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/"
 	$(PY_COV) report
 	$(PY_COV) html
 	x-www-browser htmlcov/index.html
@@ -95,5 +96,13 @@ gen_ref:
 	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)power-Power.ps > $(REFDIR)power-Power.ps.new
 	mv $(REFDIR)power-Power.ps.new $(REFDIR)power-Power.ps
 
-.PHONY: deb deb_clean test lint test_local gen_ref test_docker_local
+single_test:
+	rm -rf pp
+	-$(PYTEST) --log-cli-level debug -k "$(SINGLE_TEST)" --test_dir pp
+	@echo "********************" Output
+	@cat pp/*/output.txt
+	@echo "********************" Error
+	@tail -n 30 pp/*/error.txt
+
+.PHONY: deb deb_clean test lint test_local gen_ref test_docker_local single_test
 
