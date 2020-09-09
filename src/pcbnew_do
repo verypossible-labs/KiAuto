@@ -38,7 +38,7 @@ from kicad_auto.file_util import (
     errs, wrns,
 )
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
-                             WRONG_PCB_NAME, PCBNEW_ERROR)
+                             WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -470,6 +470,11 @@ if __name__ == '__main__':
 
     # Create a logger with the specified verbosity
     logger = log.init(args.verbose)
+
+    if args.command is None:
+        logger.error('No command selected')
+        parser.print_help()
+        exit(WRONG_ARGUMENTS)
 
     # Used to debug the GUI steps
     set_wait(args.wait_key)
