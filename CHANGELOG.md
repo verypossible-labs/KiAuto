@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.2] - 2020-09-10
+### Fixed
+- Crash when no arguments.
+- Crash when no x11vnc and it was requested.
+- Lost warning messages when using --warnings_as_errors
+
 ## [1.4.1] - 2020-06-14
 ### Added
 - --fill_zones/-f option to 'pcbnew_do export' to fill zones before printing.
