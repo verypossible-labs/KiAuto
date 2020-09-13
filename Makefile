@@ -24,12 +24,12 @@ lint:
 	flake8 . --count --statistics
 	rm eeschema_do.py pcbnew_do.py
 
-test: lint
+test_server: lint
 	$(PY_COV) erase
 	$(PYTEST)
 	$(PY_COV) report
 
-test_local: lint
+test: lint
 	rm -rf output
 	$(PY_COV) erase
 	$(PYTEST) --test_dir output
