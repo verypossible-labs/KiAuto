@@ -16,7 +16,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (WRONG_ARGUMENTS)
+from kicad_auto.misc import (WRONG_ARGUMENTS, Config)
 
 PROG = 'eeschema_do'
 OUT_ERR_REX = r'(\d+) ERC errors'
@@ -87,8 +87,9 @@ def test_erc_ok_eeschema_running():
     prj = 'good-project'
     rep = prj+'.erc'
     ctx = context.TestContextSCH('ERC_Ok_eeschema_running', prj)
+    cfg = Config(logging)
     # Run eeschema in parallel to get 'Dismiss eeschema already running'
-    with ctx.start_kicad('eeschema'):
+    with ctx.start_kicad(cfg.eeschema, cfg):
         # Enable DEBUG logs
         cmd = [PROG, '-vv', 'run_erc']
         # Use a TTY to get colors in the DEBUG logs

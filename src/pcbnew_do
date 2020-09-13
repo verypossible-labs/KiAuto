@@ -38,7 +38,7 @@ from kicad_auto.file_util import (
     errs, wrns,
 )
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
-                             WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS)
+                             WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -46,7 +46,6 @@ from kicad_auto.ui_automation import (
     wait_for_window,
     recorded_xvfb,
     clipboard_store,
-    set_wait,
     wait_point
 )
 
@@ -132,7 +131,7 @@ def wait_pcbnew(time=10, others=None):
     return wait_for_window('Main pcbnew window', r'Pcbnew', time, others=others)
 
 
-def wait_pcbew_start():
+def wait_pcbew_start(cfg):
     failed_focuse = False
     other = None
     try:
@@ -147,7 +146,7 @@ def wait_pcbew_start():
         failed_focuse = True
         pass
     if failed_focuse:
-        wait_point()
+        wait_point(cfg)
         if other == TITLE_ERROR:
             dismiss_error()
             logger.error('pcbnew reported an error')
@@ -163,12 +162,12 @@ def wait_pcbew_start():
             raise
 
 
-def exit_pcbnew():
+def exit_pcbnew(cfg):
     # Wait until the dialog is closed, useful when more than one file are created
     id = wait_pcbnew(10)
 
     logger.info('Exiting pcbnew')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'ctrl+q'])
     try:
         wait_not_focused(id[0], 5)
@@ -179,7 +178,7 @@ def exit_pcbnew():
     # Note: if we modified the PCB KiCad will ask for save using a broken dialog.
     #       It doesn't have a name and only gets focus with a WM.
     logger.info('Retry pcbnew exit')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Return', 'ctrl+q'])
     try:
         wait_not_focused(id[0], 5)
@@ -187,10 +186,10 @@ def exit_pcbnew():
         logger.debug('PCBnew not exiting, will kill')
         pass
     # If we failed to exit we will kill it anyways
-    wait_point()
+    wait_point(cfg)
 
 
-def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=False):
+def print_layers(cfg, pcb_file, output_dir, output_filename, fill_zones=False):
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -198,25 +197,23 @@ def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=
     if os.path.exists(print_output_file):
         os.remove(print_output_file)
 
-    xvfb_kwargs = {'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
-
-    with recorded_xvfb(output_dir if record else None, 'pcbnew_print_layers_screencast.ogv',
-                       args.start_x11vnc, use_wm, **xvfb_kwargs):
-        with PopenContext(['pcbnew', pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
+    cfg.video_name = 'pcbnew_print_layers_screencast.ogv'
+    with recorded_xvfb(cfg):
+        with PopenContext([cfg.pcbnew, pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
 
             clipboard_store(print_output_file)
 
-            wait_pcbew_start()
+            wait_pcbew_start(cfg)
 
             if fill_zones:
                 logger.info('Fill zones')
-                wait_point()
+                wait_point(cfg)
                 xdotool(['key', 'b'])
                 # Wait for complation
                 sleep(1)
 
             logger.info('Open File->Print')
-            wait_point()
+            wait_point(cfg)
             xdotool(['key', 'alt+f', 'p'])
 
             retry = False
@@ -229,11 +226,11 @@ def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=
             if retry:  # pragma: no cover
                 # Excluded from coverage, only happends under conditions hard to reproduce
                 logger.info('Open File->Print (retrying)')
-                wait_point()
+                wait_point(cfg)
                 xdotool(['key', 'alt+f', 'p'])
                 id = wait_for_window('Print dialog', 'Print')
 
-            wait_point()
+            wait_point(cfg)
             # The "color" option is selected, send enough Tabs to go to the Print button
             keys = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
                     # When using a WM we have chances to be 1 tab before "color" (don't know why)
@@ -243,7 +240,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=
             xdotool(keys)
 
             id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
-            wait_point()
+            wait_point(cfg)
             # List of printers
             xdotool(['key', 'Tab',
                      # Go up to the top
@@ -254,7 +251,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=
                      'Return'])
             id_sel_f = wait_for_window('Select a filename', '(Select a filename|%s)' % select_a_filename, 2)
             logger.info('Pasting output dir')
-            wait_point()
+            wait_point(cfg)
             xdotool(['key',
                      # Select all
                      'ctrl+a',
@@ -265,7 +262,7 @@ def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=
             # Back to print
             wait_not_focused(id_sel_f[0])
             wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
-            wait_point()
+            wait_point(cfg)
             xdotool(['key',
                      # Format options
                      'Tab',
@@ -278,18 +275,18 @@ def print_layers(pcb_file, output_dir, output_filename, record=True, fill_zones=
 
             wait_not_focused(id2[1])
             id = wait_for_window('Print dialog', 'Print')
-            wait_point()
+            wait_point(cfg)
             # Close button
             xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
 
             wait_not_focused(id2[0])
-            exit_pcbnew()
+            exit_pcbnew(cfg)
             pcbnew_proc.terminate()
 
     return print_output_file
 
 
-def run_drc(pcb_file, output_dir, record=True, save=False):
+def run_drc(cfg, pcb_file, output_dir, save=False):
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -297,50 +294,48 @@ def run_drc(pcb_file, output_dir, record=True, save=False):
     if os.path.exists(drc_output_file):
         os.remove(drc_output_file)
 
-    xvfb_kwargs = {'width': args.rec_width, 'height': args.rec_height, 'colordepth': 24, }
-
-    with recorded_xvfb(output_dir if record else None, 'pcbnew_run_drc_screencast.ogv',
-                       args.start_x11vnc, use_wm, **xvfb_kwargs):
-        with PopenContext(['pcbnew', pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
+    cfg.video_name = 'pcbnew_run_drc_screencast.ogv'
+    with recorded_xvfb(cfg):
+        with PopenContext([cfg.pcbnew, pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
 
             clipboard_store(drc_output_file)
 
-            wait_pcbew_start()
+            wait_pcbew_start(cfg)
 
             logger.info('Open Inspect->DRC')
-            wait_point()
+            wait_point(cfg)
             xdotool(['key', 'alt+i', 'd'])
 
             wait_for_window('DRC modal window', 'DRC Control')
             # Note: Refill zones on DRC gets saved in ~/.config/kicad/pcbnew as RefillZonesBeforeDrc
             # The space here is to enable the report of all errors for tracks
             logger.info('Enable reporting all errors for tracks')
-            wait_point()
+            wait_point(cfg)
             xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'space', 'Tab', 'Tab', 'Tab', 'Tab'])
             logger.info('Pasting output dir')
-            wait_point()
+            wait_point(cfg)
             xdotool(['key', 'ctrl+v', 'Return'])
 
             wait_for_window('Report completed dialog', 'Disk File Report Completed')
-            wait_point()
+            wait_point(cfg)
             xdotool(['key', 'Return'])
             wait_for_window('DRC modal window', 'DRC Control')
 
             logger.info('Closing the DRC dialog')
-            wait_point()
+            wait_point(cfg)
             xdotool(['key', 'shift+Tab', 'Return'])
             wait_pcbnew()
 
             if save:
                 logger.info('Saving PCB')
-                wait_point()
+                wait_point(cfg)
                 os.rename(pcb_file, pcb_file + '-bak')
                 xdotool(['key', 'ctrl+s'])
                 logger.info('Wait for PCB file creation')
-                wait_point()
+                wait_point(cfg)
                 wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
 
-            exit_pcbnew()
+            exit_pcbnew(cfg)
             pcbnew_proc.terminate()
 
     return drc_output_file
@@ -476,10 +471,7 @@ if __name__ == '__main__':
         parser.print_help()
         exit(WRONG_ARGUMENTS)
 
-    # Used to debug the GUI steps
-    set_wait(args.wait_key)
-    # Use a Window Manager, dialogs behaves in a different way
-    use_wm = args.use_wm
+    cfg = Config(logger, args)
 
     # Get local versions for the GTK window names
     gettext.textdomain('gtk30')
@@ -513,7 +505,7 @@ if __name__ == '__main__':
         load_filters(args.errors_filter[0])
 
     # Back-up the current pcbnew configuration
-    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
+    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/'+cfg.kicad_conf_dir)
     if not os.path.isdir(kicad_cfg_dir):
         logger.debug('Creating KiCad config dir')
         os.makedirs(kicad_cfg_dir, exist_ok=True)
@@ -582,9 +574,9 @@ if __name__ == '__main__':
 
     error_level = 0
     if args.command == 'export':
-        print_layers(args.kicad_pcb_file, args.output_dir, args.output_name[0], args.record, args.fill_zones)
+        print_layers(cfg, args.kicad_pcb_file, args.output_dir, args.output_name[0], args.fill_zones)
     else:  # run_drc
-        drc_errors, unconnected_pads = parse_drc(run_drc(args.kicad_pcb_file, args.output_dir, args.record, args.save))
+        drc_errors, unconnected_pads = parse_drc(run_drc(cfg, args.kicad_pcb_file, args.output_dir, args.save))
         logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
 
         skip_err, skip_unc = apply_filters('DRC error/s', 'unconnected pad/s')

@@ -23,6 +23,8 @@ import re
 import argparse
 import atexit
 import shutil
+import json
+import time
 
 # Look for the 'kicad_auto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,14 +33,17 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Log functionality first
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
+logger = log.init(2)
+
 from kicad_auto.file_util import (
     load_filters,
     wait_for_file_created_by_process,
     apply_filters,
-    errs, wrns,
+    errs, wrns
 )
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
-                             WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR)
+                             WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
+                             USER_HOTKEYS_PRESENT)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -46,7 +51,7 @@ from kicad_auto.ui_automation import (
     wait_not_focused,
     recorded_xvfb,
     clipboard_store,
-    set_wait,
+    clipboard_retrieve,
     wait_point
 )
 
@@ -100,15 +105,15 @@ def dismiss_already_running():
     xdotool(['key', 'Return'])
 
 
-def wait_eeschema(time, others=None):
-    return wait_for_window('Main eeschema window', r'Eeschema.*\.sch', time, others=others)
+def wait_eeschema(cfg, time, others=None):
+    return wait_for_window('Main eeschema window', cfg.ee_window_title, time, others=others)
 
 
-def wait_eeschema_start():
+def wait_eeschema_start(cfg):
     failed_focuse = False
     other = None
     try:
-        wait_eeschema(args.wait_start, others=[TITLE_CONFIRMATION, TITLE_REMAP_SYMBOLS, TITLE_ERROR, TITLE_WARNING])
+        wait_eeschema(cfg, args.wait_start, others=[TITLE_CONFIRMATION, TITLE_REMAP_SYMBOLS, TITLE_ERROR, TITLE_WARNING])
     except RuntimeError:  # pragma: no cover
         logger.debug('Time-out waiting for eeschema, will retry')
         failed_focuse = True
@@ -132,18 +137,18 @@ def wait_eeschema_start():
             logger.error('eeschema reported an error')
             exit(EESCHEMA_ERROR)
         try:
-            wait_eeschema(5)
+            wait_eeschema(cfg, 5)
         except RuntimeError:  # pragma: no cover
             logger.error('Time-out waiting for eeschema, giving up')
             raise
 
 
-def exit_eeschema():
+def exit_eeschema(cfg):
     # Wait until the dialog is closed, useful when more than one file are created
-    id = wait_eeschema(10)
+    id = wait_eeschema(cfg, 10)
 
     logger.info('Exiting eeschema')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'ctrl+q'])
     try:
         wait_not_focused(id[0], 5)
@@ -160,25 +165,25 @@ def exit_eeschema():
     # If we failed to exit we will kill it anyways
 
 
-def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
-    wait_eeschema_start()
+def eeschema_plot_schematic(cfg, output_dir, output_file, all_pages, pid, ext):
+    wait_eeschema_start(cfg)
     clipboard_store(output_dir)
 
     logger.info('Open File->pLot')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'alt+f', 'l'])
     wait_for_window('plot', 'Plot Schematic Options')
 
     logger.info('Clear input text')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Left', 'ctrl+a', 'Delete'])
 
     logger.info('Paste output directory')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'ctrl+v'])
 
     logger.info('Move to the "plot" button')
-    wait_point()
+    wait_point(cfg)
     # We try to select the "print all" button.
     # Lamentably this is the default, so we can be confused because "Return" will press it anyways.
     command_list = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
@@ -196,18 +201,18 @@ def eeschema_plot_schematic(output_dir, output_file, all_pages, pid, ext):
     xdotool(command_list)
 
     logger.info('Plot')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Return'])
 
     logger.info('Wait for plot file creation')
-    wait_point()
+    wait_point(cfg)
     wait_for_file_created_by_process(pid, output_file)
 
     logger.info('Closing window')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Escape'])
 
-    exit_eeschema()
+    exit_eeschema(cfg)
 
 
 def eeschema_parse_erc(erc_file, warning_as_error=False):
@@ -254,54 +259,120 @@ def eeschema_parse_erc(erc_file, warning_as_error=False):
     return int(errors), int(warnings)
 
 
-def eeschema_run_erc_schematic(erc_file, pid):
-    wait_eeschema_start()
+def eeschema_run_erc_schematic_5_1(cfg, erc_file, pid):
     clipboard_store(erc_file)
-
+    # Open the ERC dialog
     logger.info('Open Tools->Electrical Rules Checker')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'alt+i', 'c'])
-
+    # Wait dialog
     wait_for_window('Electrical Rules Checker dialog', 'Electrical Rules Checker')
-    wait_point()
+    wait_point(cfg)
+    # Enable the "Create ERC file report"
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'space', 'Return'])
-
+    # Wait for the save dialog
     wait_for_window('ERC File save dialog', 'ERC File')
+    # Paste the name
     logger.info('Pasting output file')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'ctrl+v'])
     # KiCad adds .erc
     erc_file = erc_file + '.erc'
     if os.path.exists(erc_file):
         os.remove(erc_file)
-
+    # Run the ERC
     logger.info('Run ERC')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Return'])
-
+    # Wait for report created
     logger.info('Wait for ERC file creation')
-    wait_point()
+    wait_point(cfg)
     wait_for_file_created_by_process(pid, erc_file)
-
+    # Close the ERC dialog
     logger.info('Exit ERC')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'shift+Tab', 'Return'])
-
-    exit_eeschema()
-
     return erc_file
 
 
-def eeschema_netlist_commands(net_file, pid):
-    wait_eeschema_start()
+def eeschema_run_erc_schematic_6_0(cfg, erc_file, pid):
+    # Open the ERC dialog
+    logger.info('Open Tools->Electrical Rules Checker')
+    wait_point(cfg)
+    xdotool(['key', 'ctrl+shift+i'])
+    # Wait dialog
+    wait_for_window('Electrical Rules Checker dialog', 'Electrical Rules Checker')
+    wait_point(cfg)
+    # Run the ERC
+    logger.info('Run ERC')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    #
+    # To know when KiCad finished we try this:
+    # - After pressing "Return" a "hidden widget" is selected.
+    #   The focus is before the messages and after the close.
+    # - A Tab gives the focus to the messages.
+    # - Ctrl+A selects all
+    # - Ctrl+V copies to the clipboard
+    # We try this sequence until we get the "Finished" message.
+    #
+    tries = 20
+    while tries:
+        tries -= 1
+        xdotool(['key', 'Tab', 'ctrl+a', 'ctrl+c'])
+        res = clipboard_retrieve()
+        if 'Finished' in res:
+            break
+        time.sleep(0.3)
+    if not tries:
+        RuntimeError('Timed out waiting for ERC')
+    # Save the report
+    clipboard_store(erc_file)
+    # KiCad adds .rpt
+    erc_file = erc_file + '.rpt'
+    if os.path.exists(erc_file):
+        os.remove(erc_file)
+    logger.info('Open the save dialog')
+    wait_point(cfg)
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
+    # Wait for the save dialog
+    wait_for_window('ERC File save dialog', 'Save Report to File')
+    # Paste the name
+    logger.info('Pasting output file')
+    wait_point(cfg)
+    xdotool(['key', 'ctrl+v'])
+    # Wait for report created
+    logger.info('Wait for ERC file creation')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    wait_for_file_created_by_process(pid, erc_file)
+    # Close the ERC dialog
+    logger.info('Exit ERC')
+    wait_point(cfg)
+    xdotool(['key', 'Escape'])
+    return erc_file
+
+
+def eeschema_run_erc_schematic(cfg, erc_file, pid):
+    wait_eeschema_start(cfg)
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        erc_file = eeschema_run_erc_schematic_6_0(cfg, erc_file, pid)
+    else:
+        erc_file = eeschema_run_erc_schematic_5_1(cfg, erc_file, pid)
+    exit_eeschema(cfg)
+    return erc_file
+
+
+def eeschema_netlist_commands(cfg, net_file, pid):
+    wait_eeschema_start(cfg)
     clipboard_store(net_file)
 
     logger.info('Open Tools->Generate Netlist File')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'alt+t', 'n'])
 
     wait_for_window('Netlist dialog', 'Netlist')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Tab', 'Tab', 'Return'])
 
     try:
@@ -323,7 +394,7 @@ def eeschema_netlist_commands(net_file, pid):
         xdotool(['key', 'shift+Tab', 'shift+Tab', 'Return'])
         wait_for_window('Netlist File save dialog', 'Save Netlist File')
     logger.info('Pasting output file')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'ctrl+v'])
     # KiCad adds .net
     net_file = net_file + '.net'
@@ -331,100 +402,164 @@ def eeschema_netlist_commands(net_file, pid):
         os.remove(net_file)
 
     logger.info('Generate Netlist')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Return'])
 
     logger.info('Wait for Netlist file creation')
-    wait_point()
+    wait_point(cfg)
     wait_for_file_created_by_process(pid, net_file)
 
-    exit_eeschema()
+    exit_eeschema(cfg)
 
     return net_file
 
 
-def eeschema_bom_xml_commands(output_file, pid):
-    wait_eeschema_start()
+def eeschema_bom_xml_commands(cfg, output_file, pid):
+    wait_eeschema_start(cfg)
     clipboard_store('xsltproc -o "'+output_file + '" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
 
     logger.info('Open Tools->Generate Bill of Materials')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'alt+t', 'm'])
 
     wait_for_window('Bill of Material dialog', 'Bill of Material')
     logger.info('Paste xslt command')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'ctrl+v'])
 
     logger.info('Generating netlist')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Return'])
 
     logger.info('Wait for BoM file creation')
-    wait_point()
+    wait_point(cfg)
     wait_for_file_created_by_process(pid, output_file)
 
     logger.info('Closing dialog')
-    wait_point()
+    wait_point(cfg)
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
 
-    exit_eeschema()
+    exit_eeschema(cfg)
 
 
-# Restore the eeschema configuration
-def restore_config():
-    if os.path.exists(old_config_file):
-        os.remove(config_file)
-        os.rename(old_config_file, config_file)
+def restore_config(cfg):
+    """ Restore original user configuration """
+    if cfg.conf_eeschema_bkp and os.path.exists(cfg.conf_eeschema_bkp):
+        os.remove(cfg.conf_eeschema)
+        os.rename(cfg.conf_eeschema_bkp, cfg.conf_eeschema)
+        cfg.conf_eeschema_bkp = None
         logger.debug('Restoring old eeschema config')
-
-
-# Restore the KiCad common configuration
-def restore_common_config():
-    if os.path.exists(old_common_config_file):
-        os.remove(common_config_file)
-        os.rename(old_common_config_file, common_config_file)
+    if cfg.conf_kicad_bkp and os.path.exists(cfg.conf_kicad_bkp):
+        os.remove(cfg.conf_kicad)
+        os.rename(cfg.conf_kicad_bkp, cfg.conf_kicad)
+        cfg.conf_kicad_bkp = None
         logger.debug('Restoring old KiCad common config')
+    if cfg.conf_hotkeys_bkp and os.path.exists(cfg.conf_hotkeys_bkp):
+        os.remove(cfg.conf_hotkeys)
+        os.rename(cfg.conf_hotkeys_bkp, cfg.conf_hotkeys)
+        cfg.conf_hotkeys_bkp = None
+        logger.debug('Restoring old user hotkeys config')
 
 
-# Variables used to memorize .pro state
-pro_name = None
-pro_stat = None
-pro_content = None
-
-
-def memorize_project(sch):
+def memorize_project(sch, cfg):
     """ Detect the .pro filename and try to read it and its mtime.
         If KiCad changes it then will try to revert the changes """
-    global pro_name
-    global pro_stat
-    global pro_content
-    pro_name = os.path.splitext(sch)[0]+'.pro'
-    if not os.path.isfile(pro_name):
-        logger.warning('KiCad project file not found')
-        return
-    pro_stat = os.stat(pro_name)
-    with open(pro_name) as f:
-        pro_content = f.read()
-    atexit.register(restore_project)
+    cfg.pro_stat = None
+    cfg.pro_content = None
+    name_no_ext = os.path.splitext(sch)[0]
+    cfg.pro_name = name_no_ext+'.kicad_pro'
+    if not os.path.isfile(cfg.pro_name):
+        cfg.pro_name = name_no_ext+'.pro'
+        if not os.path.isfile(cfg.pro_name):
+            logger.warning('KiCad project file not found')
+            return
+    cfg.pro_stat = os.stat(cfg.pro_name)
+    with open(cfg.pro_name) as f:
+        cfg.pro_content = f.read()
+    atexit.register(restore_project, cfg)
 
 
-def restore_project():
+def restore_project(cfg):
     """ If the .pro was modified try to restore it """
     logger.debug('Checking if .pro was modified')
-    if pro_stat and pro_content:
+    if cfg.pro_stat and cfg.pro_content:
         pro_found = False
-        if os.path.isfile(pro_name):
-            new_stat = os.stat(pro_name)
+        if os.path.isfile(cfg.pro_name):
+            new_stat = os.stat(cfg.pro_name)
             pro_found = True
         else:  # pragma: no cover
             logger.warning('Project file lost')
-        if not pro_found or new_stat.st_mtime != pro_stat.st_mtime:
+        if not pro_found or new_stat.st_mtime != cfg.pro_stat.st_mtime:
             logger.debug('Restoring the project file')
-            os.rename(pro_name, pro_name+'-bak')
-            with open(pro_name, 'w') as f:
-                f.write(pro_content)
-            os.utime(pro_name, times=(pro_stat.st_atime, pro_stat.st_mtime))
+            os.rename(cfg.pro_name, cfg.pro_name+'-bak')
+            with open(cfg.pro_name, 'w') as f:
+                f.write(cfg.pro_content)
+            os.utime(cfg.pro_name, times=(cfg.pro_stat.st_atime, cfg.pro_stat.st_mtime))
+
+
+def create_eeschema_config(cfg):
+    logger.debug('Creating an eeschema config')
+    # HPGL:0 ??:1 PS:2 DXF:3 PDF:4 SVG:5
+    index = ['hpgl', '---', 'ps', 'dxf', 'pdf', 'svg'].index(cfg.export_format)
+    logger.debug('Selecting plot format %s (%d)', cfg.export_format, index)
+    with open(cfg.conf_eeschema, "wt") as text_file:
+        if cfg.conf_eeschema_json:
+            eeconf = {'plot': {'format': index}}
+            eeconf['system'] = {"first_run_shown": True, "never_show_rescue_dialog": True}
+            eeconf['appearance'] = {"show_sexpr_file_convert_warning": False}
+            eeconf['window'] = {"size_x": cfg.rec_width, "size_y": cfg.rec_height}
+            text_file.write(json.dumps(eeconf))
+            logger.debug(json.dumps(eeconf))
+        else:
+            text_file.write('RescueNeverShow=1\n')
+            text_file.write('PlotFormat=%d\n' % index)
+
+
+def create_kicad_config(cfg):
+    logger.debug('Creating a KiCad common config')
+    with open(cfg.conf_kicad, "wt") as text_file:
+        if cfg.conf_kicad_json:
+            kiconf = {"environment": {"show_warning_dialog": False}}
+            kiconf['system'] = {"editor_name": "/bin/cat"}
+            text_file.write(json.dumps(kiconf))
+            logger.debug(json.dumps(kiconf))
+        else:
+            text_file.write('ShowEnvVarWarningDialog=0\n')
+            text_file.write('Editor=/bin/cat\n')
+
+
+def create_user_hotkeys(cfg):
+    logger.debug('Creating a user hotkeys config')
+    with open(cfg.conf_hotkeys, "wt") as text_file:
+        text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
+
+
+def backup_config(name, file, err, cfg):
+    config_file = file
+    old_config_file = file+'.pre_script'
+    logger.debug(name+' config: '+config_file)
+    # If we have an old back-up ask for the user to solve it
+    if os.path.isfile(old_config_file):
+        logger.error(name+' config back-up found (%s)', old_config_file)
+        logger.error('It could contain your %s configuration, rename it to %s or discard it.', name.lower(), config_file)
+        exit(err)
+    if os.path.isfile(config_file):
+        logger.debug('Moving current config to '+old_config_file)
+        os.rename(config_file, old_config_file)
+        atexit.register(restore_config, cfg)
+        return old_config_file
+    return None
+
+
+def check_lib_table(cfg):
+    if not os.path.isfile(cfg.user_sym_lib_table):
+        logger.debug('Missing default sym-lib-table')
+        if os.path.isfile(cfg.sys_sym_lib_table):
+            shutil.copy2(cfg.sys_sym_lib_table, cfg.user_sym_lib_table)
+        elif cfg.sys_sym_lib_table2 and os.path.isfile(cfg.sys_sym_lib_table2):
+            shutil.copy2(cfg.sys_sym_lib_table2, cfg.user_sym_lib_table)
+        else:  # pragma: no cover
+            logger.warning('Missing default system symbol table '+cfg.sys_sym_lib_table+' KiCad will most probably fail')
 
 
 if __name__ == '__main__':
@@ -459,104 +594,67 @@ if __name__ == '__main__':
     bom_xml_parser = subparsers.add_parser('bom_xml', help='Create the BoM in XML format')
 
     args = parser.parse_args()
+    # Set the verbosity
+    log.set_level(logger, args.verbose)
 
-    # Create a logger with the specified verbosity
-    logger = log.init(args.verbose)
+    cfg = Config(logger, args)
+    cfg.video_name = args.command+'_eeschema_screencast.ogv'
 
-    # Used to debug the GUI steps
-    set_wait(args.wait_key)
-    # Use a Window Manager, dialogs behaves in a different way
-    use_wm = args.use_wm
-
+    # Check the schematic is there
     if not os.path.isfile(args.schematic):
         logger.error(args.schematic+' does not exist')
         exit(NO_SCHEMATIC)
 
     # If we pass a name without extension KiCad will try to create a ".sch"
     if os.path.splitext(args.schematic)[1] == '':
-        logger.error('Schematic files must use sch extension')
+        logger.error('Schematic files must use sch/kicad_sch extension')
         exit(WRONG_SCH_NAME)
 
+    # Load filters
     if args.command == 'run_erc' and args.errors_filter:
         load_filters(args.errors_filter[0])
 
-    memorize_project(args.schematic)
+    memorize_project(args.schematic, cfg)
 
     # Create output dir if it doesn't exist
     output_dir = os.path.abspath(args.output_dir)+'/'
+    cfg.video_dir = output_dir
     os.makedirs(output_dir, exist_ok=True)
-
+    #
+    # Configure KiCad in a deterministic way
+    #
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
-
-    # Back-up the current eeschema configuration
-    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
-    if not os.path.isdir(kicad_cfg_dir):
+    # Ensure we have a config dir
+    if not os.path.isdir(cfg.kicad_conf_path):
         logger.debug('Creating KiCad config dir')
-        os.makedirs(kicad_cfg_dir, exist_ok=True)
-    config_file = os.path.join(kicad_cfg_dir, 'eeschema')
-    old_config_file = config_file + '.pre_script'
-    logger.debug('Eeschema config: '+config_file)
-    # If we have an old back-up ask for the user to solve it
-    if os.path.isfile(old_config_file):
-        logger.error('Eeschema config back-up found (%s)', old_config_file)
-        logger.error('It could contain your eeschema configuration, rename it to %s or discard it.', config_file)
-        exit(EESCHEMA_CFG_PRESENT)
-    if os.path.isfile(config_file):
-        logger.debug('Moving current config to '+old_config_file)
-        os.rename(config_file, old_config_file)
-        atexit.register(restore_config)
-
+        os.makedirs(cfg.kicad_conf_path, exist_ok=True)
+    # Back-up the current eeschema configuration
+    cfg.conf_eeschema_bkp = backup_config('Eeschema', cfg.conf_eeschema, EESCHEMA_CFG_PRESENT, cfg)
     # Create a suitable configuration
-    logger.debug('Creating an eeschema config')
-    text_file = open(config_file, "w")
-    text_file.write('RescueNeverShow=1\n')
-    if args.command == 'export':
-        # HPGL:0 ??:1 PS:2 DXF:3 PDF:4 SVG:5
-        index = ['hpgl', '---', 'ps', 'dxf', 'pdf', 'svg'].index(args.file_format.lower())
-        logger.debug('Selecting plot format %s (%d)', args.file_format, index)
-        text_file.write('PlotFormat=%d\n' % index)
-    text_file.close()
-
+    create_eeschema_config(cfg)
     # Back-up the current kicad_common configuration
-    common_config_file = os.environ['HOME'] + '/.config/kicad/kicad_common'
-    old_common_config_file = common_config_file + '.pre_script'
-    logger.debug('Kicad common config: '+common_config_file)
-    # If we have an old back-up ask for the user to solve it
-    if os.path.isfile(old_common_config_file):
-        logger.error('KiCad common config back-up found (%s)', old_common_config_file)
-        logger.error('It could contain your kiCad configuration, rename it to %s or discard it.', common_config_file)
-        exit(KICAD_CFG_PRESENT)
-    if os.path.isfile(common_config_file):
-        logger.debug('Moving current config to '+old_common_config_file)
-        os.rename(common_config_file, old_common_config_file)
-        atexit.register(restore_common_config)
-
+    cfg.conf_kicad_bkp = backup_config('KiCad common', cfg.conf_kicad, KICAD_CFG_PRESENT, cfg)
     # Create a suitable configuration
-    logger.debug('Creating a KiCad common config')
-    text_file = open(common_config_file, "w")
-    text_file.write('ShowEnvVarWarningDialog=0\n')
-    text_file.write('Editor=/bin/cat\n')
-    text_file.close()
-
+    create_kicad_config(cfg)
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        # KiCad 6 breaks menu short-cuts, but we can configure user hotkeys
+        # Back-up the current user.hotkeys configuration
+        cfg.conf_hotkeys_bkp = backup_config('User hotkeys', cfg.conf_hotkeys, USER_HOTKEYS_PRESENT, cfg)
+        # Create a suitable configuration
+        create_user_hotkeys(cfg)
     # Make sure the user has sym-lib-table
-    user_lib_table = os.path.join(kicad_cfg_dir, 'sym-lib-table')
-    if not os.path.isfile(user_lib_table):
-        logger.debug('Missing default sym-lib-table')
-        system_lib_table = '/usr/share/kicad/template/sym-lib-table'
-        if os.path.isfile(system_lib_table):
-            shutil.copy2(system_lib_table, user_lib_table)
-        else:  # pragma: no cover
-            logger.warning('Missing default system symbol table '+system_lib_table+' KiCad will most probably fail')
-
+    check_lib_table(cfg)
+    #
+    # Do all the work
+    #
     output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(args.schematic))[0])
-    with recorded_xvfb(output_dir if args.record else None, args.command+'_eeschema_screencast.ogv',
-                       args.start_x11vnc, use_wm, width=args.rec_width, height=args.rec_height, colordepth=24):
-        with PopenContext(['eeschema', args.schematic], close_fds=True,
+    with recorded_xvfb(cfg):
+        with PopenContext([cfg.eeschema, args.schematic], close_fds=True,
                           stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL) as eeschema_proc:
             if args.command == 'export':
                 # Export
-                ext = args.file_format.lower()
+                ext = cfg.export_format
                 if ext == 'hpgl':
                     ext = 'plt'
                 output_file = output_file_no_ext+'.'+ext
@@ -565,17 +663,17 @@ if __name__ == '__main__':
                     os.remove(output_file)
                     # Note: what if we are exporting multiple files and *all* of them exists?
                     # No problem KiCad will overwrite them without even asking ;-)
-                eeschema_plot_schematic(output_dir, output_file, args.all_pages, eeschema_proc.pid, ext)
+                eeschema_plot_schematic(cfg, output_dir, output_file, args.all_pages, eeschema_proc.pid, ext)
             elif args.command == 'netlist':
                 # Netlist
-                eeschema_netlist_commands(output_file_no_ext, eeschema_proc.pid)
+                eeschema_netlist_commands(cfg, output_file_no_ext, eeschema_proc.pid)
             elif args.command == 'bom_xml':
                 # BoM XML
                 output_file = output_file_no_ext+'.csv'
-                eeschema_bom_xml_commands(output_file, eeschema_proc.pid)
+                eeschema_bom_xml_commands(cfg, output_file, eeschema_proc.pid)
             elif args.command == 'run_erc':
                 # Run ERC
-                erc_file = eeschema_run_erc_schematic(output_file_no_ext, eeschema_proc.pid)
+                erc_file = eeschema_run_erc_schematic(cfg, output_file_no_ext, eeschema_proc.pid)
                 errors, warnings = eeschema_parse_erc(erc_file, args.warnings_as_errors)
                 skip_err, skip_wrn = apply_filters('ERC error/s', 'ERC warning/s')
                 errors = errors-skip_err
@@ -593,11 +691,12 @@ if __name__ == '__main__':
                     exit(-errors)
                 logger.info('No errors')
             eeschema_proc.terminate()
+    #
+    # Exit clean-up
+    #
     # The following code is here only to make coverage tool properly meassure atexit code.
     atexit.unregister(restore_project)
-    restore_project()
+    restore_project(cfg)
     atexit.unregister(restore_config)
-    restore_config()
-    atexit.unregister(restore_common_config)
-    restore_common_config()
+    restore_config(cfg)
     exit(0)

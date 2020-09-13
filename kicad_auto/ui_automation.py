@@ -21,22 +21,16 @@
 #   limitations under the License.
 
 import os
-from subprocess import (Popen, CalledProcessError, TimeoutExpired, call, check_output, STDOUT, DEVNULL)
+from subprocess import (Popen, CalledProcessError, TimeoutExpired, call, check_output, STDOUT, DEVNULL, PIPE)
 import tempfile
 import time
 import shutil
-from logging import (DEBUG)
-
 from contextlib import contextmanager
-
 # python3-xvfbwrapper
 from xvfbwrapper import Xvfb
 
-
 from kicad_auto import log
 logger = log.get_logger(__name__)
-
-wait_for_key = False
 
 
 class PopenContext(Popen):
@@ -131,8 +125,8 @@ def start_wm(do_it):
 
 
 @contextmanager
-def start_record(video_dir, video_name):
-    if video_dir:
+def start_record(do_record, video_dir, video_name):
+    if do_record:
         video_filename = os.path.join(video_dir, video_name)
         cmd = ['recordmydesktop', '--overwrite', '--no-sound', '--no-frame', '--on-the-fly-encoding',
                '-o', video_filename]
@@ -170,22 +164,23 @@ def start_x11vnc(do_it, old_display):
 
 
 @contextmanager
-def recorded_xvfb(video_dir, video_name, do_x11vnc, do_wm, **xvfb_args):
+def recorded_xvfb(cfg):
     try:
         old_display = os.environ['DISPLAY']
     except KeyError:
         old_display = None
         pass
-    with Xvfb(**xvfb_args):
+    with Xvfb(width=cfg.rec_width, height=cfg.rec_height, colordepth=cfg.colordepth):
         wait_xserver()
-        with start_x11vnc(do_x11vnc, old_display):
-            with start_wm(do_wm):
-                with start_record(video_dir, video_name):
+        with start_x11vnc(cfg.start_x11vnc, old_display):
+            with start_wm(cfg.use_wm):
+                with start_record(cfg.record, cfg.video_dir, cfg.video_name):
                     yield
 
 
 def xdotool(command):
     return check_output(['xdotool'] + command, stderr=DEVNULL)
+    # return check_output(['xdotool'] + command)
 
 
 def clipboard_store(string):
@@ -217,17 +212,17 @@ def clipboard_store(string):
         raise
 
 
-# def clipboard_retrieve():
-#     p = Popen(['xclip', '-o', '-selection', 'clipboard'], stdout=PIPE)
-#     output = ''
-#     for line in p.stdout:
-#         output += line.decode()
-#     logger.debug('Clipboard retrieve "'+output+'"')
-#     return output
+def clipboard_retrieve():
+    p = Popen(['xclip', '-o', '-selection', 'clipboard'], stdout=PIPE, stderr=STDOUT)
+    output = ''
+    for line in p.stdout:
+        output += line.decode()
+    logger.debug('Clipboard retrieve "'+output+'"')
+    return output
 
 
 def debug_window(id=None):  # pragma: no cover
-    if logger.level != DEBUG:
+    if log.get_level() < 2:
         return
     if shutil.which('xprop'):
         if id is None:
@@ -310,11 +305,6 @@ def wait_for_window(name, window_regex, timeout=10, focus=True, skip_id=0, other
     raise RuntimeError('Timed out waiting for %s window' % name)
 
 
-def set_wait(state):
-    global wait_for_key
-    wait_for_key = state
-
-
-def wait_point():
-    if wait_for_key:
+def wait_point(cfg):
+    if cfg.wait_for_key:
         input('Press a key')

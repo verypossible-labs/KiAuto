@@ -6,7 +6,7 @@ import subprocess
 import re
 import pytest
 from glob import glob
-from pty import openpty
+from pty import spawn
 from contextlib import contextmanager
 from psutil import pid_exists
 import sys
@@ -25,6 +25,7 @@ MODE_PCB = 0
 
 
 class TestContext(object):
+    pty_data = None
 
     def __init__(self, test_name, prj_name):
         # We are using PCBs
@@ -98,6 +99,12 @@ class TestContext(object):
     def get_pro_mtime(self):
         return os.path.getmtime(self.get_pro_filename())
 
+    @staticmethod
+    def read(fd):
+        data = os.read(fd, 1024)
+        TestContext.pty_data += data
+        return data
+
     def run(self, cmd, ret_val=None, extra=None, use_a_tty=False, filename=None):
         logging.debug('Running '+self.test_name)
         # Change the command to be local and add the board and output arguments
@@ -112,26 +119,21 @@ class TestContext(object):
         err_filename = self.get_out_path('error.txt')
         if use_a_tty:
             # This is used to test the coloured logs, we need stderr to be a TTY
-            master, slave = openpty()
-            f_err = slave
-            f_out = slave
+            TestContext.pty_data = b''
+            ret_code = spawn(cmd, self.read)
+            self.err = TestContext.pty_data.decode()
+            self.out = self.err
         else:
             # Redirect stdout and stderr to files
             f_out = os.open(out_filename, os.O_RDWR | os.O_CREAT)
             f_err = os.open(err_filename, os.O_RDWR | os.O_CREAT)
-        # Run the process
-        process = subprocess.Popen(cmd, stdout=f_out, stderr=f_err)
-        ret_code = process.wait()
+            # Run the process
+            process = subprocess.Popen(cmd, stdout=f_out, stderr=f_err)
+            ret_code = process.wait()
         logging.debug('ret_code '+str(ret_code))
-        if use_a_tty:
-            self.err = os.read(master, 10000)
-            self.err = self.err.decode()
-            self.out = self.err
         exp_ret = 0 if ret_val is None else ret_val
         assert ret_code == exp_ret
         if use_a_tty:
-            os.close(master)
-            os.close(slave)
             with open(out_filename, 'w') as f:
                 f.write(self.out)
             with open(err_filename, 'w') as f:
@@ -274,11 +276,10 @@ class TestContext(object):
             f.write(re.sub(pattern, repl, txt))
 
     @contextmanager
-    def start_kicad(self, cmd):
+    def start_kicad(self, cmd, cfg):
         """ Context manager to run a command under a virual X server.
             Use like this: with context.start_kicad('command'): """
-        xvfb_kwargs = {'width': 800, 'height': 600, 'colordepth': 24, }
-        with recorded_xvfb(None, None, False, False, **xvfb_kwargs):
+        with recorded_xvfb(cfg):
             with PopenContext([cmd], stderr=subprocess.DEVNULL, close_fds=True) as self.proc:
                 logging.debug('Started '+cmd+' with PID: '+str(self.proc.pid))
                 assert pid_exists(self.proc.pid)

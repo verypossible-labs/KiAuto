@@ -8,6 +8,7 @@ pytest-3 --log-cli-level debug
 
 import os
 import sys
+import logging
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 prev_dir = os.path.dirname(script_dir)
@@ -15,7 +16,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (WRONG_LAYER_NAME)
+from kicad_auto.misc import (WRONG_LAYER_NAME, Config)
 
 
 PROG = 'pcbnew_do'
@@ -58,8 +59,9 @@ def test_print_pcb_good_dwg_dism():
     # Create the output to force and overwrite
     with open(ctx.get_out_path(pdf), 'w') as f:
         f.write('dummy')
+    cfg = Config(logging)
     # Run pcbnew in parallel to get 'Dismiss pcbnew already running'
-    with ctx.start_kicad('pcbnew'):
+    with ctx.start_kicad(cfg.pcbnew, cfg):
         cmd = [PROG, '-v', '--wait_start', '5', 'export', '--output_name', pdf]
         layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
         ctx.run(cmd, extra=layers)
