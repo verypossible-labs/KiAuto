@@ -7,6 +7,7 @@ import logging
 
 # Default domain, base name for the tool
 domain = 'ki_auto'
+verbose_level = 2
 
 
 def get_logger(name=None):
@@ -20,17 +21,26 @@ def set_domain(name):
     domain = name
 
 
-def init(level):
-    """Initialize the logging feature using a custom format and the specified verbosity level"""
+def set_level(logger, level):
+    global verbose_level
+    verbose_level = level
     if level >= 2:
         log_level = logging.DEBUG
     elif level == 1:
         log_level = logging.INFO
     else:
         log_level = logging.WARNING
-
-    logger = get_logger()
     logger.setLevel(log_level)
+
+
+def get_level():
+    return verbose_level
+
+
+def init(level):
+    """Initialize the logging feature using a custom format and the specified verbosity level"""
+    logger = get_logger()
+    set_level(logger, level)
     ch = logging.StreamHandler()
     ch.setFormatter(CustomFormatter())
     logger.addHandler(ch)
