@@ -37,14 +37,12 @@ def get_level():
     return verbose_level
 
 
-def init(level):
+def init():
     """Initialize the logging feature using a custom format and the specified verbosity level"""
     logger = get_logger()
-    set_level(logger, level)
     ch = logging.StreamHandler()
     ch.setFormatter(CustomFormatter())
     logger.addHandler(ch)
-
     return logger
 
 

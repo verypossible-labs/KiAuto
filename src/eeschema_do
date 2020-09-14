@@ -32,10 +32,10 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Log functionality first
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
-logger = log.init(2)
+logger = log.init()
 
 from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, errs, wrns,
-                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table)
+                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                              WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
                              USER_HOTKEYS_PRESENT)
@@ -311,14 +311,14 @@ def eeschema_run_erc_schematic_6_0(cfg, erc_file, pid):
     # - Ctrl+V copies to the clipboard
     # We try this sequence until we get the "Finished" message.
     #
-    tries = 20
+    tries = 30
     while tries:
         tries -= 1
         xdotool(['key', 'Tab', 'ctrl+a', 'ctrl+c'])
         res = clipboard_retrieve()
         if 'Finished' in res:
             break
-        time.sleep(0.3)
+        time.sleep(0.5)
     if not tries:
         RuntimeError('Timed out waiting for ERC')
     # Save the report
@@ -502,12 +502,6 @@ def create_kicad_config(cfg):
         else:
             text_file.write('ShowEnvVarWarningDialog=0\n')
             text_file.write('Editor=/bin/cat\n')
-
-
-def create_user_hotkeys(cfg):
-    logger.debug('Creating a user hotkeys config')
-    with open(cfg.conf_hotkeys, "wt") as text_file:
-        text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
 
 
 if __name__ == '__main__':

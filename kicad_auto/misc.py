@@ -21,6 +21,7 @@ PCBNEW_ERROR = 9
 EESCHEMA_ERROR = 10
 NO_PCBNEW_MODULE = 11
 USER_HOTKEYS_PRESENT = 12
+CORRUPTED_PCB = 13
 # Wait 25 s to pcbnew/eeschema window to be present
 WAIT_START = 25
 # Name for testing versions
@@ -89,11 +90,7 @@ class Config(object):
         self.conf_eeschema = os.path.join(self.kicad_conf_path, 'eeschema')
         self.conf_eeschema_bkp = None
         self.conf_eeschema_json = False
-        if self.kicad_version >= KICAD_VERSION_5_99:
-            self.conf_eeschema += '.json'
-            self.conf_eeschema_json = True
         # - pcbnew config
-        # 20200912: pcbnew still in old format
         self.conf_pcbnew = os.path.join(self.kicad_conf_path, 'pcbnew')
         self.conf_pcbnew_bkp = None
         self.conf_pcbnew_json = False
@@ -101,7 +98,13 @@ class Config(object):
         self.conf_kicad = os.path.join(self.kicad_conf_path, 'kicad_common')
         self.conf_kicad_bkp = None
         self.conf_kicad_json = False
+        # Config files that migrated to JSON
+        # Note that they remain in the old format until saved
         if self.kicad_version >= KICAD_VERSION_5_99:
+            self.conf_eeschema += '.json'
+            self.conf_eeschema_json = True
+            self.conf_pcbnew += '.json'
+            self.conf_pcbnew_json = True
             self.conf_kicad += '.json'
             self.conf_kicad_json = True
         # - hotkeys

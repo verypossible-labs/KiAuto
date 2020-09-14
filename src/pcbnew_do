@@ -22,6 +22,8 @@ import re
 from time import (asctime, localtime, sleep)
 import subprocess
 import gettext
+import json
+import shutil
 
 # Look for the 'kicad_auto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -30,10 +32,13 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Log functionality first
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
+logger = log.init()
+
 from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, errs, wrns,
-                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table)
+                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
-                             WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config)
+                             WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, KICAD_VERSION_5_99, USER_HOTKEYS_PRESENT,
+                             CORRUPTED_PCB)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,
@@ -41,6 +46,7 @@ from kicad_auto.ui_automation import (
     wait_for_window,
     recorded_xvfb,
     clipboard_store,
+    clipboard_retrieve,
     wait_point
 )
 
@@ -59,7 +65,7 @@ def parse_drc(drc_file):
     in_wrns = False
 
     for line in lines:
-        m = re.search(r'^\*\* Found ([0-9]+) DRC errors \*\*$', line)
+        m = re.search(r'^\*\* Found ([0-9]+) DRC (errors|violations) \*\*$', line)
         if m:
             drc_errors = m.group(1)
             in_errs = True
@@ -264,7 +270,7 @@ def print_layers(cfg, print_output_file, pcbnew_proc, fill_zones=False):
     pcbnew_proc.terminate()
 
 
-def run_drc(cfg, pcb_file, drc_output_file, pcbnew_proc, save=False):
+def run_drc_5_1(cfg, pcb_file, drc_output_file, pcbnew_proc, save=False):
     logger.info('Open Inspect->DRC')
     wait_point(cfg)
     xdotool(['key', 'alt+i', 'd'])
@@ -289,6 +295,66 @@ def run_drc(cfg, pcb_file, drc_output_file, pcbnew_proc, save=False):
     xdotool(['key', 'shift+Tab', 'Return'])
     wait_pcbnew()
 
+
+def run_drc_6_0(cfg, pcb_file, drc_output_file, pcbnew_proc, save=False):
+    logger.info('Open Inspect->DRC')
+    wait_point(cfg)
+    xdotool(['key', 'ctrl+shift+i'])
+    # Wait dialog
+    wait_for_window('DRC modal window', 'DRC Control')
+    # Run the DRC
+    logger.info('Run DRC')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    #
+    # To know when KiCad finished we try this:
+    # - When finished the list of errors is selected
+    # - 2 Shift+Tab gives the focus to the messages.
+    # - Ctrl+A selects all
+    # - Ctrl+V copies to the clipboard
+    # We try this sequence until we get the "Finished" message.
+    #
+    tries = 30
+    while tries:
+        tries -= 1
+        xdotool(['key', 'shift+Tab', 'shift+Tab', 'ctrl+a', 'ctrl+c'])
+        res = clipboard_retrieve()
+        if 'Finished' in res:
+            break
+        sleep(0.5)
+    if not tries:
+        RuntimeError('Timed out waiting for ERC')
+    # Save the DRC
+    clipboard_store(drc_output_file)
+    logger.info('Open the save dialog')
+    wait_point(cfg)
+    logger.info('Save DRC')
+    wait_point(cfg)
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
+    # Wait for the save dialog
+    wait_for_window('DRC File save dialog', 'Save Report to File')
+    # Paste the name
+    logger.info('Pasting output file')
+    wait_point(cfg)
+    xdotool(['key', 'ctrl+a', 'ctrl+v'])
+    # Wait for report created
+    logger.info('Wait for DRC file creation')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    wait_for_file_created_by_process(pcbnew_proc.pid, drc_output_file)
+    # Close the dialog
+    logger.info('Closing the DRC dialog')
+    wait_point(cfg)
+    xdotool(['key', 'Escape'])
+    wait_pcbnew()
+
+
+def run_drc(cfg, pcb_file, drc_output_file, pcbnew_proc, save=False):
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        run_drc_6_0(cfg, pcb_file, drc_output_file, pcbnew_proc, save)
+    else:
+        run_drc_5_1(cfg, pcb_file, drc_output_file, pcbnew_proc, save)
+    # Save the PCB
     if save:
         logger.info('Saving PCB')
         wait_point(cfg)
@@ -297,7 +363,7 @@ def run_drc(cfg, pcb_file, drc_output_file, pcbnew_proc, save=False):
         logger.info('Wait for PCB file creation')
         wait_point(cfg)
         wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
-
+    # Exit
     exit_pcbnew(cfg)
     pcbnew_proc.terminate()
 
@@ -310,9 +376,10 @@ def load_layers(kicad_pcb_file):
         if collect_layers:
             z = re.match(r'\s+\((\d+)\s+(\S+)', line)
             if z:
-                res = z.groups()
-                # print(res[1]+'->'+res[0])
-                layer_names[int(res[0])] = res[1]
+                id, name = z.groups()
+                if name[0] == '"':
+                    name = name[1:-1]
+                layer_names[int(id)] = name
             else:
                 if re.search(r'^\s+\)$', line):
                     collect_layers = False
@@ -346,49 +413,75 @@ def list_warnings():
             logger.warning(wrn)
 
 
-pcb_size = -1
-pcb_date = -1
-pcb_file = None
-
-
-def restore_pcb():
-    if pcb_file and pcb_size >= 0 and pcb_date >= 0:
-        cur_date = os.path.getmtime(pcb_file)
-        if cur_date != pcb_date:
+def restore_pcb(cfg):
+    if cfg.pcb_file and cfg.pcb_size >= 0 and cfg.pcb_date >= 0:
+        cur_date = os.path.getmtime(cfg.pcb_file)
+        bkp = cfg.pcb_file+'-bak'
+        if cur_date != cfg.pcb_date:
             logger.debug('Current pcb date: {} (!={}), trying to restore it'.
-                         format(asctime(localtime(cur_date)), asctime(localtime(pcb_date))))
-            bkp = pcb_file+'-bak'
+                         format(asctime(localtime(cur_date)), asctime(localtime(cfg.pcb_date))))
             if os.path.isfile(bkp):
                 bkp_size = os.path.getsize(bkp)
-                if bkp_size == pcb_size:
-                    os.remove(pcb_file)
-                    os.rename(bkp, pcb_file)
-                    logger.debug('Moved {} -> {}'.format(bkp, pcb_file))
+                if bkp_size == cfg.pcb_size:
+                    os.remove(cfg.pcb_file)
+                    os.rename(bkp, cfg.pcb_file)
+                    logger.debug('Moved {} -> {}'.format(bkp, cfg.pcb_file))
                 else:  # pragma: no cover
                     logger.error('Corrupted back-up file! (size = {})'.format(bkp_size))
             else:  # pragma: no cover
                 logger.error('No back-up available!')
+        if cfg.kicad_version >= KICAD_VERSION_5_99 and os.path.isfile(bkp):
+            os.remove(bkp)
 
 
-def memorize_pcb(file):
-    global pcb_size
-    global pcb_date
-    global pcb_file
-    pcb_size = os.path.getsize(file)
-    pcb_date = os.path.getmtime(file)
-    pcb_file = file
+def memorize_pcb(cfg):
+    cfg.pcb_size = os.path.getsize(cfg.pcb_file)
+    cfg.pcb_date = os.path.getmtime(cfg.pcb_file)
     logger.debug('Current pcb ({}) size: {} date: {}'.
-                 format(pcb_file, pcb_size, asctime(localtime(pcb_date))))
-    atexit.register(restore_pcb)
+                 format(cfg.pcb_file, cfg.pcb_size, asctime(localtime(cfg.pcb_date))))
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        # KiCad 6 no longer creates back-up, we do it
+        shutil.copy2(cfg.pcb_file, cfg.pcb_file+'-bak')
+    atexit.register(restore_pcb, cfg)
 
 
-def create_pcbnew_config(cfg, args):
+def create_pcbnew_config(cfg):
+    # Mark which layers are requested
+    used_layers = set()
+    layer_cnt = cfg.board.GetCopperLayerCount()
+    for layer in cfg.layers:
+        # Support for kiplot inner layers
+        if layer.startswith("Inner"):
+            m = re.match(r"^Inner\.([0-9]+)$", layer)
+            if not m:
+                logger.error('Malformed inner layer name: '+layer+', use Inner.N')
+                sys.exit(WRONG_LAYER_NAME)
+            layer_n = int(m.group(1))
+            if layer_n < 1 or layer_n >= layer_cnt - 1:
+                logger.error(layer+" isn't a valid layer")
+                sys.exit(WRONG_LAYER_NAME)
+            used_layers.add(layer_n)
+        else:
+            id = cfg.board.GetLayerID(layer)
+            if id < 0:
+                logger.error('Unknown layer '+layer)
+                sys.exit(WRONG_LAYER_NAME)
+            used_layers.add(id)
     with open(cfg.conf_pcbnew, "wt") as text_file:
-        text_file.write('canvas_type=2\n')
-        text_file.write('RefillZonesBeforeDrc=1\n')
-        text_file.write('PcbFrameFirstRunShown=1\n')
-        text_file.write('DrcTrackToZoneTest=1\n')
-        if args.command == 'export':
+        if cfg.conf_pcbnew_json:
+            conf = {"graphics": {"canvas_type": 2}}
+            conf["drc_dialog"] = {"refill_zones": True, "test_track_to_zone": True}
+            conf["system"] = {"first_run_shown": True, "layers": sorted(used_layers)}
+            conf["printing"] = {"monochrome": False, "title_block": True}
+            conf["plot"] = {"check_zones_before_plotting": cfg.fill_zones, "one_page_per_layer": 0, "pads_drill_mode": 2}
+            json_text = json.dumps(conf)
+            text_file.write(json_text)
+            logger.debug(json_text)
+        else:
+            text_file.write('canvas_type=2\n')
+            text_file.write('RefillZonesBeforeDrc=1\n')
+            text_file.write('DrcTrackToZoneTest=1\n')
+            text_file.write('PcbFrameFirstRunShown=1\n')
             # Color
             text_file.write('PrintMonochrome=0\n')
             # Include frame
@@ -397,29 +490,20 @@ def create_pcbnew_config(cfg, args):
             text_file.write('PrintPadsDrillOpt=2\n')
             # Only one file
             text_file.write('PrintSinglePage=1\n')
-            # Mark which layers are requested
-            used_layers = [0]*50
-            for layer in args.layers:
-                try:
-                    # Support for kiplot inner layers
-                    if layer.startswith("Inner"):
-                        m = re.match(r"^Inner\.([0-9]+)$", layer)
-                        if not m:
-                            logger.error('Malformed inner layer name: '+layer+', use Inner.N')
-                            sys.exit(WRONG_LAYER_NAME)
-                        layer_n = int(m.group(1))
-                        if layer_n > 49 or layer_names[layer_n] == '-':
-                            logger.error(layer+" isn't a valid layer")
-                            sys.exit(WRONG_LAYER_NAME)
-                        used_layers[layer_n] = 1
-                    else:
-                        used_layers[layer_names.index(layer)] = 1
-                except ValueError:
-                    logger.error('Unknown layer '+layer)
-                    sys.exit(WRONG_LAYER_NAME)
             # List all posible layers, indicating which ones are requested
             for x in range(0, 50):
-                text_file.write('PlotLayer_%d=%d\n' % (x, used_layers[x]))
+                text_file.write('PlotLayer_%d=%d\n' % (x, int(x in used_layers)))
+
+
+def load_pcb(fname):
+    import pcbnew
+    try:
+        board = pcbnew.LoadBoard(fname)
+    except OSError as e:
+        logger.error('Error loading PCB file. Corrupted?')
+        logger.error(e)
+        exit(CORRUPTED_PCB)
+    return board
 
 
 if __name__ == '__main__':
@@ -456,9 +540,8 @@ if __name__ == '__main__':
     drc_parser.add_argument('output_dir', help='Output directory')
 
     args = parser.parse_args()
-
-    # Create a logger with the specified verbosity
-    logger = log.init(args.verbose)
+    # Set the specified verbosity
+    log.set_level(logger, args.verbose)
 
     if args.command is None:
         logger.error('No command selected')
@@ -466,6 +549,9 @@ if __name__ == '__main__':
         exit(WRONG_ARGUMENTS)
 
     cfg = Config(logger, args)
+    # Empty values by default, we'll fill them for export
+    cfg.fill_zones = False
+    cfg.layers = []
 
     # Get local versions for the GTK window names
     gettext.textdomain('gtk30')
@@ -487,13 +573,16 @@ if __name__ == '__main__':
         logger.error('PCB files must use kicad_pcb extension')
         exit(WRONG_PCB_NAME)
 
+    cfg.board = load_pcb(args.kicad_pcb_file)
+    cfg.pcb_file = args.kicad_pcb_file
     will_save = args.command == 'run_drc' and args.save
     if not will_save:
-        memorize_pcb(args.kicad_pcb_file)
+        memorize_pcb(cfg)
 
     if args.command == 'export':
         # Read the layer names from the PCB
-        layer_names = load_layers(args.kicad_pcb_file)
+        cfg.fill_zones = args.fill_zones
+        cfg.layers = args.layers
 
     if args.command == 'run_drc' and args.errors_filter:
         load_filters(args.errors_filter[0])
@@ -502,7 +591,13 @@ if __name__ == '__main__':
     check_kicad_config_dir(cfg)
     cfg.conf_pcbnew_bkp = backup_config('PCBnew', cfg.conf_pcbnew, PCBNEW_CFG_PRESENT, cfg)
     # Create a suitable configuration
-    create_pcbnew_config(cfg, args)
+    create_pcbnew_config(cfg)
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        # KiCad 6 breaks menu short-cuts, but we can configure user hotkeys
+        # Back-up the current user.hotkeys configuration
+        cfg.conf_hotkeys_bkp = backup_config('User hotkeys', cfg.conf_hotkeys, USER_HOTKEYS_PRESENT, cfg)
+        # Create a suitable configuration
+        create_user_hotkeys(cfg)
     # Make sure the user has fp-lib-table
     check_lib_table(cfg.user_fp_lib_table, cfg.sys_fp_lib_table)
     # Create output dir, compute full name for output file and remove it
@@ -547,7 +642,7 @@ if __name__ == '__main__':
     # The following code is here only to make coverage tool properly meassure atexit code.
     if not will_save:
         atexit.unregister(restore_pcb)
-        restore_pcb()
+        restore_pcb(cfg)
     atexit.unregister(restore_config)
     restore_config(cfg)
     exit(error_level)

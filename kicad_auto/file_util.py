@@ -154,3 +154,10 @@ def backup_config(name, file, err, cfg):
         atexit.register(restore_config, cfg)
         return old_config_file
     return None
+
+
+def create_user_hotkeys(cfg):
+    logger.debug('Creating a user hotkeys config')
+    with open(cfg.conf_hotkeys, "wt") as text_file:
+        text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
+        text_file.write('pcbnew.DRCTool.runDRC\tCtrl+Shift+I\n')

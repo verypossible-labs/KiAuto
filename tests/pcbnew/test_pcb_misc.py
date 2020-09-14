@@ -16,7 +16,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (PCBNEW_CFG_PRESENT, NO_PCB, WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS)
+from kicad_auto.misc import (PCBNEW_CFG_PRESENT, NO_PCB, WRONG_PCB_NAME, WRONG_ARGUMENTS, CORRUPTED_PCB)
 
 PROG = 'pcbnew_do'
 BOGUS_PCB = 'bogus.kicad_pcb'
@@ -78,8 +78,8 @@ def test_bogus_pcb():
     with open(pcb, 'w') as f:
         f.write('dummy')
     cmd = [PROG, '--wait_start', '5', 'run_drc']
-    ctx.run(cmd, PCBNEW_ERROR, filename=pcb)
-    assert ctx.search_err(r"pcbnew reported an error") is not None
+    ctx.run(cmd, CORRUPTED_PCB, filename=pcb)
+    assert ctx.search_err(r"Error loading PCB file. Corrupted?") is not None
     ctx.clean_up()
 
 
