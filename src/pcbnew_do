@@ -184,156 +184,122 @@ def exit_pcbnew(cfg):
     wait_point(cfg)
 
 
-def print_layers(cfg, pcb_file, output_dir, output_filename, fill_zones=False):
+def print_layers(cfg, print_output_file, pcbnew_proc, fill_zones=False):
+    if fill_zones:
+        logger.info('Fill zones')
+        wait_point(cfg)
+        xdotool(['key', 'b'])
+        # Wait for complation
+        sleep(1)
 
-    os.makedirs(output_dir, exist_ok=True)
+    logger.info('Open File->Print')
+    wait_point(cfg)
+    xdotool(['key', 'alt+f', 'p'])
 
-    print_output_file = os.path.join(os.path.abspath(output_dir), output_filename)
-    if os.path.exists(print_output_file):
-        os.remove(print_output_file)
+    retry = False
+    try:
+        id = wait_for_window('Print dialog', 'Print')
+    except RuntimeError:  # pragma: no cover
+        # Perhaps the fill took too muchm try again
+        retry = True
 
-    cfg.video_name = 'pcbnew_print_layers_screencast.ogv'
-    with recorded_xvfb(cfg):
-        with PopenContext([cfg.pcbnew, pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
+    if retry:  # pragma: no cover
+        # Excluded from coverage, only happends under conditions hard to reproduce
+        logger.info('Open File->Print (retrying)')
+        wait_point(cfg)
+        xdotool(['key', 'alt+f', 'p'])
+        id = wait_for_window('Print dialog', 'Print')
 
-            clipboard_store(print_output_file)
+    wait_point(cfg)
+    # The "color" option is selected, send enough Tabs to go to the Print button
+    keys = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
+            # When using a WM we have chances to be 1 tab before "color" (don't know why)
+            # Here we add this Tab, but then we move to the right in case it wasn't necessary
+            'Tab', 'Right',
+            'Return']
+    xdotool(keys)
 
-            wait_pcbew_start(cfg)
+    id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % cfg.print_dlg_name, skip_id=id[0])
+    wait_point(cfg)
+    # List of printers
+    xdotool(['key', 'Tab',
+             # Go up to the top
+             'Home',
+             # Output file name
+             'Tab',
+             # Open dialog
+             'Return'])
+    id_sel_f = wait_for_window('Select a filename', '(Select a filename|%s)' % cfg.select_a_filename, 2)
+    logger.info('Pasting output dir')
+    wait_point(cfg)
+    xdotool(['key',
+             # Select all
+             'ctrl+a',
+             # Paste
+             'ctrl+v',
+             # Select this name
+             'Return'])
+    # Back to print
+    wait_not_focused(id_sel_f[0])
+    wait_for_window('Printer dialog', '^(Print|%s)$' % cfg.print_dlg_name, skip_id=id[0])
+    wait_point(cfg)
+    xdotool(['key',
+             # Format options
+             'Tab',
+             # Be sure we are at left (PDF)
+             'Left', 'Left', 'Left',
+             # Print it
+             'Return'])
 
-            if fill_zones:
-                logger.info('Fill zones')
-                wait_point(cfg)
-                xdotool(['key', 'b'])
-                # Wait for complation
-                sleep(1)
+    wait_for_file_created_by_process(pcbnew_proc.pid, print_output_file)
 
-            logger.info('Open File->Print')
-            wait_point(cfg)
-            xdotool(['key', 'alt+f', 'p'])
+    wait_not_focused(id2[1])
+    id = wait_for_window('Print dialog', 'Print')
+    wait_point(cfg)
+    # Close button
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
 
-            retry = False
-            try:
-                id = wait_for_window('Print dialog', 'Print')
-            except RuntimeError:  # pragma: no cover
-                # Perhaps the fill took too muchm try again
-                retry = True
-
-            if retry:  # pragma: no cover
-                # Excluded from coverage, only happends under conditions hard to reproduce
-                logger.info('Open File->Print (retrying)')
-                wait_point(cfg)
-                xdotool(['key', 'alt+f', 'p'])
-                id = wait_for_window('Print dialog', 'Print')
-
-            wait_point(cfg)
-            # The "color" option is selected, send enough Tabs to go to the Print button
-            keys = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
-                    # When using a WM we have chances to be 1 tab before "color" (don't know why)
-                    # Here we add this Tab, but then we move to the right in case it wasn't necessary
-                    'Tab', 'Right',
-                    'Return']
-            xdotool(keys)
-
-            id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % cfg.print_dlg_name, skip_id=id[0])
-            wait_point(cfg)
-            # List of printers
-            xdotool(['key', 'Tab',
-                     # Go up to the top
-                     'Home',
-                     # Output file name
-                     'Tab',
-                     # Open dialog
-                     'Return'])
-            id_sel_f = wait_for_window('Select a filename', '(Select a filename|%s)' % cfg.select_a_filename, 2)
-            logger.info('Pasting output dir')
-            wait_point(cfg)
-            xdotool(['key',
-                     # Select all
-                     'ctrl+a',
-                     # Paste
-                     'ctrl+v',
-                     # Select this name
-                     'Return'])
-            # Back to print
-            wait_not_focused(id_sel_f[0])
-            wait_for_window('Printer dialog', '^(Print|%s)$' % cfg.print_dlg_name, skip_id=id[0])
-            wait_point(cfg)
-            xdotool(['key',
-                     # Format options
-                     'Tab',
-                     # Be sure we are at left (PDF)
-                     'Left', 'Left', 'Left',
-                     # Print it
-                     'Return'])
-
-            wait_for_file_created_by_process(pcbnew_proc.pid, print_output_file)
-
-            wait_not_focused(id2[1])
-            id = wait_for_window('Print dialog', 'Print')
-            wait_point(cfg)
-            # Close button
-            xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
-
-            wait_not_focused(id2[0])
-            exit_pcbnew(cfg)
-            pcbnew_proc.terminate()
-
-    return print_output_file
+    wait_not_focused(id2[0])
+    exit_pcbnew(cfg)
+    pcbnew_proc.terminate()
 
 
-def run_drc(cfg, pcb_file, output_dir, save=False):
+def run_drc(cfg, pcb_file, drc_output_file, pcbnew_proc, save=False):
+    logger.info('Open Inspect->DRC')
+    wait_point(cfg)
+    xdotool(['key', 'alt+i', 'd'])
 
-    os.makedirs(output_dir, exist_ok=True)
+    wait_for_window('DRC modal window', 'DRC Control')
+    # Note: Refill zones on DRC gets saved in ~/.config/kicad/pcbnew as RefillZonesBeforeDrc
+    # The space here is to enable the report of all errors for tracks
+    logger.info('Enable reporting all errors for tracks')
+    wait_point(cfg)
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'space', 'Tab', 'Tab', 'Tab', 'Tab'])
+    logger.info('Pasting output dir')
+    wait_point(cfg)
+    xdotool(['key', 'ctrl+v', 'Return'])
 
-    drc_output_file = os.path.join(os.path.abspath(output_dir), args.output_name[0])
-    if os.path.exists(drc_output_file):
-        os.remove(drc_output_file)
+    wait_for_window('Report completed dialog', 'Disk File Report Completed')
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    wait_for_window('DRC modal window', 'DRC Control')
 
-    cfg.video_name = 'pcbnew_run_drc_screencast.ogv'
-    with recorded_xvfb(cfg):
-        with PopenContext([cfg.pcbnew, pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
+    logger.info('Closing the DRC dialog')
+    wait_point(cfg)
+    xdotool(['key', 'shift+Tab', 'Return'])
+    wait_pcbnew()
 
-            clipboard_store(drc_output_file)
+    if save:
+        logger.info('Saving PCB')
+        wait_point(cfg)
+        os.rename(pcb_file, pcb_file + '-bak')
+        xdotool(['key', 'ctrl+s'])
+        logger.info('Wait for PCB file creation')
+        wait_point(cfg)
+        wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
 
-            wait_pcbew_start(cfg)
-
-            logger.info('Open Inspect->DRC')
-            wait_point(cfg)
-            xdotool(['key', 'alt+i', 'd'])
-
-            wait_for_window('DRC modal window', 'DRC Control')
-            # Note: Refill zones on DRC gets saved in ~/.config/kicad/pcbnew as RefillZonesBeforeDrc
-            # The space here is to enable the report of all errors for tracks
-            logger.info('Enable reporting all errors for tracks')
-            wait_point(cfg)
-            xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'space', 'Tab', 'Tab', 'Tab', 'Tab'])
-            logger.info('Pasting output dir')
-            wait_point(cfg)
-            xdotool(['key', 'ctrl+v', 'Return'])
-
-            wait_for_window('Report completed dialog', 'Disk File Report Completed')
-            wait_point(cfg)
-            xdotool(['key', 'Return'])
-            wait_for_window('DRC modal window', 'DRC Control')
-
-            logger.info('Closing the DRC dialog')
-            wait_point(cfg)
-            xdotool(['key', 'shift+Tab', 'Return'])
-            wait_pcbnew()
-
-            if save:
-                logger.info('Saving PCB')
-                wait_point(cfg)
-                os.rename(pcb_file, pcb_file + '-bak')
-                xdotool(['key', 'ctrl+s'])
-                logger.info('Wait for PCB file creation')
-                wait_point(cfg)
-                wait_for_file_created_by_process(pcbnew_proc.pid, os.path.realpath(pcb_file))
-
-            exit_pcbnew(cfg)
-            pcbnew_proc.terminate()
-
-    return drc_output_file
+    exit_pcbnew(cfg)
+    pcbnew_proc.terminate()
 
 
 def load_layers(kicad_pcb_file):
@@ -539,29 +505,42 @@ if __name__ == '__main__':
     create_pcbnew_config(cfg, args)
     # Make sure the user has fp-lib-table
     check_lib_table(cfg.user_fp_lib_table, cfg.sys_fp_lib_table)
+    # Create output dir, compute full name for output file and remove it
+    output_dir = os.path.abspath(args.output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    output_filename = os.path.join(output_dir, args.output_name[0])
+    if os.path.exists(output_filename):
+        os.remove(output_filename)
+    # Name for the video
+    cfg.video_name = 'pcbnew_'+args.command+'_screencast.ogv'
     #
     # Do all the work
     #
     error_level = 0
-    if args.command == 'export':
-        print_layers(cfg, args.kicad_pcb_file, args.output_dir, args.output_name[0], args.fill_zones)
-    else:  # run_drc
-        drc_errors, unconnected_pads = parse_drc(run_drc(cfg, args.kicad_pcb_file, args.output_dir, args.save))
-        logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
-
-        skip_err, skip_unc = apply_filters('DRC error/s', 'unconnected pad/s')
-        drc_errors = drc_errors-skip_err
-        unconnected_pads = unconnected_pads-skip_unc
-        if drc_errors == 0 and unconnected_pads == 0:
-            logger.info('No errors')
-        else:
-            logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
-            list_errors()
-            if args.ignore_unconnected:
-                unconnected_pads = 0
-            else:
-                list_warnings()
-            error_level = -(drc_errors+unconnected_pads)
+    with recorded_xvfb(cfg):
+        with PopenContext([cfg.pcbnew, args.kicad_pcb_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
+            clipboard_store(output_filename)
+            wait_pcbew_start(cfg)
+            if args.command == 'export':
+                print_layers(cfg, output_filename, pcbnew_proc, args.fill_zones)
+            else:  # run_drc
+                run_drc(cfg, args.kicad_pcb_file, output_filename, pcbnew_proc, args.save)
+                drc_errors, unconnected_pads = parse_drc(output_filename)
+                logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+                # Apply filters
+                skip_err, skip_unc = apply_filters('DRC error/s', 'unconnected pad/s')
+                drc_errors = drc_errors-skip_err
+                unconnected_pads = unconnected_pads-skip_unc
+                if drc_errors == 0 and unconnected_pads == 0:
+                    logger.info('No errors')
+                else:
+                    logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+                    list_errors()
+                    if args.ignore_unconnected:
+                        unconnected_pads = 0
+                    else:
+                        list_warnings()
+                    error_level = -(drc_errors+unconnected_pads)
     #
     # Exit clean-up
     #
