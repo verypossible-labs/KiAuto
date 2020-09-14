@@ -123,7 +123,8 @@ def check_lib_table(fuser, fsys):
 
 def restore_one_config(name, fname, fbkp):
     if fbkp and os.path.exists(fbkp):
-        os.remove(fname)
+        if os.path.exists(fname):
+            os.remove(fname)
         os.rename(fbkp, fname)
         logger.debug('Restoring old %s config', name)
         return None
