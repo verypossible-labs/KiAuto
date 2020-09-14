@@ -22,7 +22,6 @@ import sys
 import re
 import argparse
 import atexit
-import shutil
 import json
 import time
 
@@ -35,12 +34,8 @@ from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 logger = log.init(2)
 
-from kicad_auto.file_util import (
-    load_filters,
-    wait_for_file_created_by_process,
-    apply_filters,
-    errs, wrns
-)
+from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, errs, wrns,
+                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                              WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
                              USER_HOTKEYS_PRESENT)
@@ -442,25 +437,6 @@ def eeschema_bom_xml_commands(cfg, output_file, pid):
     exit_eeschema(cfg)
 
 
-def restore_config(cfg):
-    """ Restore original user configuration """
-    if cfg.conf_eeschema_bkp and os.path.exists(cfg.conf_eeschema_bkp):
-        os.remove(cfg.conf_eeschema)
-        os.rename(cfg.conf_eeschema_bkp, cfg.conf_eeschema)
-        cfg.conf_eeschema_bkp = None
-        logger.debug('Restoring old eeschema config')
-    if cfg.conf_kicad_bkp and os.path.exists(cfg.conf_kicad_bkp):
-        os.remove(cfg.conf_kicad)
-        os.rename(cfg.conf_kicad_bkp, cfg.conf_kicad)
-        cfg.conf_kicad_bkp = None
-        logger.debug('Restoring old KiCad common config')
-    if cfg.conf_hotkeys_bkp and os.path.exists(cfg.conf_hotkeys_bkp):
-        os.remove(cfg.conf_hotkeys)
-        os.rename(cfg.conf_hotkeys_bkp, cfg.conf_hotkeys)
-        cfg.conf_hotkeys_bkp = None
-        logger.debug('Restoring old user hotkeys config')
-
-
 def memorize_project(sch, cfg):
     """ Detect the .pro filename and try to read it and its mtime.
         If KiCad changes it then will try to revert the changes """
@@ -534,34 +510,6 @@ def create_user_hotkeys(cfg):
         text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
 
 
-def backup_config(name, file, err, cfg):
-    config_file = file
-    old_config_file = file+'.pre_script'
-    logger.debug(name+' config: '+config_file)
-    # If we have an old back-up ask for the user to solve it
-    if os.path.isfile(old_config_file):
-        logger.error(name+' config back-up found (%s)', old_config_file)
-        logger.error('It could contain your %s configuration, rename it to %s or discard it.', name.lower(), config_file)
-        exit(err)
-    if os.path.isfile(config_file):
-        logger.debug('Moving current config to '+old_config_file)
-        os.rename(config_file, old_config_file)
-        atexit.register(restore_config, cfg)
-        return old_config_file
-    return None
-
-
-def check_lib_table(cfg):
-    if not os.path.isfile(cfg.user_sym_lib_table):
-        logger.debug('Missing default sym-lib-table')
-        if os.path.isfile(cfg.sys_sym_lib_table):
-            shutil.copy2(cfg.sys_sym_lib_table, cfg.user_sym_lib_table)
-        elif cfg.sys_sym_lib_table2 and os.path.isfile(cfg.sys_sym_lib_table2):
-            shutil.copy2(cfg.sys_sym_lib_table2, cfg.user_sym_lib_table)
-        else:  # pragma: no cover
-            logger.warning('Missing default system symbol table '+cfg.sys_sym_lib_table+' KiCad will most probably fail')
-
-
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad schematic automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
@@ -626,9 +574,7 @@ if __name__ == '__main__':
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
     # Ensure we have a config dir
-    if not os.path.isdir(cfg.kicad_conf_path):
-        logger.debug('Creating KiCad config dir')
-        os.makedirs(cfg.kicad_conf_path, exist_ok=True)
+    check_kicad_config_dir(cfg)
     # Back-up the current eeschema configuration
     cfg.conf_eeschema_bkp = backup_config('Eeschema', cfg.conf_eeschema, EESCHEMA_CFG_PRESENT, cfg)
     # Create a suitable configuration
@@ -644,7 +590,7 @@ if __name__ == '__main__':
         # Create a suitable configuration
         create_user_hotkeys(cfg)
     # Make sure the user has sym-lib-table
-    check_lib_table(cfg)
+    check_lib_table(cfg.user_sym_lib_table, cfg.sys_sym_lib_table)
     #
     # Do all the work
     #

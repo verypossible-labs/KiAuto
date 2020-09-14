@@ -19,7 +19,6 @@ import os
 import argparse
 import atexit
 import re
-import shutil
 from time import (asctime, localtime, sleep)
 import subprocess
 import gettext
@@ -31,12 +30,8 @@ sys.path.insert(0, os.path.dirname(script_dir))
 # Log functionality first
 from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
-from kicad_auto.file_util import (
-    load_filters,
-    wait_for_file_created_by_process,
-    apply_filters,
-    errs, wrns,
-)
+from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, errs, wrns,
+                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
                              WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config)
 from kicad_auto.ui_automation import (
@@ -239,7 +234,7 @@ def print_layers(cfg, pcb_file, output_dir, output_filename, fill_zones=False):
                     'Return']
             xdotool(keys)
 
-            id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
+            id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % cfg.print_dlg_name, skip_id=id[0])
             wait_point(cfg)
             # List of printers
             xdotool(['key', 'Tab',
@@ -249,7 +244,7 @@ def print_layers(cfg, pcb_file, output_dir, output_filename, fill_zones=False):
                      'Tab',
                      # Open dialog
                      'Return'])
-            id_sel_f = wait_for_window('Select a filename', '(Select a filename|%s)' % select_a_filename, 2)
+            id_sel_f = wait_for_window('Select a filename', '(Select a filename|%s)' % cfg.select_a_filename, 2)
             logger.info('Pasting output dir')
             wait_point(cfg)
             xdotool(['key',
@@ -261,7 +256,7 @@ def print_layers(cfg, pcb_file, output_dir, output_filename, fill_zones=False):
                      'Return'])
             # Back to print
             wait_not_focused(id_sel_f[0])
-            wait_for_window('Printer dialog', '^(Print|%s)$' % print_dlg_name, skip_id=id[0])
+            wait_for_window('Printer dialog', '^(Print|%s)$' % cfg.print_dlg_name, skip_id=id[0])
             wait_point(cfg)
             xdotool(['key',
                      # Format options
@@ -373,13 +368,6 @@ class ListLayers(argparse.Action):
         parser.exit()  # exits the program with no more arg parsing and checking
 
 
-# Restore the pcbnew configuration
-def restore_config():
-    if os.path.exists(old_config_file):
-        os.remove(config_file)
-        os.rename(old_config_file, config_file)
-
-
 def list_errors():
     for err in errs:
         if err:
@@ -426,6 +414,46 @@ def memorize_pcb(file):
     logger.debug('Current pcb ({}) size: {} date: {}'.
                  format(pcb_file, pcb_size, asctime(localtime(pcb_date))))
     atexit.register(restore_pcb)
+
+
+def create_pcbnew_config(cfg, args):
+    with open(cfg.conf_pcbnew, "wt") as text_file:
+        text_file.write('canvas_type=2\n')
+        text_file.write('RefillZonesBeforeDrc=1\n')
+        text_file.write('PcbFrameFirstRunShown=1\n')
+        text_file.write('DrcTrackToZoneTest=1\n')
+        if args.command == 'export':
+            # Color
+            text_file.write('PrintMonochrome=0\n')
+            # Include frame
+            text_file.write('PrintPageFrame=1\n')
+            # Real drill marks
+            text_file.write('PrintPadsDrillOpt=2\n')
+            # Only one file
+            text_file.write('PrintSinglePage=1\n')
+            # Mark which layers are requested
+            used_layers = [0]*50
+            for layer in args.layers:
+                try:
+                    # Support for kiplot inner layers
+                    if layer.startswith("Inner"):
+                        m = re.match(r"^Inner\.([0-9]+)$", layer)
+                        if not m:
+                            logger.error('Malformed inner layer name: '+layer+', use Inner.N')
+                            sys.exit(WRONG_LAYER_NAME)
+                        layer_n = int(m.group(1))
+                        if layer_n > 49 or layer_names[layer_n] == '-':
+                            logger.error(layer+" isn't a valid layer")
+                            sys.exit(WRONG_LAYER_NAME)
+                        used_layers[layer_n] = 1
+                    else:
+                        used_layers[layer_names.index(layer)] = 1
+                except ValueError:
+                    logger.error('Unknown layer '+layer)
+                    sys.exit(WRONG_LAYER_NAME)
+            # List all posible layers, indicating which ones are requested
+            for x in range(0, 50):
+                text_file.write('PlotLayer_%d=%d\n' % (x, used_layers[x]))
 
 
 if __name__ == '__main__':
@@ -475,10 +503,10 @@ if __name__ == '__main__':
 
     # Get local versions for the GTK window names
     gettext.textdomain('gtk30')
-    select_a_filename = gettext.gettext('Select a filename')
-    print_dlg_name = gettext.gettext('Print')
-    logger.debug('Select a filename -> '+select_a_filename)
-    logger.debug('Print -> '+print_dlg_name)
+    cfg.select_a_filename = gettext.gettext('Select a filename')
+    cfg.print_dlg_name = gettext.gettext('Print')
+    logger.debug('Select a filename -> '+cfg.select_a_filename)
+    logger.debug('Print -> '+cfg.print_dlg_name)
 
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
@@ -505,73 +533,15 @@ if __name__ == '__main__':
         load_filters(args.errors_filter[0])
 
     # Back-up the current pcbnew configuration
-    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/'+cfg.kicad_conf_dir)
-    if not os.path.isdir(kicad_cfg_dir):
-        logger.debug('Creating KiCad config dir')
-        os.makedirs(kicad_cfg_dir, exist_ok=True)
-    config_file = os.path.join(kicad_cfg_dir, 'pcbnew')
-    old_config_file = config_file + '.pre_script'
-    logger.debug('PCBnew config: '+config_file)
-    # If we have an old back-up ask for the user to solve it
-    if os.path.isfile(old_config_file):
-        logger.error('PCBnew config back-up found (%s)', old_config_file)
-        logger.error('It could contain your pcbnew configuration, rename it to %s or discard it.', config_file)
-        exit(PCBNEW_CFG_PRESENT)
-    if os.path.isfile(config_file):
-        logger.debug('Moving current config to '+old_config_file)
-        os.rename(config_file, old_config_file)
-        atexit.register(restore_config)
-
+    check_kicad_config_dir(cfg)
+    cfg.conf_pcbnew_bkp = backup_config('PCBnew', cfg.conf_pcbnew, PCBNEW_CFG_PRESENT, cfg)
     # Create a suitable configuration
-    text_file = open(config_file, "w")
-    text_file.write('canvas_type=2\n')
-    text_file.write('RefillZonesBeforeDrc=1\n')
-    text_file.write('PcbFrameFirstRunShown=1\n')
-    text_file.write('DrcTrackToZoneTest=1\n')
-    if args.command == 'export':
-        # Color
-        text_file.write('PrintMonochrome=0\n')
-        # Include frame
-        text_file.write('PrintPageFrame=1\n')
-        # Real drill marks
-        text_file.write('PrintPadsDrillOpt=2\n')
-        # Only one file
-        text_file.write('PrintSinglePage=1\n')
-        # Mark which layers are requested
-        used_layers = [0]*50
-        for layer in args.layers:
-            try:
-                # Support for kiplot inner layers
-                if layer.startswith("Inner"):
-                    m = re.match(r"^Inner\.([0-9]+)$", layer)
-                    if not m:
-                        logger.error('Malformed inner layer name: '+layer+', use Inner.N')
-                        sys.exit(WRONG_LAYER_NAME)
-                    layer_n = int(m.group(1))
-                    if layer_n > 49 or layer_names[layer_n] == '-':
-                        logger.error(layer+" isn't a valid layer")
-                        sys.exit(WRONG_LAYER_NAME)
-                    used_layers[layer_n] = 1
-                else:
-                    used_layers[layer_names.index(layer)] = 1
-            except ValueError:
-                logger.error('Unknown layer '+layer)
-                sys.exit(WRONG_LAYER_NAME)
-        # List all posible layers, indicating which ones are requested
-        for x in range(0, 50):
-            text_file.write('PlotLayer_%d=%d\n' % (x, used_layers[x]))
-    text_file.close()
-
+    create_pcbnew_config(cfg, args)
     # Make sure the user has fp-lib-table
-    user_lib_table = os.path.join(kicad_cfg_dir, 'fp-lib-table')
-    if not os.path.isfile(user_lib_table):
-        logger.debug('Missing default fp-lib-table')
-        system_lib_table = '/usr/share/kicad/template/fp-lib-table'
-        if os.path.isfile(system_lib_table):
-            shutil.copy2(system_lib_table, user_lib_table)
-        else:  # pragma: no cover
-            logger.warning('Missing default system footprint table '+system_lib_table+' KiCad will most probably fail')
-
+    check_lib_table(cfg.user_fp_lib_table, cfg.sys_fp_lib_table)
+    #
+    # Do all the work
+    #
     error_level = 0
     if args.command == 'export':
         print_layers(cfg, args.kicad_pcb_file, args.output_dir, args.output_name[0], args.fill_zones)
@@ -592,11 +562,13 @@ if __name__ == '__main__':
             else:
                 list_warnings()
             error_level = -(drc_errors+unconnected_pads)
-
+    #
+    # Exit clean-up
+    #
     # The following code is here only to make coverage tool properly meassure atexit code.
     if not will_save:
         atexit.unregister(restore_pcb)
         restore_pcb()
     atexit.unregister(restore_config)
-    restore_config()
+    restore_config(cfg)
     exit(error_level)

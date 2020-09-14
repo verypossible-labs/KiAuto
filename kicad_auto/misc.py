@@ -27,6 +27,8 @@ WAIT_START = 25
 NIGHTLY = 'nightly'
 
 KICAD_VERSION_5_99 = 5099000
+KICAD_SHARE = '/usr/share/kicad/'
+KICAD_NIGHTLY_SHARE = '/usr/share/kicad-nightly/'
 
 
 class Config(object):
@@ -107,13 +109,13 @@ class Config(object):
         self.conf_hotkeys_bkp = None
         # - sym-lib-table
         self.user_sym_lib_table = os.path.join(self.kicad_conf_path, 'sym-lib-table')
+        self.user_fp_lib_table = os.path.join(self.kicad_conf_path, 'fp-lib-table')
+        self.sys_sym_lib_table = [KICAD_SHARE+'template/sym-lib-table']
+        self.sys_fp_lib_table = [KICAD_SHARE+'template/fp-lib-table']
         if ng_ver:
             # 20200912: sym-lib-table is missing
-            self.sys_sym_lib_table = '/usr/share/kicad-nightly/template/sym-lib-table'
-            self.sys_sym_lib_table2 = '/usr/share/kicad/template/sym-lib-table'
-        else:
-            self.sys_sym_lib_table = '/usr/share/kicad/template/sym-lib-table'
-            self.sys_sym_lib_table2 = None
+            self.sys_sym_lib_table.insert(0, KICAD_NIGHTLY_SHARE+'template/sym-lib-table')
+            self.sys_fp_lib_table.insert(0, KICAD_NIGHTLY_SHARE+'template/fp-lib-table')
         # Some details about the UI
         if self.kicad_version >= KICAD_VERSION_5_99:
             # KiCad 5.99.0

@@ -3,6 +3,8 @@
 import os
 import time
 import re
+import shutil
+import atexit
 # python3-psutil
 import psutil
 
@@ -100,3 +102,54 @@ def apply_filters(err_name, wrn_name):
     if skip_wrn:
         logger.info('Ignoring {} {}'.format(skip_wrn, wrn_name))
     return skip_err, skip_wrn
+
+
+def check_kicad_config_dir(cfg):
+    if not os.path.isdir(cfg.kicad_conf_path):
+        logger.debug('Creating KiCad config dir')
+        os.makedirs(cfg.kicad_conf_path, exist_ok=True)
+
+
+def check_lib_table(fuser, fsys):
+    if not os.path.isfile(fuser):
+        logger.debug('Missing default sym-lib-table')
+        for f in fsys:
+            if os.path.isfile(f):
+                shutil.copy2(f, fuser)
+                return
+        logger.warning('Missing default system symbol table '+fsys[0] +
+                       ' KiCad will most probably fail')  # pragma: no cover
+
+
+def restore_one_config(name, fname, fbkp):
+    if fbkp and os.path.exists(fbkp):
+        os.remove(fname)
+        os.rename(fbkp, fname)
+        logger.debug('Restoring old %s config', name)
+        return None
+    return fbkp
+
+
+def restore_config(cfg):
+    """ Restore original user configuration """
+    cfg.conf_eeschema_bkp = restore_one_config('eeschema', cfg.conf_eeschema, cfg.conf_eeschema_bkp)
+    cfg.conf_kicad_bkp = restore_one_config('KiCad common', cfg.conf_kicad, cfg.conf_kicad_bkp)
+    cfg.conf_hotkeys_bkp = restore_one_config('user hotkeys', cfg.conf_hotkeys, cfg.conf_hotkeys_bkp)
+    cfg.conf_pcbnew_bkp = restore_one_config('pcbnew', cfg.conf_pcbnew, cfg.conf_pcbnew_bkp)
+
+
+def backup_config(name, file, err, cfg):
+    config_file = file
+    old_config_file = file+'.pre_script'
+    logger.debug(name+' config: '+config_file)
+    # If we have an old back-up ask for the user to solve it
+    if os.path.isfile(old_config_file):
+        logger.error(name+' config back-up found (%s)', old_config_file)
+        logger.error('It could contain your %s configuration, rename it to %s or discard it.', name.lower(), config_file)
+        exit(err)
+    if os.path.isfile(config_file):
+        logger.debug('Moving current config to '+old_config_file)
+        os.rename(config_file, old_config_file)
+        atexit.register(restore_config, cfg)
+        return old_config_file
+    return None
