@@ -594,6 +594,7 @@ if __name__ == '__main__':
     # Do all the work
     #
     cfg.output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(cfg.input_file))[0])
+    error_level = 0
     with recorded_xvfb(cfg):
         with PopenContext([cfg.eeschema, cfg.input_file], close_fds=True,
                           stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL) as eeschema_proc:
@@ -629,8 +630,9 @@ if __name__ == '__main__':
                 if errors > 0:
                     logger.error(str(errors)+' ERC errors detected')
                     list_errors(cfg)
-                    exit(-errors)
-                logger.info('No errors')
+                    error_level = -errors
+                else:
+                    logger.info('No errors')
             eeschema_proc.terminate()
     #
     # Exit clean-up
@@ -640,4 +642,4 @@ if __name__ == '__main__':
     restore_project(cfg)
     atexit.unregister(restore_config)
     restore_config(cfg)
-    exit(0)
+    exit(error_level)
