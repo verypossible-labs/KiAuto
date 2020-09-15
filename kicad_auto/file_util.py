@@ -161,3 +161,5 @@ def create_user_hotkeys(cfg):
     with open(cfg.conf_hotkeys, "wt") as text_file:
         text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
         text_file.write('pcbnew.DRCTool.runDRC\tCtrl+Shift+I\n')
+        text_file.write('common.Control.print\tCtrl+P\n')
+        text_file.write('pcbnew.ZoneFiller.zoneFillAll\tB\n')

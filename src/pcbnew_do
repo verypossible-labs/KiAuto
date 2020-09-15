@@ -191,40 +191,46 @@ def exit_pcbnew(cfg):
 
 
 def print_layers(cfg, print_output_file, pcbnew_proc, fill_zones=False):
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        print_dialog_keys = ['ctrl+p']
+    else:
+        # We should be able to use Ctrl+P, unless the user configured it
+        # otherwise. We aren't configuring hotkeys for 5.1 so is better
+        # to just use the menu accelerators (removed on KiCad 6)
+        print_dialog_keys = ['alt+f', 'p']
+    # Fill zones if the user asked for it
     if fill_zones:
         logger.info('Fill zones')
         wait_point(cfg)
         xdotool(['key', 'b'])
         # Wait for complation
         sleep(1)
-
+    # Open the KiCad Print dialog
     logger.info('Open File->Print')
     wait_point(cfg)
-    xdotool(['key', 'alt+f', 'p'])
-
+    xdotool(['key']+print_dialog_keys)
     retry = False
     try:
         id = wait_for_window('Print dialog', 'Print')
     except RuntimeError:  # pragma: no cover
         # Perhaps the fill took too muchm try again
         retry = True
-
+    # Retry the open dialog
     if retry:  # pragma: no cover
         # Excluded from coverage, only happends under conditions hard to reproduce
         logger.info('Open File->Print (retrying)')
         wait_point(cfg)
-        xdotool(['key', 'alt+f', 'p'])
+        xdotool(['key']+print_dialog_keys)
         id = wait_for_window('Print dialog', 'Print')
-
+    # Open the gtk print dialog
     wait_point(cfg)
-    # The "color" option is selected, send enough Tabs to go to the Print button
-    keys = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
-            # When using a WM we have chances to be 1 tab before "color" (don't know why)
-            # Here we add this Tab, but then we move to the right in case it wasn't necessary
-            'Tab', 'Right',
-            'Return']
-    xdotool(keys)
-
+    # Two possible options here:
+    # 1) With WM we usually get "Exclude PCB edge ..." selected
+    # 2) Without WM we usually get "Color" selected
+    # In both cases sending 4 Shit+Tab moves as to one of the layer columns.
+    # From there Return prints and Escape closes the window.
+    xdotool(['key', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'Return'])
+    # Check it is open
     id2 = wait_for_window('Printer dialog', '^(Print|%s)$' % cfg.print_dlg_name, skip_id=id[0])
     wait_point(cfg)
     # List of printers
@@ -256,16 +262,17 @@ def print_layers(cfg, print_output_file, pcbnew_proc, fill_zones=False):
              'Left', 'Left', 'Left',
              # Print it
              'Return'])
-
+    # Wait until the file is created
     wait_for_file_created_by_process(pcbnew_proc.pid, print_output_file)
-
     wait_not_focused(id2[1])
+    # Now we should be in the KiCad Print dialog again
     id = wait_for_window('Print dialog', 'Print')
     wait_point(cfg)
-    # Close button
-    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
-
+    # Close the dialog
+    # We are in one of the layer columns, here Escape works
+    xdotool(['key', 'Escape'])
     wait_not_focused(id2[0])
+    # Exit
     exit_pcbnew(cfg)
     pcbnew_proc.terminate()
 
@@ -471,9 +478,10 @@ def create_pcbnew_config(cfg):
         if cfg.conf_pcbnew_json:
             conf = {"graphics": {"canvas_type": 2}}
             conf["drc_dialog"] = {"refill_zones": True, "test_track_to_zone": True}
-            conf["system"] = {"first_run_shown": True, "layers": sorted(used_layers)}
-            conf["printing"] = {"monochrome": False, "title_block": True}
-            conf["plot"] = {"check_zones_before_plotting": cfg.fill_zones, "one_page_per_layer": 0, "pads_drill_mode": 2}
+            conf["system"] = {"first_run_shown": True}
+            conf["printing"] = {"monochrome": False, "title_block": True, "layers": sorted(used_layers)}
+            conf["plot"] = {"check_zones_before_plotting": cfg.fill_zones, "one_page_per_layer": 1, "pads_drill_mode": 2}
+            conf["window"] = {"size_x": cfg.rec_width, "size_y": cfg.rec_height}
             json_text = json.dumps(conf)
             text_file.write(json_text)
             logger.debug(json_text)
