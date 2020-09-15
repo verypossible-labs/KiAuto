@@ -359,17 +359,27 @@ def eeschema_run_erc_schematic(cfg, erc_file, pid):
 
 
 def eeschema_netlist_commands(cfg, net_file, pid):
+    # KiCad 5.1 vs 5.99 differences
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        open_keys = ['ctrl+shift+n']
+        generate_keys = ['Return']
+        dialog_name = 'Export Netlist'
+    else:
+        open_keys = ['alt+t', 'n']
+        generate_keys = ['Tab', 'Tab', 'Return']
+        dialog_name = 'Netlist'
+    # Wait for Eeschema
     wait_eeschema_start(cfg)
+    # Put the file name in the clipboard
     clipboard_store(net_file)
-
+    # Open the dialog
     logger.info('Open Tools->Generate Netlist File')
     wait_point(cfg)
-    xdotool(['key', 'alt+t', 'n'])
-
-    wait_for_window('Netlist dialog', 'Netlist')
+    xdotool(['key']+open_keys)
+    wait_for_window('Netlist dialog', dialog_name)
+    # Start to generate the netlist (select file name)
     wait_point(cfg)
-    xdotool(['key', 'Tab', 'Tab', 'Return'])
-
+    xdotool(['key']+generate_keys)
     try:
         wait_for_window('Netlist File save dialog', 'Save Netlist File', others=['Plugin Properties'])
         failed_focuse = False
@@ -395,17 +405,16 @@ def eeschema_netlist_commands(cfg, net_file, pid):
     net_file = net_file + '.net'
     if os.path.exists(net_file):
         os.remove(net_file)
-
+    # Confirm the name and generate the netlist
     logger.info('Generate Netlist')
     wait_point(cfg)
     xdotool(['key', 'Return'])
-
+    # Wait until created
     logger.info('Wait for Netlist file creation')
     wait_point(cfg)
     wait_for_file_created_by_process(pid, net_file)
-
+    # Exit
     exit_eeschema(cfg)
-
     return net_file
 
 
