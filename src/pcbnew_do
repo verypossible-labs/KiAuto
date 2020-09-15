@@ -34,7 +34,7 @@ from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 logger = log.init()
 
-from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, errs, wrns,
+from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                                   check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
                              WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, KICAD_VERSION_5_99, USER_HOTKEYS_PRESENT,
@@ -55,15 +55,13 @@ TITLE_ERROR = '^Error$'
 TITLE_WARNING = '^Warning$'
 
 
-def parse_drc(drc_file):
+def parse_drc(cfg, drc_file):
     with open(drc_file, 'r') as f:
         lines = f.read().splitlines()
-
     drc_errors = None
     unconnected_pads = None
     in_errs = False
     in_wrns = False
-
     for line in lines:
         m = re.search(r'^\*\* Found ([0-9]+) DRC (errors|violations) \*\*$', line)
         if m:
@@ -82,18 +80,18 @@ def parse_drc(drc_file):
         if in_errs:
             m = re.search(r'^ErrType\((\d+)\): (.*)', line)
             if m:
-                errs.append('({}) {}'.format(m.group(1), m.group(2)))
+                cfg.errs.append('({}) {}'.format(m.group(1), m.group(2)))
                 continue
-            if len(line) > 4 and len(errs) > 0:
-                errs.append(errs.pop()+'\n'+line)
+            if len(line) > 4 and len(cfg.errs) > 0:
+                cfg.errs.append(cfg.errs.pop()+'\n'+line)
                 continue
         if in_wrns:
             m = re.search(r'^ErrType\((\d+)\): (.*)', line)
             if m:
-                wrns.append('({}) {}'.format(m.group(1), m.group(2)))
+                cfg.wrns.append('({}) {}'.format(m.group(1), m.group(2)))
                 continue
-            if len(line) > 4 and len(wrns) > 0:
-                wrns.append(wrns.pop()+'\n'+line)
+            if len(line) > 4 and len(cfg.wrns) > 0:
+                cfg.wrns.append(cfg.wrns.pop()+'\n'+line)
                 continue
 
     return int(drc_errors), int(unconnected_pads)
@@ -408,18 +406,6 @@ class ListLayers(argparse.Action):
         parser.exit()  # exits the program with no more arg parsing and checking
 
 
-def list_errors():
-    for err in errs:
-        if err:
-            logger.error(err)
-
-
-def list_warnings():
-    for wrn in wrns:
-        if wrn:
-            logger.warning(wrn)
-
-
 def restore_pcb(cfg):
     if cfg.pcb_file and cfg.pcb_size >= 0 and cfg.pcb_date >= 0:
         cur_date = os.path.getmtime(cfg.pcb_file)
@@ -593,7 +579,7 @@ if __name__ == '__main__':
         cfg.layers = args.layers
 
     if args.command == 'run_drc' and args.errors_filter:
-        load_filters(args.errors_filter[0])
+        load_filters(cfg, args.errors_filter[0])
 
     # Back-up the current pcbnew configuration
     check_kicad_config_dir(cfg)
@@ -628,21 +614,21 @@ if __name__ == '__main__':
                 print_layers(cfg, output_filename, pcbnew_proc, args.fill_zones)
             else:  # run_drc
                 run_drc(cfg, args.kicad_pcb_file, output_filename, pcbnew_proc, args.save)
-                drc_errors, unconnected_pads = parse_drc(output_filename)
+                drc_errors, unconnected_pads = parse_drc(cfg, output_filename)
                 logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
                 # Apply filters
-                skip_err, skip_unc = apply_filters('DRC error/s', 'unconnected pad/s')
+                skip_err, skip_unc = apply_filters(cfg, 'DRC error/s', 'unconnected pad/s')
                 drc_errors = drc_errors-skip_err
                 unconnected_pads = unconnected_pads-skip_unc
                 if drc_errors == 0 and unconnected_pads == 0:
                     logger.info('No errors')
                 else:
                     logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
-                    list_errors()
+                    list_errors(cfg)
                     if args.ignore_unconnected:
                         unconnected_pads = 0
                     else:
-                        list_warnings()
+                        list_warnings(cfg)
                     error_level = -(drc_errors+unconnected_pads)
     #
     # Exit clean-up

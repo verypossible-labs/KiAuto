@@ -12,12 +12,6 @@ from kicad_auto.misc import (WRONG_ARGUMENTS)
 from kicad_auto import log
 logger = log.get_logger(__name__)
 
-# Collected errors and unconnecteds (warnings)
-errs = []
-wrns = []
-# Error filters
-err_filters = []
-
 
 def wait_for_file_created_by_process(pid, file, timeout=15):
     process = psutil.Process(pid)
@@ -43,7 +37,7 @@ def wait_for_file_created_by_process(pid, file, timeout=15):
     raise RuntimeError('Timed out waiting for creation of %s' % file)
 
 
-def load_filters(file):
+def load_filters(cfg, file):
     """ Load errors filters """
     if not os.path.isfile(file):
         logger.error("Filter file `{}` doesn't exist".format(file))
@@ -57,7 +51,7 @@ def load_filters(file):
             if len(line) > 0 and line[0] != '#':
                 m = re.search(r'^(\d+),(.*)$', line)
                 if m:
-                    err_filters.append([m.group(1), m.group(2)])
+                    cfg.err_filters.append([m.group(1), m.group(2)])
                     fl = fl+1
                 else:
                     logger.error('Syntax error at line {} in filter file `{}`: `{}`'.format(ln, file, line))
@@ -67,41 +61,49 @@ def load_filters(file):
         logger.info('Loaded {} error filters from `{}`'.format(fl, file))
 
 
-def apply_filters(err_name, wrn_name):
+def apply_filters(cfg, err_name, wrn_name):
     """ Apply the error filters to the list of errors and unconnecteds """
-    if len(err_filters) == 0:
+    if len(cfg.err_filters) == 0:
         return (0, 0)
-    c = len(errs)
     skip_err = 0
-    for i in range(c):
-        err = errs[i]
-        for f in err_filters:
+    for i, err in enumerate(cfg.errs):
+        for f in cfg.err_filters:
             if err.startswith('({})'.format(f[0])):
                 m = re.search(f[1], err)
                 if m:
-                    skip_err = skip_err+1
-                    logger.warning('Ignoring '+errs[i])
+                    skip_err += 1
+                    logger.warning('Ignoring '+err)
                     logger.debug('Matched regex `{}`'.format(f[1]))
-                    errs[i] = None
+                    cfg.errs[i] = None
                     break
     if skip_err:
         logger.info('Ignoring {} {}'.format(skip_err, err_name))
-    c = len(wrns)
     skip_wrn = 0
-    for i in range(c):
-        wrn = wrns[i]
-        for f in err_filters:
+    for i, wrn in enumerate(cfg.wrns):
+        for f in cfg.err_filters:
             if wrn.startswith('({})'.format(f[0])):
                 m = re.search(f[1], wrn)
                 if m:
-                    skip_wrn = skip_wrn+1
-                    logger.info('Ignoring '+wrns[i])
+                    skip_wrn += 1
+                    logger.info('Ignoring '+wrn)
                     logger.debug('Matched regex `{}`'.format(f[1]))
-                    wrns[i] = None
+                    cfg.wrns[i] = None
                     break
     if skip_wrn:
         logger.info('Ignoring {} {}'.format(skip_wrn, wrn_name))
     return skip_err, skip_wrn
+
+
+def list_errors(cfg):
+    for err in cfg.errs:
+        if err:
+            logger.error(err)
+
+
+def list_warnings(cfg):
+    for wrn in cfg.wrns:
+        if wrn:
+            logger.warning(wrn)
 
 
 def check_kicad_config_dir(cfg):

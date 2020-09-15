@@ -34,7 +34,7 @@ from kicad_auto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 logger = log.init()
 
-from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, errs, wrns,
+from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                                   check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                              WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
@@ -160,14 +160,14 @@ def exit_eeschema(cfg):
     # If we failed to exit we will kill it anyways
 
 
-def eeschema_plot_schematic(cfg, output_dir, all_pages):
+def eeschema_plot_schematic(cfg):
     # KiCad 5.1 vs 5.99 differences
     if cfg.kicad_version >= KICAD_VERSION_5_99:
         open_keys = ['ctrl+shift+p']
     else:
         open_keys = ['alt+f', 'l']
     # Put the file name in the clipboard
-    clipboard_store(output_dir)
+    clipboard_store(cfg.output_dir)
     # Open the dialog
     logger.info('Open File->pLot')
     wait_point(cfg)
@@ -188,7 +188,7 @@ def eeschema_plot_schematic(cfg, output_dir, all_pages):
     wait_point(cfg)
     # We try to select the "Plot xxx" button.
     command_list = ['key', 'shift+Tab', 'shift+Tab']
-    if all_pages:
+    if cfg.all_pages:
         command_list.append('shift+Tab')
     logger.debug(str(command_list)+'   '+str(len(command_list)))
     xdotool(command_list)
@@ -207,47 +207,43 @@ def eeschema_plot_schematic(cfg, output_dir, all_pages):
     exit_eeschema(cfg)
 
 
-def eeschema_parse_erc(erc_file, warning_as_error=False):
-    with open(erc_file, 'r') as f:
+def eeschema_parse_erc(cfg):
+    with open(cfg.output_file, 'rt') as f:
         lines = f.read().splitlines()
         last_line = lines[-1]
-
     cont = False
     is_err = False
-    global errs
-    global wrns
     for line in lines:
         m = re.search(r'^ErrType\((\d+)\): (.*)', line)
         if m:
             msg = '({}) {}'.format(m.group(1), m.group(2))
             if r'Severity: error' in line:
                 is_err = True
-                errs.append(msg)
+                cfg.errs.append(msg)
             else:
                 is_err = False
-                wrns.append(msg)
+                cfg.wrns.append(msg)
             cont = True
             continue
         if cont and line.startswith('    '):
             if is_err:
-                if len(errs):
-                    errs.append(errs.pop()+'\n'+line)
+                if len(cfg.errs):
+                    cfg.errs.append(cfg.errs.pop()+'\n'+line)
             else:
-                if len(wrns):
-                    wrns.append(wrns.pop()+'\n'+line)
+                if len(cfg.wrns):
+                    cfg.wrns.append(cfg.wrns.pop()+'\n'+line)
             continue
         cont = False
-
     logger.debug('Last line: '+last_line)
     m = re.search(r'^ \*\* ERC messages: ([0-9]+) +Errors ([0-9]+) +Warnings ([0-9]+)+$', last_line)
     # messages = m.group(1)
     errors = m.group(2)
     warnings = m.group(3)
-
-    if warning_as_error:
-        errs += wrns
-        wrns = []
-        return int(errors) + int(warnings), 0
+    # Apply the warnings_as_errors option
+    if cfg.warnings_as_errors:
+        cfg.errs += cfg.wrns
+        cfg.wrns = []
+        return int(errors)+int(warnings), 0
     return int(errors), int(warnings)
 
 
@@ -547,6 +543,8 @@ if __name__ == '__main__':
 
     cfg = Config(logger, args)
     cfg.video_name = args.command+'_eeschema_screencast.ogv'
+    cfg.all_pages = getattr(args, 'all_pages', False)
+    cfg.warnings_as_errors = getattr(args, 'warnings_as_errors', False)
 
     # Check the schematic is there
     if not os.path.isfile(args.schematic):
@@ -560,13 +558,13 @@ if __name__ == '__main__':
 
     # Load filters
     if args.command == 'run_erc' and args.errors_filter:
-        load_filters(args.errors_filter[0])
+        load_filters(cfg, args.errors_filter[0])
 
     memorize_project(args.schematic, cfg)
 
     # Create output dir if it doesn't exist
     output_dir = os.path.abspath(args.output_dir)+'/'
-    cfg.video_dir = output_dir
+    cfg.video_dir = cfg.output_dir = output_dir
     os.makedirs(output_dir, exist_ok=True)
     #
     # Configure KiCad in a deterministic way
@@ -607,7 +605,7 @@ if __name__ == '__main__':
                 if ext == 'hpgl':
                     ext = 'plt'
                 set_output_file(cfg, ext)
-                eeschema_plot_schematic(cfg, output_dir, args.all_pages)
+                eeschema_plot_schematic(cfg)
             elif args.command == 'netlist':
                 # Netlist
                 set_output_file(cfg, 'net')
@@ -620,20 +618,16 @@ if __name__ == '__main__':
                 # Run ERC
                 set_output_file(cfg, 'erc')
                 eeschema_run_erc_schematic(cfg)
-                errors, warnings = eeschema_parse_erc(cfg.output_file, args.warnings_as_errors)
-                skip_err, skip_wrn = apply_filters('ERC error/s', 'ERC warning/s')
+                errors, warnings = eeschema_parse_erc(cfg)
+                skip_err, skip_wrn = apply_filters(cfg, 'ERC error/s', 'ERC warning/s')
                 errors = errors-skip_err
                 warnings = warnings-skip_wrn
                 if warnings > 0:
                     logger.warning(str(warnings)+' ERC warnings detected')
-                    for wrn in wrns:
-                        if wrn:
-                            logger.warning(wrn)
+                    list_warnings(cfg)
                 if errors > 0:
                     logger.error(str(errors)+' ERC errors detected')
-                    for err in errs:
-                        if err:
-                            logger.error(err)
+                    list_errors(cfg)
                     exit(-errors)
                 logger.info('No errors')
             eeschema_proc.terminate()

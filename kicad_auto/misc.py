@@ -126,6 +126,11 @@ class Config(object):
         else:
             # KiCad 5.1.6
             self.ee_window_title = r'Eeschema.*\.sch'  # "Eeschema - file.sch"
+        # Collected errors and unconnecteds (warnings)
+        self.errs = []
+        self.wrns = []
+        # Error filters
+        self.err_filters = []
 
 
 __version__ = '1.4.2'
