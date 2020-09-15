@@ -161,52 +161,51 @@ def exit_eeschema(cfg):
 
 
 def eeschema_plot_schematic(cfg, output_dir, output_file, all_pages, pid, ext):
+    # KiCad 5.1 vs 5.99 differences
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        open_keys = ['ctrl+shift+p']
+    else:
+        open_keys = ['alt+f', 'l']
+    # Wait for Eeschema
     wait_eeschema_start(cfg)
+    # Put the file name in the clipboard
     clipboard_store(output_dir)
-
+    # Open the dialog
     logger.info('Open File->pLot')
     wait_point(cfg)
-    xdotool(['key', 'alt+f', 'l'])
+    xdotool(['key']+open_keys)
     wait_for_window('plot', 'Plot Schematic Options')
-
+    # With a WM we usually get the "Browse" button selected.
+    # Without it we usually are in the input box.
+    # For this reason we move to the left and select all.
     logger.info('Clear input text')
     wait_point(cfg)
-    xdotool(['key', 'Left', 'ctrl+a', 'Delete'])
-
+    xdotool(['key', 'Left', 'ctrl+a'])
+    # Paste the file name
     logger.info('Paste output directory')
     wait_point(cfg)
     xdotool(['key', 'ctrl+v'])
-
+    # Press the "Plot xxx" button
     logger.info('Move to the "plot" button')
     wait_point(cfg)
-    # We try to select the "print all" button.
-    # Lamentably this is the default, so we can be confused because "Return" will press it anyways.
-    command_list = ['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab',
-                    'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', ]
-    if ext == 'dxf':
-        # DXF greys one widget (net result)
-        command_list.pop()
-    if ext == 'plt':
-        # HPGL enables one widget (net result)
-        command_list.append('Tab')
-    if not all_pages:
-        # If "print all" is selected one more tab is "print current"
-        command_list.append('Tab')
+    # We try to select the "Plot xxx" button.
+    command_list = ['key', 'shift+Tab', 'shift+Tab']
+    if all_pages:
+        command_list.append('shift+Tab')
     logger.debug(str(command_list)+'   '+str(len(command_list)))
     xdotool(command_list)
-
     logger.info('Plot')
     wait_point(cfg)
     xdotool(['key', 'Return'])
-
+    # Wait for the file
     logger.info('Wait for plot file creation')
     wait_point(cfg)
     wait_for_file_created_by_process(pid, output_file)
-
+    # Close the dialog
     logger.info('Closing window')
     wait_point(cfg)
     xdotool(['key', 'Escape'])
-
+    # Exit
     exit_eeschema(cfg)
 
 

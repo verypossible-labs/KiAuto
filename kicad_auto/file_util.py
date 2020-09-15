@@ -160,6 +160,7 @@ def create_user_hotkeys(cfg):
     logger.debug('Creating a user hotkeys config')
     with open(cfg.conf_hotkeys, "wt") as text_file:
         text_file.write('common.Control.print\tCtrl+P\n')
+        text_file.write('common.Control.plot\tCtrl+Shift+P\n')
         text_file.write('eeschema.EditorControl.exportNetlist\tCtrl+Shift+N\n')
         text_file.write('eeschema.EditorControl.generateBOM\tCtrl+Shift+B\n')
         text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
