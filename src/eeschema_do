@@ -427,12 +427,12 @@ def eeschema_bom_xml_commands(cfg):
     exit_eeschema(cfg)
 
 
-def memorize_project(sch, cfg):
+def memorize_project(cfg):
     """ Detect the .pro filename and try to read it and its mtime.
         If KiCad changes it then will try to revert the changes """
     cfg.pro_stat = None
     cfg.pro_content = None
-    name_no_ext = os.path.splitext(sch)[0]
+    name_no_ext = os.path.splitext(cfg.input_file)[0]
     cfg.pro_name = name_no_ext+'.kicad_pro'
     if not os.path.isfile(cfg.pro_name):
         cfg.pro_name = name_no_ext+'.pro'
@@ -545,14 +545,15 @@ if __name__ == '__main__':
     cfg.video_name = args.command+'_eeschema_screencast.ogv'
     cfg.all_pages = getattr(args, 'all_pages', False)
     cfg.warnings_as_errors = getattr(args, 'warnings_as_errors', False)
+    cfg.input_file = args.schematic
 
     # Check the schematic is there
-    if not os.path.isfile(args.schematic):
-        logger.error(args.schematic+' does not exist')
+    if not os.path.isfile(cfg.input_file):
+        logger.error(cfg.input_file+' does not exist')
         exit(NO_SCHEMATIC)
 
     # If we pass a name without extension KiCad will try to create a ".sch"
-    if os.path.splitext(args.schematic)[1] == '':
+    if os.path.splitext(cfg.input_file)[1] == '':
         logger.error('Schematic files must use sch/kicad_sch extension')
         exit(WRONG_SCH_NAME)
 
@@ -560,7 +561,7 @@ if __name__ == '__main__':
     if args.command == 'run_erc' and args.errors_filter:
         load_filters(cfg, args.errors_filter[0])
 
-    memorize_project(args.schematic, cfg)
+    memorize_project(cfg)
 
     # Create output dir if it doesn't exist
     output_dir = os.path.abspath(args.output_dir)+'/'
@@ -592,9 +593,9 @@ if __name__ == '__main__':
     #
     # Do all the work
     #
-    cfg.output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(args.schematic))[0])
+    cfg.output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(cfg.input_file))[0])
     with recorded_xvfb(cfg):
-        with PopenContext([cfg.eeschema, args.schematic], close_fds=True,
+        with PopenContext([cfg.eeschema, cfg.input_file], close_fds=True,
                           stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL) as eeschema_proc:
             # Wait for Eeschema
             wait_eeschema_start(cfg)
