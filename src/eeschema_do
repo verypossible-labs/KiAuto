@@ -419,30 +419,42 @@ def eeschema_netlist_commands(cfg, net_file, pid):
 
 
 def eeschema_bom_xml_commands(cfg, output_file, pid):
+    # KiCad 5.1 vs 5.99 differences
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        open_keys = ['ctrl+shift+b']
+        exit_keys = ['Escape']
+    else:
+        open_keys = ['alt+t', 'm']
+        exit_keys = ['Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return']
+    # Wait for Eeschema
     wait_eeschema_start(cfg)
-    clipboard_store('xsltproc -o "'+output_file + '" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
-
+    # Put in the clipboard the xsltproc command
+    clipboard_store('xsltproc -o "'+output_file+'" "/usr/share/kicad/plugins/bom2grouped_csv.xsl" "%I"')
+    # If the output exists remove it or the command will fail
+    if os.path.isfile(output_file):
+        os.remove(output_file)
+    # Open the dialog
     logger.info('Open Tools->Generate Bill of Materials')
     wait_point(cfg)
-    xdotool(['key', 'alt+t', 'm'])
-
+    xdotool(['key']+open_keys)
     wait_for_window('Bill of Material dialog', 'Bill of Material')
+    # Select the command input and paste the command
     logger.info('Paste xslt command')
     wait_point(cfg)
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'ctrl+v'])
-
+    # Generate the netlist
     logger.info('Generating netlist')
     wait_point(cfg)
     xdotool(['key', 'Return'])
-
+    # Wait until the file is created
     logger.info('Wait for BoM file creation')
     wait_point(cfg)
     wait_for_file_created_by_process(pid, output_file)
-
+    # Close the dialog
     logger.info('Closing dialog')
     wait_point(cfg)
-    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
-
+    xdotool(['key']+exit_keys)
+    # Exit
     exit_eeschema(cfg)
 
 
