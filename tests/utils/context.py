@@ -17,17 +17,40 @@ from kicad_auto.ui_automation import recorded_xvfb, PopenContext
 
 COVERAGE_SCRIPT = 'python3-coverage'
 KICAD_PCB_EXT = '.kicad_pcb'
-KICAD_SCH_EXT = '.sch'
 REF_DIR = 'tests/reference'
 
 MODE_SCH = 1
 MODE_PCB = 0
+
+KICAD_VERSION_5_99 = 5099000
+
+
+def usable_cmd(cmd):
+    return ' '.join(cmd)
 
 
 class TestContext(object):
     pty_data = None
 
     def __init__(self, test_name, prj_name):
+        ng_ver = os.environ.get('KIAUS_USE_NIGHTLY')
+        if ng_ver:
+            # Path to the Python module
+            sys.path.insert(0, '/usr/lib/kicad-nightly/lib/python3/dist-packages')
+        import pcbnew
+        # Detect version
+        m = re.match(r'(\d+)\.(\d+)\.(\d+)', pcbnew.GetBuildVersion())
+        major = int(m.group(1))
+        minor = int(m.group(2))
+        patch = int(m.group(3))
+        self.kicad_version = major*1000000+minor*1000+patch
+        logging.debug('Detected KiCad v{}.{}.{} ({})'.format(major, minor, patch, self.kicad_version))
+        if self.kicad_version < KICAD_VERSION_5_99:
+            self.board_dir = '../kicad5'
+            self.sch_ext = '.sch'
+        else:
+            self.board_dir = '../kicad6'
+            self.sch_ext = '.kicad_sch'
         # We are using PCBs
         self.mode = MODE_PCB
         # The name used for the test output dirs and other logging
@@ -43,17 +66,18 @@ class TestContext(object):
         self.err = None
         self.proc = None
 
+
     def _get_board_cfg_dir(self):
         this_dir = os.path.dirname(os.path.realpath(__file__))
-        return os.path.join(this_dir, '../kicad5')
+        return os.path.abspath(os.path.join(this_dir, self.board_dir))
 
     def _get_board_name(self):
         self.board_file = os.path.join(self._get_board_cfg_dir(),
                                        self.prj_name,
                                        self.prj_name +
-                                       (KICAD_PCB_EXT if self.mode == MODE_PCB else KICAD_SCH_EXT))
+                                       (KICAD_PCB_EXT if self.mode == MODE_PCB else self.sch_ext))
         logging.info('PCB file: '+self.board_file)
-        assert os.path.isfile(self.board_file)
+        assert os.path.isfile(self.board_file), self.board_file
 
     def _set_up_output_dir(self, test_dir):
         if test_dir:
@@ -114,7 +138,7 @@ class TestContext(object):
         cmd.append(self.output_dir)
         if extra is not None:
             cmd = cmd+extra
-        logging.debug(cmd)
+        logging.debug(usable_cmd(cmd))
         out_filename = self.get_out_path('output.txt')
         err_filename = self.get_out_path('error.txt')
         if use_a_tty:
@@ -172,16 +196,16 @@ class TestContext(object):
         if reference is None:
             reference = image
         cmd = ['compare',
-               # Tolerate 5 % error in color
-               '-fuzz', '5%',
+               # Tolerate 30 % error in color
+               '-fuzz', '30%',
                # Count how many pixels differ
                '-metric', 'AE',
                self.get_out_path(image),
                os.path.join(REF_DIR, reference),
-               # Avoid the part where KiCad version is printed
-               '-crop', '100%x92%+0+0', '+repage',
+               # Avoid the part where KiCad version and title are printed
+               '-crop', '100%x88%+0+0', '+repage',
                self.get_out_path(diff)]
-        logging.debug('Comparing images with: '+str(cmd))
+        logging.debug('Comparing images with: '+usable_cmd(cmd))
         res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         # m = re.match(r'([\d\.e-]+) \(([\d\.e-]+)\)', res.decode())
         # assert m
@@ -252,7 +276,7 @@ class TestContext(object):
                    # Avoid the part where KiCad version is printed
                    '-crop', '100%x92%+0+0', '+repage',
                    self.get_out_path(diff.format(page))]
-            logging.debug('Comparing images with: '+str(cmd))
+            logging.debug('Comparing images with: '+usable_cmd(cmd))
             res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             m = re.match(r'([\d\.]+) \(([\d\.]+)\)', res.decode())
             assert m
@@ -264,7 +288,7 @@ class TestContext(object):
             reference = text
         cmd = ['/bin/sh', '-c', 'diff -ub '+os.path.join(REF_DIR, reference)+' ' +
                self.get_out_path(text)+' > '+self.get_out_path(diff)]
-        logging.debug('Comparing texts with: '+str(cmd))
+        logging.debug('Comparing texts with: '+usable_cmd(cmd))
         res = subprocess.call(cmd)
         assert res == 0
 
@@ -281,7 +305,7 @@ class TestContext(object):
             Use like this: with context.start_kicad('command'): """
         with recorded_xvfb(cfg):
             with PopenContext([cmd], stderr=subprocess.DEVNULL, close_fds=True) as self.proc:
-                logging.debug('Started '+cmd+' with PID: '+str(self.proc.pid))
+                logging.debug('Started `'+usable_cmd(cmd)+'` with PID: '+str(self.proc.pid))
                 assert pid_exists(self.proc.pid)
                 yield
 
