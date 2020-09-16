@@ -17,9 +17,17 @@ def wait_for_file_created_by_process(pid, file, timeout=15):
     process = psutil.Process(pid)
 
     DELAY = 0.2
-    logger.debug('Waiting for file %s', file)
+    logger.debug('Waiting for file %s (pid %d)', file, pid)
     for i in range(int(timeout/DELAY)):
-        open_files = process.open_files()
+        kicad_died = False
+        try:
+            open_files = process.open_files()
+        except psutil.AccessDenied:
+            # Is our child, this access denied is because we are listing
+            # files for other process that took the pid of the old KiCad.
+            kicad_died = True
+        if kicad_died:
+            raise RuntimeError('KiCad unexpectedly died')
         logger.debug(open_files)
         if os.path.isfile(file):
             file_open = False
