@@ -461,7 +461,7 @@ def create_pcbnew_config(cfg):
     with open(cfg.conf_pcbnew, "wt") as text_file:
         if cfg.conf_pcbnew_json:
             conf = {"graphics": {"canvas_type": 2}}
-            conf["drc_dialog"] = {"refill_zones": True, "test_track_to_zone": True}
+            conf["drc_dialog"] = {"refill_zones": True, "test_track_to_zone": True, "test_all_track_errors": True}
             conf["system"] = {"first_run_shown": True}
             conf["printing"] = {"monochrome": False, "title_block": True, "layers": sorted(used_layers)}
             conf["plot"] = {"check_zones_before_plotting": cfg.fill_zones, "one_page_per_layer": 1, "pads_drill_mode": 2}
