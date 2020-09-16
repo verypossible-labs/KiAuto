@@ -324,7 +324,7 @@ def run_drc_6_0(cfg):
         tries -= 1
         xdotool(['key', 'shift+Tab', 'shift+Tab', 'ctrl+a', 'ctrl+c'])
         res = clipboard_retrieve()
-        if 'Finished' in res:
+        if 'Finished' in res or 'Done.' in res:
             break
         sleep(0.5)
     if not tries:
