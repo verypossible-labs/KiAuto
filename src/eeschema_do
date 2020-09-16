@@ -35,7 +35,8 @@ log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 logger = log.init()
 
 from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
-                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys)
+                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
+                                  check_input_file)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                              WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
                              USER_HOTKEYS_PRESENT)
@@ -439,6 +440,8 @@ def memorize_project(cfg):
         if not os.path.isfile(cfg.pro_name):
             logger.warning('KiCad project file not found')
             return
+        if cfg.kicad_version >= KICAD_VERSION_5_99:
+            logger.warning('Using old format projects is not recommended. Convert them first.')
     cfg.pro_stat = os.stat(cfg.pro_name)
     with open(cfg.pro_name) as f:
         cfg.pro_content = f.read()
@@ -546,17 +549,8 @@ if __name__ == '__main__':
     cfg.all_pages = getattr(args, 'all_pages', False)
     cfg.warnings_as_errors = getattr(args, 'warnings_as_errors', False)
     cfg.input_file = args.schematic
-
-    # Check the schematic is there
-    if not os.path.isfile(cfg.input_file):
-        logger.error(cfg.input_file+' does not exist')
-        exit(NO_SCHEMATIC)
-
-    # If we pass a name without extension KiCad will try to create a ".sch"
-    if os.path.splitext(cfg.input_file)[1] == '':
-        logger.error('Schematic files must use sch/kicad_sch extension')
-        exit(WRONG_SCH_NAME)
-
+    # Make sure the input file exists and has an extension
+    check_input_file(cfg, NO_SCHEMATIC, WRONG_SCH_NAME)
     # Load filters
     if args.command == 'run_erc' and args.errors_filter:
         load_filters(cfg, args.errors_filter[0])

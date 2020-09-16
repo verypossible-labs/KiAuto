@@ -35,7 +35,8 @@ log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 logger = log.init()
 
 from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
-                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys)
+                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
+                                  check_input_file)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
                              WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, KICAD_VERSION_5_99, USER_HOTKEYS_PRESENT,
                              CORRUPTED_PCB)
@@ -555,17 +556,8 @@ if __name__ == '__main__':
 
     # Force english + UTF-8
     os.environ['LANG'] = 'C.UTF-8'
-
-    # Check the file exists
-    if not os.path.isfile(cfg.input_file):
-        logger.error(cfg.input_file+' does not exist')
-        exit(NO_PCB)
-
-    # If we pass a name without extension KiCad will try to create a ".kicad_pcb"
-    if os.path.splitext(cfg.input_file)[1] == '':
-        logger.error('PCB files must use kicad_pcb extension')
-        exit(WRONG_PCB_NAME)
-
+    # Make sure the input file exists and has an extension
+    check_input_file(cfg, NO_PCB, WRONG_PCB_NAME)
     cfg.board = load_pcb(cfg.input_file)
     if not cfg.save:
         memorize_pcb(cfg)

@@ -8,7 +8,7 @@ import atexit
 # python3-psutil
 import psutil
 
-from kicad_auto.misc import (WRONG_ARGUMENTS)
+from kicad_auto.misc import (WRONG_ARGUMENTS, KICAD_VERSION_5_99)
 from kicad_auto import log
 logger = log.get_logger(__name__)
 
@@ -168,3 +168,18 @@ def create_user_hotkeys(cfg):
         text_file.write('eeschema.InspectionTool.runERC\tCtrl+Shift+I\n')
         text_file.write('pcbnew.DRCTool.runDRC\tCtrl+Shift+I\n')
         text_file.write('pcbnew.ZoneFiller.zoneFillAll\tB\n')
+
+
+def check_input_file(cfg, no_file, no_ext):
+    # Check the schematic/PCB is there
+    if not os.path.isfile(cfg.input_file):
+        logger.error(cfg.input_file+' does not exist')
+        exit(no_file)
+    # If we pass a name without extension KiCad will try to create a kicad_sch/kicad_pcb
+    # The extension can be anything.
+    ext = os.path.splitext(cfg.input_file)[1]
+    if not ext:
+        logger.error('Input files must use an extension, otherwise KiCad will reject them.')
+        exit(no_ext)
+    if cfg.kicad_version >= KICAD_VERSION_5_99 and ext == '.sch':
+        logger.warning('Using old format files is not recommended. Convert them first.')

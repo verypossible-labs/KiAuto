@@ -65,7 +65,7 @@ def test_pcb_no_extension():
     ctx = context.TestContext('PCB_no_extension', prj)
     cmd = [PROG, 'run_drc']
     ctx.run(cmd, WRONG_PCB_NAME, filename='Makefile')
-    m = ctx.search_err(r'PCB files must use kicad_pcb extension')
+    m = ctx.search_err(r'Input files must use an extension')
     assert m is not None
     ctx.clean_up()
 

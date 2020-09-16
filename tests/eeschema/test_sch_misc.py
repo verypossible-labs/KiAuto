@@ -92,7 +92,7 @@ def test_sch_no_extension():
     ctx = context.TestContextSCH('SCH_no_extension', prj)
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, WRONG_SCH_NAME, filename='Makefile')
-    m = ctx.search_err(r'Schematic files must use sch/kicad_sch extension')
+    m = ctx.search_err(r'Input files must use an extension')
     assert m is not None
     ctx.clean_up()
 
