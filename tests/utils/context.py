@@ -219,7 +219,8 @@ class TestContext(object):
     def svg_to_png(self, svg):
         png = os.path.splitext(svg)[0]+'.png'
         logging.debug('Converting '+svg+' to '+png)
-        cmd = ['convert', '-density', '150', svg, png]
+        # cmd = ['convert', '-density', '150', svg, png]
+        cmd = ['rsvg-convert', '-d', '150', '-p', '150', '-o', png, svg]
         subprocess.check_call(cmd)
         return os.path.basename(png)
 

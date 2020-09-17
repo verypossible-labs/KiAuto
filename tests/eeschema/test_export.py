@@ -50,11 +50,17 @@ def test_export_all_svg():
     prj = 'good-project'
     ctx = context.TestContextSCH('Export_All_SVG', prj)
     cmd = [PROG, 'export', '--file_format', 'svg', '--all_pages']
-    ctx.create_dummy_out_file('logic-logic.svg')
+    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+        logic = 'logic-logic.svg'
+        power = 'power-Power.svg'
+    else:
+        logic = prj+'-logic.svg'
+        power = prj+'-Power.svg'
+    ctx.create_dummy_out_file(logic)
     ctx.run(cmd)
     ctx.compare_svg('good-project.svg')
-    ctx.compare_svg('logic-logic.svg')
-    ctx.compare_svg('power-Power.svg')
+    ctx.compare_svg(logic)
+    ctx.compare_svg(power)
     ctx.clean_up()
 
 
