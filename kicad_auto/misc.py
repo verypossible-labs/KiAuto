@@ -122,7 +122,7 @@ class Config(object):
         # Some details about the UI
         if self.kicad_version >= KICAD_VERSION_5_99:
             # KiCad 5.99.0
-            self.ee_window_title = r'\[/\] — Eeschema$'  # "PROJECT [HIERARCHY_PATH] - Eeschema"
+            self.ee_window_title = r'\[/.*\] — Eeschema$'  # "PROJECT [HIERARCHY_PATH] - Eeschema"
         else:
             # KiCad 5.1.6
             self.ee_window_title = r'Eeschema.*\.sch'  # "Eeschema - file.sch"
