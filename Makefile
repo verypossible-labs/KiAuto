@@ -1,10 +1,10 @@
 #!/usr/bin/make
 PY_COV=python3-coverage
 PYTEST=pytest-3
-REFDIR=tests/reference/
+REFDIR=tests/reference/6/
 GOOD=tests/kicad5/good-project/good-project.kicad_pcb
 REFILL=tests/kicad5/zone-refill/zone-refill.kicad_pcb
-GOOD_SCH=tests/kicad5/good-project/good-project.sch
+GOOD_SCH=tests/kicad6/good-project/good-project.kicad_sch
 CWD := $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 USER_ID=$(shell id -u)
 GROUP_ID=$(shell id -g)
@@ -68,14 +68,23 @@ docker_deb_shell:
 	--volume="/home/$(USER):/home/$(USER):rw" \
 	setsoft/kicad_pybuild:latest /bin/bash
 
+gen1_ref:
+	src/eeschema_do export --file_format ps --all $(GOOD_SCH) $(REFDIR)
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project.ps > $(REFDIR)good-project.ps.new
+	mv $(REFDIR)good-project.ps.new $(REFDIR)good-project.ps
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-logic.ps > $(REFDIR)good-project-logic.ps.new
+	mv $(REFDIR)good-project-logic.ps.new $(REFDIR)good-project-logic.ps
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-Power.ps > $(REFDIR)good-project-Power.ps.new
+	mv $(REFDIR)good-project-Power.ps.new $(REFDIR)good-project-Power.ps
+
 gen_ref:
 	# Reference outputs, must be manually inspected if regenerated
 	cp -a $(REFILL).refill $(REFILL)
 	src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
 	cp -a $(REFILL).ok $(REFILL)
-	src/pcbnew_do export --output_name good_pcb_with_dwg.pdf $(GOOD) $(REFDIR) F.Cu F.SilkS Dwgs.User Edge.Cuts
-	src/pcbnew_do export --output_name good_pcb_inners.pdf   $(GOOD) $(REFDIR) F.Cu F.SilkS GND.Cu Signal1.Cu Signal2.Cu Power.Cu Edge.Cuts
-	src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
+	# src/pcbnew_do export --output_name good_pcb_with_dwg.pdf $(GOOD) $(REFDIR) F.Cu F.SilkS Dwgs.User Edge.Cuts
+	# src/pcbnew_do export --output_name good_pcb_inners.pdf   $(GOOD) $(REFDIR) F.Cu F.SilkS GND.Cu Signal1.Cu Signal2.Cu Power.Cu Edge.Cuts
+	# src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
 	src/eeschema_do export --file_format pdf --all $(GOOD_SCH) $(REFDIR)
 	mv $(REFDIR)good-project.pdf $(REFDIR)good_sch_all.pdf
 	src/eeschema_do export --file_format pdf $(GOOD_SCH) $(REFDIR)
@@ -84,17 +93,17 @@ gen_ref:
 	# I really hate this, files has time stamps, 3 of them in fact, WHY ANOTHER INSIDE!!!
 	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project.svg > $(REFDIR)good-project.svg.new
 	mv $(REFDIR)good-project.svg.new $(REFDIR)good-project.svg
-	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)logic-logic.svg > $(REFDIR)logic-logic.svg.new
-	mv $(REFDIR)logic-logic.svg.new $(REFDIR)logic-logic.svg
-	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)power-Power.svg > $(REFDIR)power-Power.svg.new
-	mv $(REFDIR)power-Power.svg.new $(REFDIR)power-Power.svg
+	# sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project-logic.svg > $(REFDIR)good-project-logic.svg.new
+	# mv $(REFDIR)good-project-logic.svg.new $(REFDIR)good-project-logic.svg
+	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project-Power.svg > $(REFDIR)good-project-Power.svg.new
+	mv $(REFDIR)good-project-Power.svg.new $(REFDIR)good-project-Power.svg
 	src/eeschema_do export --file_format ps --all $(GOOD_SCH) $(REFDIR)
 	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project.ps > $(REFDIR)good-project.ps.new
 	mv $(REFDIR)good-project.ps.new $(REFDIR)good-project.ps
-	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)logic-logic.ps > $(REFDIR)logic-logic.ps.new
-	mv $(REFDIR)logic-logic.ps.new $(REFDIR)logic-logic.ps
-	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)power-Power.ps > $(REFDIR)power-Power.ps.new
-	mv $(REFDIR)power-Power.ps.new $(REFDIR)power-Power.ps
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-logic.ps > $(REFDIR)good-project-logic.ps.new
+	mv $(REFDIR)good-project-logic.ps.new $(REFDIR)good-project-logic.ps
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-Power.ps > $(REFDIR)good-project-Power.ps.new
+	mv $(REFDIR)good-project-Power.ps.new $(REFDIR)good-project-Power.ps
 
 single_test:
 	rm -rf pp
