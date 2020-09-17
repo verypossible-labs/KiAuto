@@ -48,10 +48,12 @@ class TestContext(object):
             self.board_dir = '../kicad5'
             self.sch_ext = '.sch'
             self.ref_dir = 'tests/reference/5'
+            self.pro_ext = '.pro'
         else:
             self.board_dir = '../kicad6'
             self.sch_ext = '.kicad_sch'
             self.ref_dir = 'tests/reference/6'
+            self.pro_ext = '.kicad_pro'
         # We are using PCBs
         self.mode = MODE_PCB
         # The name used for the test output dirs and other logging
@@ -115,7 +117,7 @@ class TestContext(object):
             f.write('Dummy file\n')
 
     def get_pro_filename(self):
-        return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+'.pro')
+        return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+self.pro_ext)
 
     def get_prodir_filename(self, file):
         return os.path.join(self._get_board_cfg_dir(), self.prj_name, file)
