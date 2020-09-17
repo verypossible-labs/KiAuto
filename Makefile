@@ -79,9 +79,9 @@ gen1_ref:
 
 gen_ref:
 	# Reference outputs, must be manually inspected if regenerated
-	cp -a $(REFILL).refill $(REFILL)
-	src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
-	cp -a $(REFILL).ok $(REFILL)
+	# cp -a $(REFILL).refill $(REFILL)
+	# src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
+	# cp -a $(REFILL).ok $(REFILL)
 	# src/pcbnew_do export --output_name good_pcb_with_dwg.pdf $(GOOD) $(REFDIR) F.Cu F.SilkS Dwgs.User Edge.Cuts
 	# src/pcbnew_do export --output_name good_pcb_inners.pdf   $(GOOD) $(REFDIR) F.Cu F.SilkS GND.Cu Signal1.Cu Signal2.Cu Power.Cu Edge.Cuts
 	# src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
