@@ -326,7 +326,7 @@ class TestContext(object):
             Use like this: with context.start_kicad('command'): """
         with recorded_xvfb(cfg):
             with PopenContext([cmd], stderr=subprocess.DEVNULL, close_fds=True) as self.proc:
-                logging.debug('Started `'+usable_cmd(cmd)+'` with PID: '+str(self.proc.pid))
+                logging.debug('Started `'+cmd+'` with PID: '+str(self.proc.pid))
                 assert pid_exists(self.proc.pid)
                 yield
 
