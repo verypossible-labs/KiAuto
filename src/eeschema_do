@@ -36,7 +36,7 @@ logger = log.init()
 
 from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                                   check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
-                                  check_input_file)
+                                  check_input_file, memorize_project, restore_project)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                              WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
                              USER_HOTKEYS_PRESENT)
@@ -428,44 +428,6 @@ def eeschema_bom_xml_commands(cfg):
     exit_eeschema(cfg)
 
 
-def memorize_project(cfg):
-    """ Detect the .pro filename and try to read it and its mtime.
-        If KiCad changes it then will try to revert the changes """
-    cfg.pro_stat = None
-    cfg.pro_content = None
-    name_no_ext = os.path.splitext(cfg.input_file)[0]
-    cfg.pro_name = name_no_ext+'.kicad_pro'
-    if not os.path.isfile(cfg.pro_name):
-        cfg.pro_name = name_no_ext+'.pro'
-        if not os.path.isfile(cfg.pro_name):
-            logger.warning('KiCad project file not found')
-            return
-        if cfg.kicad_version >= KICAD_VERSION_5_99:
-            logger.warning('Using old format projects is not recommended. Convert them first.')
-    cfg.pro_stat = os.stat(cfg.pro_name)
-    with open(cfg.pro_name) as f:
-        cfg.pro_content = f.read()
-    atexit.register(restore_project, cfg)
-
-
-def restore_project(cfg):
-    """ If the .pro was modified try to restore it """
-    logger.debug('Checking if .pro was modified')
-    if cfg.pro_stat and cfg.pro_content:
-        pro_found = False
-        if os.path.isfile(cfg.pro_name):
-            new_stat = os.stat(cfg.pro_name)
-            pro_found = True
-        else:  # pragma: no cover
-            logger.warning('Project file lost')
-        if not pro_found or new_stat.st_mtime != cfg.pro_stat.st_mtime:
-            logger.debug('Restoring the project file')
-            os.rename(cfg.pro_name, cfg.pro_name+'-bak')
-            with open(cfg.pro_name, 'w') as f:
-                f.write(cfg.pro_content)
-            os.utime(cfg.pro_name, times=(cfg.pro_stat.st_atime, cfg.pro_stat.st_mtime))
-
-
 def create_eeschema_config(cfg):
     logger.debug('Creating an eeschema config')
     # HPGL:0 ??:1 PS:2 DXF:3 PDF:4 SVG:5
@@ -544,11 +506,10 @@ if __name__ == '__main__':
     # Set the verbosity
     log.set_level(logger, args.verbose)
 
-    cfg = Config(logger, args)
+    cfg = Config(logger, args.schematic, args)
     cfg.video_name = args.command+'_eeschema_screencast.ogv'
     cfg.all_pages = getattr(args, 'all_pages', False)
     cfg.warnings_as_errors = getattr(args, 'warnings_as_errors', False)
-    cfg.input_file = args.schematic
     # Make sure the input file exists and has an extension
     check_input_file(cfg, NO_SCHEMATIC, WRONG_SCH_NAME)
     # Load filters
@@ -556,7 +517,6 @@ if __name__ == '__main__':
         load_filters(cfg, args.errors_filter[0])
 
     memorize_project(cfg)
-
     # Create output dir if it doesn't exist
     output_dir = os.path.abspath(args.output_dir)+'/'
     cfg.video_dir = cfg.output_dir = output_dir

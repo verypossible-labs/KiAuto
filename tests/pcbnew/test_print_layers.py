@@ -24,14 +24,18 @@ DEFAULT = 'printed.pdf'
 CMD_OUT = 'output.txt'
 
 
-def test_print_pcb_good_dwg():
+def test_print_pcb_good_dwg_1():
     ctx = context.TestContext('Print_Good_with_Dwg', 'good-project')
     pdf = 'good_pcb_with_dwg.pdf'
-    cmd = [PROG, 'export', '--output_name', pdf]
+    mtime1 = ctx.get_pro_mtime()
+    mtime2 = ctx.get_prl_mtime()
+    cmd = [PROG, '-vv', 'export', '--output_name', pdf]
     layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(pdf)
     ctx.compare_image(pdf)
+    assert mtime1 == ctx.get_pro_mtime()
+    assert mtime2 == ctx.get_prl_mtime()
     ctx.clean_up()
 
 

@@ -191,3 +191,59 @@ def check_input_file(cfg, no_file, no_ext):
         exit(no_ext)
     if cfg.kicad_version >= KICAD_VERSION_5_99 and ext == '.sch':
         logger.warning('Using old format files is not recommended. Convert them first.')
+
+
+def memorize_project(cfg):
+    """ Detect the .pro filename and try to read it and its mtime.
+        If KiCad changes it then we'll try to revert the changes """
+    cfg.pro_stat = None
+    cfg.pro_content = None
+    cfg.prl_stat = None
+    cfg.prl_content = None
+    name_no_ext = os.path.splitext(cfg.input_file)[0]
+    cfg.pro_name = name_no_ext+'.'+cfg.pro_ext
+    if not os.path.isfile(cfg.pro_name):
+        cfg.pro_name = name_no_ext+'.pro'
+        if not os.path.isfile(cfg.pro_name):
+            logger.warning('KiCad project file not found')
+            return
+        if cfg.kicad_version >= KICAD_VERSION_5_99:
+            logger.warning('Using old format projects is not recommended. Convert them first.')
+    if cfg.pro_name[-4:] == '.pro':
+        cfg.pro_stat = cfg.start_pro_stat
+    else:
+        cfg.pro_stat = cfg.start_kicad_pro_stat
+    with open(cfg.pro_name) as f:
+        cfg.pro_content = f.read()
+    atexit.register(restore_project, cfg)
+    if cfg.prl_ext:
+        cfg.prl_name = name_no_ext+'.'+cfg.prl_ext
+        if not os.path.isfile(cfg.prl_name):
+            return
+        cfg.prl_stat = cfg.start_kicad_prl_stat
+        with open(cfg.prl_name) as f:
+            cfg.prl_content = f.read()
+
+
+def _restore_project(name, stat_v, content):
+    logger.debug('Checking if %s was modified', name)
+    if stat_v and content:
+        pro_found = False
+        if os.path.isfile(name):
+            new_stat = os.stat(name)
+            pro_found = True
+        else:  # pragma: no cover
+            logger.warning('Project file lost')
+        if not pro_found or new_stat.st_mtime != stat_v.st_mtime:
+            logger.debug('Restoring the project file')
+            os.rename(name, name+'-bak')
+            with open(name, 'wt') as f:
+                f.write(content)
+            os.utime(name, times=(stat_v.st_atime, stat_v.st_mtime))
+
+
+def restore_project(cfg):
+    """ If the .pro was modified try to restore it """
+    _restore_project(cfg.pro_name, cfg.pro_stat, cfg.pro_content)
+    if cfg.prl_ext:
+        _restore_project(cfg.prl_name, cfg.prl_stat, cfg.prl_content)

@@ -36,7 +36,7 @@ logger = log.init()
 
 from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
                                   check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
-                                  check_input_file)
+                                  check_input_file, memorize_project, restore_project)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, WAIT_START, WRONG_LAYER_NAME,
                              WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, KICAD_VERSION_5_99, USER_HOTKEYS_PRESENT,
                              CORRUPTED_PCB)
@@ -540,7 +540,7 @@ if __name__ == '__main__':
         parser.print_help()
         exit(WRONG_ARGUMENTS)
 
-    cfg = Config(logger, args)
+    cfg = Config(logger, args.kicad_pcb_file, args)
     # Empty values by default, we'll fill them for export
     cfg.fill_zones = False
     cfg.layers = []
@@ -570,6 +570,7 @@ if __name__ == '__main__':
     if args.command == 'run_drc' and args.errors_filter:
         load_filters(cfg, args.errors_filter[0])
 
+    memorize_project(cfg)
     # Back-up the current pcbnew configuration
     check_kicad_config_dir(cfg)
     cfg.conf_pcbnew_bkp = backup_config('PCBnew', cfg.conf_pcbnew, PCBNEW_CFG_PRESENT, cfg)
@@ -632,4 +633,6 @@ if __name__ == '__main__':
         restore_pcb(cfg)
     atexit.unregister(restore_config)
     restore_config(cfg)
+    atexit.unregister(restore_project)
+    restore_project(cfg)
     exit(error_level)

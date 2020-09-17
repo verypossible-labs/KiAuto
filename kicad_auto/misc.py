@@ -33,8 +33,26 @@ KICAD_NIGHTLY_SHARE = '/usr/share/kicad-nightly/'
 
 
 class Config(object):
-    def __init__(self, logger, args=None):
+    def __init__(self, logger, input_file=None, args=None):
         self.export_format = 'pdf'
+        if input_file:
+            self.input_file = input_file
+            self.input_no_ext = os.path.splitext(input_file)[0]
+            #
+            # As soon as we init pcbnew the following files are modified:
+            #
+            if os.path.isfile(self.input_no_ext+'.pro'):
+                self.start_pro_stat = os.stat(self.input_no_ext+'.pro')
+            else:
+                self.start_pro_stat = None
+            if os.path.isfile(self.input_no_ext+'.kicad_pro'):
+                self.start_kicad_pro_stat = os.stat(self.input_no_ext+'.kicad_pro')
+            else:
+                self.start_kicad_pro_stat = None
+            if os.path.isfile(self.input_no_ext+'.kicad_prl'):
+                self.start_kicad_prl_stat = os.stat(self.input_no_ext+'.kicad_prl')
+            else:
+                self.start_kicad_prl_stat = None
         if args:
             # Session debug
             self.use_wm = args.use_wm  # Use a Window Manager, dialogs behaves in a different way
@@ -89,24 +107,29 @@ class Config(object):
         # - eeschema config
         self.conf_eeschema = os.path.join(self.kicad_conf_path, 'eeschema')
         self.conf_eeschema_bkp = None
-        self.conf_eeschema_json = False
         # - pcbnew config
         self.conf_pcbnew = os.path.join(self.kicad_conf_path, 'pcbnew')
         self.conf_pcbnew_bkp = None
-        self.conf_pcbnew_json = False
         # - kicad config
         self.conf_kicad = os.path.join(self.kicad_conf_path, 'kicad_common')
         self.conf_kicad_bkp = None
-        self.conf_kicad_json = False
         # Config files that migrated to JSON
         # Note that they remain in the old format until saved
         if self.kicad_version >= KICAD_VERSION_5_99:
             self.conf_eeschema += '.json'
-            self.conf_eeschema_json = True
             self.conf_pcbnew += '.json'
-            self.conf_pcbnew_json = True
             self.conf_kicad += '.json'
             self.conf_kicad_json = True
+            self.conf_eeschema_json = True
+            self.conf_pcbnew_json = True
+            self.pro_ext = 'kicad_pro'
+            self.prl_ext = 'kicad_prl'
+        else:
+            self.conf_kicad_json = False
+            self.conf_eeschema_json = False
+            self.conf_pcbnew_json = False
+            self.pro_ext = 'pro'
+            self.prl_ext = None
         # - hotkeys
         self.conf_hotkeys = os.path.join(self.kicad_conf_path, 'user.hotkeys')
         self.conf_hotkeys_bkp = None
