@@ -50,12 +50,8 @@ def test_export_all_svg():
     prj = 'good-project'
     ctx = context.TestContextSCH('Export_All_SVG', prj)
     cmd = [PROG, 'export', '--file_format', 'svg', '--all_pages']
-    if ctx.kicad_version < context.KICAD_VERSION_5_99:
-        logic = 'logic-logic.svg'
-        power = 'power-Power.svg'
-    else:
-        logic = prj+'-logic.svg'
-        power = prj+'-Power.svg'
+    logic = ctx.get_sub_sheet_name('logic', 'svg')
+    power = ctx.get_sub_sheet_name('Power', 'svg')
     ctx.create_dummy_out_file(logic)
     ctx.run(cmd)
     ctx.compare_svg('good-project.svg')
@@ -74,8 +70,8 @@ def test_export_svg():
     cmd = [PROG, 'export', '--file_format', 'svg']
     ctx.run(cmd)
     ctx.compare_svg(svg)
-    ctx.dont_expect_out_file('logic-logic.svg')
-    ctx.dont_expect_out_file('power-Power.svg')
+    ctx.dont_expect_out_file(ctx.get_sub_sheet_name('logic', 'svg'))
+    ctx.dont_expect_out_file(ctx.get_sub_sheet_name('Power', 'svg'))
     ctx.clean_up()
 
 
@@ -86,8 +82,8 @@ def test_export_ps():
     cmd = [PROG, 'export', '--file_format', 'ps']
     ctx.run(cmd)
     ctx.compare_ps(ps)
-    ctx.dont_expect_out_file('logic-logic.ps')
-    ctx.dont_expect_out_file('power-Power.ps')
+    ctx.dont_expect_out_file(ctx.get_sub_sheet_name('logic', 'ps'))
+    ctx.dont_expect_out_file(ctx.get_sub_sheet_name('Power', 'ps'))
     ctx.clean_up()
 
 
@@ -98,8 +94,8 @@ def test_export_all_ps():
     cmd = [PROG, 'export', '--file_format', 'ps', '--all_pages']
     ctx.run(cmd)
     ctx.compare_ps(ps)
-    ctx.compare_ps('logic-logic.ps')
-    ctx.compare_ps('power-Power.ps')
+    ctx.compare_ps(ctx.get_sub_sheet_name('logic', 'ps'))
+    ctx.compare_ps(ctx.get_sub_sheet_name('Power', 'ps'))
     ctx.clean_up()
 
 
@@ -110,8 +106,8 @@ def test_export_dxf():
     cmd = [PROG, 'export', '--file_format', 'dxf']
     ctx.run(cmd)
     ctx.expect_out_file(dxf)
-    ctx.dont_expect_out_file('logic-logic.dxf')
-    ctx.dont_expect_out_file('power-Power.dxf')
+    ctx.dont_expect_out_file(ctx.get_sub_sheet_name('logic', 'dxf'))
+    ctx.dont_expect_out_file(ctx.get_sub_sheet_name('Power', 'dxf'))
     ctx.clean_up()
 
 
@@ -122,8 +118,8 @@ def test_export_all_dxf():
     cmd = [PROG, 'export', '--file_format', 'dxf', '--all_pages']
     ctx.run(cmd)
     ctx.expect_out_file(dxf)
-    ctx.expect_out_file('logic-logic.dxf')
-    ctx.expect_out_file('power-Power.dxf')
+    ctx.expect_out_file(ctx.get_sub_sheet_name('logic', 'dxf'))
+    ctx.expect_out_file(ctx.get_sub_sheet_name('Power', 'dxf'))
     ctx.clean_up()
 
 
@@ -134,8 +130,8 @@ def test_export_hpgl():
     cmd = [PROG, 'export', '--file_format', 'hpgl']
     ctx.run(cmd)
     ctx.expect_out_file(hpgl)
-    ctx.dont_expect_out_file('logic-logic.plt')
-    ctx.dont_expect_out_file('power-Power.plt')
+    ctx.dont_expect_out_file(ctx.get_sub_sheet_name('logic', 'dxf'))
+    ctx.dont_expect_out_file(ctx.get_sub_sheet_name('Power', 'plt'))
     ctx.clean_up()
 
 
@@ -146,6 +142,6 @@ def test_export_all_hpgl():
     cmd = [PROG, 'export', '--file_format', 'hpgl', '--all_pages']
     ctx.run(cmd)
     ctx.expect_out_file(hpgl)
-    ctx.expect_out_file('logic-logic.plt')
-    ctx.expect_out_file('power-Power.plt')
+    ctx.expect_out_file(ctx.get_sub_sheet_name('logic', 'plt'))
+    ctx.expect_out_file(ctx.get_sub_sheet_name('Power', 'plt'))
     ctx.clean_up()

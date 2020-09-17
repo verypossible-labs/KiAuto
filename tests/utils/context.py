@@ -125,6 +125,11 @@ class TestContext(object):
     def get_pro_mtime(self):
         return os.path.getmtime(self.get_pro_filename())
 
+    def get_sub_sheet_name(self, sub, ext):
+        if self.kicad_version < KICAD_VERSION_5_99:
+            return sub.lower()+'-'+sub+'.'+ext
+        return self.prj_name+'-'+sub+'.'+ext
+
     @staticmethod
     def read(fd):
         data = os.read(fd, 1024)
