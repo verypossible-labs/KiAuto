@@ -27,22 +27,20 @@ def test_pcbnew_config_backup():
         back-up and the user must take action. """
     prj = 'good-project'
     ctx = context.TestContext('PCBnew_config_bkp', prj)
-
     # Create a fake back-up
-    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
-    if not os.path.isdir(kicad_cfg_dir):
+    if not os.path.isdir(ctx.kicad_cfg_dir):
         logging.debug('Creating KiCad config dir')
-        os.makedirs(kicad_cfg_dir, exist_ok=True)
-    config_file = os.path.join(kicad_cfg_dir, 'pcbnew')
-    old_config_file = config_file + '.pre_script'
+        os.makedirs(ctx.kicad_cfg_dir, exist_ok=True)
+    old_config_file = ctx.pcbnew_conf + '.pre_script'
     logging.debug('PCBnew old config: '+old_config_file)
     with open(old_config_file, 'w') as f:
         f.write('Dummy back-up\n')
-
     # Run the command
-    cmd = [PROG, 'run_drc']
-    ctx.run(cmd, PCBNEW_CFG_PRESENT)
-    os.remove(old_config_file)
+    try:
+        cmd = [PROG, 'run_drc']
+        ctx.run(cmd, PCBNEW_CFG_PRESENT)
+    finally:
+        os.remove(old_config_file)
     m = ctx.search_err('PCBnew config back-up found')
     assert m is not None
     ctx.clean_up()

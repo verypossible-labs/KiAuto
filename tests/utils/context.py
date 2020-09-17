@@ -36,6 +36,9 @@ class TestContext(object):
         if ng_ver:
             # Path to the Python module
             sys.path.insert(0, '/usr/lib/kicad-nightly/lib/python3/dist-packages')
+            self.kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicadnightly/'+ng_ver)
+        else:
+            self.kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
         import pcbnew
         # Detect version
         m = re.match(r'(\d+)\.(\d+)\.(\d+)', pcbnew.GetBuildVersion())
@@ -49,11 +52,13 @@ class TestContext(object):
             self.sch_ext = '.sch'
             self.ref_dir = 'tests/reference/5'
             self.pro_ext = '.pro'
+            self.pcbnew_conf = os.path.join(self.kicad_cfg_dir, 'pcbnew')
         else:
             self.board_dir = '../kicad6'
             self.sch_ext = '.kicad_sch'
             self.ref_dir = 'tests/reference/6'
             self.pro_ext = '.kicad_pro'
+            self.pcbnew_conf = os.path.join(self.kicad_cfg_dir, 'pcbnew.json')
         # We are using PCBs
         self.mode = MODE_PCB
         # The name used for the test output dirs and other logging
@@ -119,11 +124,19 @@ class TestContext(object):
     def get_pro_filename(self):
         return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+self.pro_ext)
 
+    def get_prl_filename(self):
+        return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+'.kicad_prl')
+
     def get_prodir_filename(self, file):
         return os.path.join(self._get_board_cfg_dir(), self.prj_name, file)
 
     def get_pro_mtime(self):
         return os.path.getmtime(self.get_pro_filename())
+
+    def get_prl_mtime(self):
+        if self.kicad_version < KICAD_VERSION_5_99:
+            return os.path.getmtime(self.get_pro_filename())
+        return os.path.getmtime(self.get_prl_filename())
 
     def get_sub_sheet_name(self, sub, ext):
         if self.kicad_version < KICAD_VERSION_5_99:
