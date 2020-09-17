@@ -33,7 +33,7 @@ def test_pcbnew_config_backup():
         os.makedirs(ctx.kicad_cfg_dir, exist_ok=True)
     old_config_file = ctx.pcbnew_conf + '.pre_script'
     logging.debug('PCBnew old config: '+old_config_file)
-    with open(old_config_file, 'w') as f:
+    with open(old_config_file, 'wt') as f:
         f.write('Dummy back-up\n')
     # Run the command
     try:

@@ -53,12 +53,16 @@ class TestContext(object):
             self.ref_dir = 'tests/reference/5'
             self.pro_ext = '.pro'
             self.pcbnew_conf = os.path.join(self.kicad_cfg_dir, 'pcbnew')
+            self.eeschema_conf = os.path.join(self.kicad_cfg_dir, 'eeschema')
+            self.kicad_conf = os.path.join(self.kicad_cfg_dir, 'kicad_common')
         else:
             self.board_dir = '../kicad6'
             self.sch_ext = '.kicad_sch'
             self.ref_dir = 'tests/reference/6'
             self.pro_ext = '.kicad_pro'
             self.pcbnew_conf = os.path.join(self.kicad_cfg_dir, 'pcbnew.json')
+            self.eeschema_conf = os.path.join(self.kicad_cfg_dir, 'eeschema.json')
+            self.kicad_conf = os.path.join(self.kicad_cfg_dir, 'kicad_common.json')
         # We are using PCBs
         self.mode = MODE_PCB
         # The name used for the test output dirs and other logging

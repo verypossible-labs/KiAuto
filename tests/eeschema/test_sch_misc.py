@@ -28,18 +28,14 @@ def test_eeschema_config_backup():
         back-up and the user must take action. """
     prj = 'good-project'
     ctx = context.TestContextSCH('Eeschema_config_bkp', prj)
-
     # Create a fake back-up
-    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
-    if not os.path.isdir(kicad_cfg_dir):
+    if not os.path.isdir(ctx.kicad_cfg_dir):
         logging.debug('Creating KiCad config dir')
-        os.makedirs(kicad_cfg_dir, exist_ok=True)
-    config_file = os.path.join(kicad_cfg_dir, 'eeschema')
-    old_config_file = config_file + '.pre_script'
+        os.makedirs(ctx.kicad_cfg_dir, exist_ok=True)
+    old_config_file = ctx.eeschema_conf + '.pre_script'
     logging.debug('Eeschema old config: '+old_config_file)
-    with open(old_config_file, 'w') as f:
+    with open(old_config_file, 'wt') as f:
         f.write('Dummy back-up\n')
-
     # Run the command
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, EESCHEMA_CFG_PRESENT)
@@ -54,18 +50,14 @@ def test_kicad_common_config_backup():
         back-up and the user must take action. """
     prj = 'good-project'
     ctx = context.TestContextSCH('Eeschema_common_config_bkp', prj)
-
     # Create a fake back-up
-    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
-    if not os.path.isdir(kicad_cfg_dir):
+    if not os.path.isdir(ctx.kicad_cfg_dir):
         logging.debug('Creating KiCad config dir')
-        os.makedirs(kicad_cfg_dir, exist_ok=True)
-    config_file = os.path.join(kicad_cfg_dir, 'kicad_common')
-    old_config_file = config_file + '.pre_script'
+        os.makedirs(ctx.kicad_cfg_dir, exist_ok=True)
+    old_config_file = ctx.kicad_conf + '.pre_script'
     logging.debug('KiCad common old config: '+old_config_file)
-    with open(old_config_file, 'w') as f:
+    with open(old_config_file, 'wt') as f:
         f.write('Dummy back-up\n')
-
     # Run the command
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, KICAD_CFG_PRESENT)
