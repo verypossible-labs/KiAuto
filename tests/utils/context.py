@@ -17,7 +17,6 @@ from kicad_auto.ui_automation import recorded_xvfb, PopenContext
 
 COVERAGE_SCRIPT = 'python3-coverage'
 KICAD_PCB_EXT = '.kicad_pcb'
-REF_DIR = 'tests/reference'
 
 MODE_SCH = 1
 MODE_PCB = 0
@@ -48,9 +47,11 @@ class TestContext(object):
         if self.kicad_version < KICAD_VERSION_5_99:
             self.board_dir = '../kicad5'
             self.sch_ext = '.sch'
+            self.ref_dir = 'tests/reference/5'
         else:
             self.board_dir = '../kicad6'
             self.sch_ext = '.kicad_sch'
+            self.ref_dir = 'tests/reference/6'
         # We are using PCBs
         self.mode = MODE_PCB
         # The name used for the test output dirs and other logging
@@ -65,7 +66,6 @@ class TestContext(object):
         self.out = None
         self.err = None
         self.proc = None
-
 
     def _get_board_cfg_dir(self):
         this_dir = os.path.dirname(os.path.realpath(__file__))
@@ -201,7 +201,7 @@ class TestContext(object):
                # Count how many pixels differ
                '-metric', 'AE',
                self.get_out_path(image),
-               os.path.join(REF_DIR, reference),
+               os.path.join(self.ref_dir, reference),
                # Avoid the part where KiCad version and title are printed
                '-crop', '100%x88%+0+0', '+repage',
                self.get_out_path(diff)]
@@ -226,9 +226,9 @@ class TestContext(object):
         if reference is None:
             reference = image
         image_png = self.svg_to_png(self.get_out_path(image))
-        reference_png = self.svg_to_png(os.path.join(REF_DIR, reference))
+        reference_png = self.svg_to_png(os.path.join(self.ref_dir, reference))
         self.compare_image(image_png, reference_png, diff)
-        os.remove(os.path.join(REF_DIR, reference_png))
+        os.remove(os.path.join(self.ref_dir, reference_png))
 
     def ps_to_png(self, ps):
         png = os.path.splitext(ps)[0]+'.png'
@@ -242,19 +242,19 @@ class TestContext(object):
         if reference is None:
             reference = image
         image_png = self.ps_to_png(self.get_out_path(image))
-        reference_png = self.ps_to_png(os.path.join(REF_DIR, reference))
+        reference_png = self.ps_to_png(os.path.join(self.ref_dir, reference))
         self.compare_image(image_png, reference_png, diff)
-        os.remove(os.path.join(REF_DIR, reference_png))
+        os.remove(os.path.join(self.ref_dir, reference_png))
 
     def compare_pdf(self, gen, reference=None, diff='diff-{}.png'):
         """ For multi-page PDFs """
         if reference is None:
             reference = gen
-        logging.debug('Comparing PDFs: '+gen+' vs '+reference)
+        logging.debug('Comparing PDFs: '+gen+' vs '+reference+' (reference)')
         # Split the reference
         logging.debug('Splitting '+reference)
         cmd = ['convert', '-density', '150',
-               os.path.join(REF_DIR, reference),
+               os.path.join(self.ref_dir, reference),
                self.get_out_path('ref-%d.png')]
         subprocess.check_call(cmd)
         # Split the generated
@@ -286,7 +286,7 @@ class TestContext(object):
     def compare_txt(self, text, reference=None, diff='diff.txt'):
         if reference is None:
             reference = text
-        cmd = ['/bin/sh', '-c', 'diff -ub '+os.path.join(REF_DIR, reference)+' ' +
+        cmd = ['/bin/sh', '-c', 'diff -ub '+os.path.join(self.ref_dir, reference)+' ' +
                self.get_out_path(text)+' > '+self.get_out_path(diff)]
         logging.debug('Comparing texts with: '+usable_cmd(cmd))
         res = subprocess.call(cmd)
