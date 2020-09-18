@@ -1,26 +1,40 @@
-KiCad automation scripts
-========================
+KiAuto
+======
 
 ![Python application](https://github.com/INTI-CMNB/kicad-automation-scripts/workflows/Python%20application/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/kicad-automation-scripts/badge.svg?branch=master&service=github)](https://coveralls.io/github/INTI-CMNB/kicad-automation-scripts?branch=master)
 
-A bunch of scripts to automate [KiCad](https://www.kicad-pcb.org/) processes using UI automation with [xdotool](https://www.semicomplete.com/projects/xdotool/).
+KiCad automation scripts.
+In particular to automate tasks that can't be done using the KiCad native Python interface.
+The automation is carried out emulating the user interaction.
 
-This is a fork of Productize SPRL's  [scripts](https://github.com/productize/kicad-automation-scripts), based in big parts on Scott Bezek's scripts in his 
-[split-flap display project](https://scottbez1.github.io/splitflap/).
-For more info see his [excellent blog posts][scot's blog].
+## Index
+
+* [Introduction](#introduction)
+* [Installation](#installation)
+* [Usage](#usage)
+* [History](#history)
+
+## Introduction
+
+Current implementation uses a virtual X server ([xvfb](https://www.x.org/releases/X11R7.6/doc/man/man1/Xvfb.1.xhtml)),
+sends key events and detects which window is focused using [xdotool](https://github.com/jordansissel/xdotool/)
+and handles the clipboard using [xclip](https://github.com/astrand/xclip).
+This means it works for Linux. KiCad is also available for Windows and MacOSX, help to port the scripts will be appreciated.
 
 Currently tested and working:
 
 - Exporting schematics to PDF, SVG, PS, DXF and HPGL
-- Exporting layouts to PDF 
+- Exporting layouts (PCBs) to PDF
 - Running ERC on schematics
 - Running DRC on layouts
 - Netlist generation
 - Basic BoM generation (mainly the XML needed for [KiBoM](https://github.com/SchrodingersGat/KiBoM))
 
-If you are looking for Gerbers, Drill and Position take a look at [KiPlot](https://github.com/INTI-CMNB/kiplot).
+If you are looking for Gerbers, Drill, Position, STEP and more take a look at [KiBot](https://github.com/INTI-CMNB/KiBot).
 
-If you are looking for STEP files creation take a look at *kicad2step*, part of KiCad.
+This project started as a fork of [kicad-automation-scripts](https://github.com/obra/kicad-automation-scripts) for more information read the [history](#History) section.
+
+A docker image containg the scripts and other tools can be found at [DockerHub](https://hub.docker.com/repository/docker/setsoft/kicad_auto).
 
 ## Installation
 
@@ -29,9 +43,9 @@ If you are looking for STEP files creation take a look at *kicad2step*, part of 
 If you are installing from a Debian package you don't need to worry about dependencies, otherwise you need to install:
 
 - [**KiCad**](http://kicad-pcb.org/) 5.1.x
-- [**xsltproc**](http://xmlsoft.org/xslt/) (usually installed as a KiCad dependency). Only needed for BoMs.
 - [**xdotool**](https://github.com/jordansissel/xdotool)
 - [**xclip**](https://github.com/astrand/xclip)
+- [**xsltproc**](http://xmlsoft.org/xslt/) (usually installed as a KiCad dependency). Only needed for BoMs.
 
 If you want to debug problems you could also need:
 
@@ -43,7 +57,7 @@ If you want to debug problems you could also need:
 
 You can use the scripts without installing. The scripts are located at the *src/* directory.
 
-You can also define a bash aliases:
+You can also define bash aliases:
 
 ```
 alias pcbnew_do=PATH_TO_REPO/src/pcbnew_do
@@ -71,6 +85,11 @@ sudo apt install ./kicad-automation-scripts.inti-cmnb_*_all.deb
 ```
 
 ## Usage
+
+Two scripts are provided:
+
+- **eeschema_do**: interacts with KiCad's eeschema (schematic editor)
+- **pcbnew_do**: interacts with KiCad's pcbnew (PCB editor)
 
 You can get detailed help using the *--help* command line option. Here I include some basic usage.
 
@@ -201,11 +220,23 @@ it you just need mto use the *-f* command line option:
 pcbnew_do run_drc -f FILTER_FILE YOUR_PCB.kicad_pcb DESTINATION/
 ```
 
+## History
 
-## Useful references
+I saw a presentation of Jesse Vincent ([@obra](https://github.com/obra)) in the [KiCon 2019](https://2019.kicad-kicon.com/) about automating KiCad tasks.
 
-split-flap: https://github.com/scottbez1/splitflap
+The presentation used [kicad-automation-scripts](https://github.com/obra/kicad-automation-scripts) as base for the tasks that needs to emulate the user interaction.
+So I forked this repo.
 
-scot's blog: https://scottbezek.blogspot.be/2016/04/scripting-kicad-pcbnew-exports.html
+But this wasn't the original repo, Jesse's repo is fork of Productize SPRL's [scripts](https://github.com/productize/kicad-automation-scripts).
+These scripts were created by Seppe Stas ([@seppestas](https://github.com/seppestas)).
 
-Dockerhub: https://hub.docker.com/repository/docker/setsoft/kicad_auto
+According to Seppe he took many ideas from the [split-flap display project](https://scottbez1.github.io/splitflap/).
+In particular from the files [here](https://github.com/scottbez1/splitflap/tree/master/electronics/scripts).
+The author of split-flap is Scott Bezek ([@scottbez1](https://github.com/scottbez1)).
+
+So this is the history of the scripts, at least what I know. In short: Scott Bezek had the original idea and used it for his project, but not as a separated tool.
+Seppe Stas from Productize SPRL took the scripts and created a tool from them.
+Then Jesse Vincent used the scripts to create a bigger set of tools and presented it on KiCon 2019.
+And finally I (Salvador E. Tropea) took Jesse's scripts and adapted them to the needs of [KiBot](https://github.com/INTI-CMNB/KiBot).
+Scott explained the idea in his [blog](https://scottbezek.blogspot.be/2016/04/scripting-kicad-pcbnew-exports.html)
+
