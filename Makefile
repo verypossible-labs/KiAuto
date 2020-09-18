@@ -14,6 +14,7 @@ deb:
 
 deb_clean:
 	fakeroot debian/rules clean
+	-@rm -rf kiauto.egg-info
 
 lint:
 	# flake8 --filename is broken
