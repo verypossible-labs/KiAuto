@@ -18,6 +18,7 @@ setup(name='kiauto',
       # Packages are marked using __init__.py
       packages=find_packages(),
       scripts=['src/eeschema_do', 'src/pcbnew_do'],
+      install_requires=['xvfbwrapper', 'psutil'],
       classifiers=['Development Status :: 4 - Beta',
                    'Environment :: Console',
                    'Intended Audience :: Developers',
