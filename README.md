@@ -11,7 +11,20 @@ The automation is carried out emulating the user interaction.
 
 * [Introduction](#introduction)
 * [Installation](#installation)
+  * [Dependencies](#dependencies)
+  * [No installation](#no-installation)
+  * [Python style installation](#python-style-installation)
+  * [Installation on Ubuntu/Debian](#installation-on-debian)
 * [Usage](#usage)
+  * [Export a schematic to PDF or SVG](#export-a-schematic-to-pdf-or-svg)
+  * [Run ERC](#run-erc)
+  * [Generate netlist](#generate-netlist)
+  * [Update BoM XML or basic BoM generation](#update-bom-xml-or-basic-bom-generation)
+  * [Run DRC](#run-drc)
+  * [Export layout as PDF](#export-layout-as-pdf)
+  * [Refilling copper zones](#refilling-copper-zones)
+  * [Common options](#common-options)
+  * [Ignoring warnings and errors from ERC or DRC](#ignoring-warnings-and-errors-from-erc-or-drc)
 * [History](#history)
 
 ## Introduction
@@ -77,7 +90,7 @@ Just run the setup, like with any other Python tool:
 sudo python3 setup.py install
 ```
 
-### Installation on Ubuntu/Debian:
+### Installation on Debian
 
 Get the Debian package from the [releases section](https://github.com/INTI-CMNB/kicad-automation-scripts/releases) and run:
 ```
@@ -93,7 +106,7 @@ Two scripts are provided:
 
 You can get detailed help using the *--help* command line option. Here I include some basic usage.
 
-### Export a schematic to PDF (or SVG)
+### Export a schematic to PDF or SVG
 
 ```
 eeschema_do export -a YOUR_SCHEMATIC.sch DESTINATION/
@@ -104,7 +117,7 @@ eeschema_do export -a -f svg YOUR_SCHEMATIC.sch DESTINATION/
 ```
 In this case you'll get one SVG for each page in your schematic.
 
-### Run ERC:
+### Run ERC
 
 To run the Electrical Rules Check:
 ```
@@ -112,7 +125,7 @@ eeschema_do run_erc YOUR_SCHEMATIC.sch DESTINATION/
 ```
 If an error is detected you'll get a message and the script will return a negative error level. Additionally you'll get *DESTINATION/YOUR_SCHEMATIC.erc* containing KiCad's report.
 
-### Generate netlist:
+### Generate netlist
 
 To generate or update the netlist, needed by other tools:
 ``` 
@@ -120,7 +133,7 @@ eeschema_do netlist YOUR_SCHEMATIC.sch DESTINATION/
 ```
 You'll get *DESTINATION/YOUR_SCHEMATIC.net*
 
-### Update BoM XML/basic BoM generation:
+### Update BoM XML or basic BoM generation:
 
 Tools like [KiBoM](https://github.com/SchrodingersGat/KiBoM) can generate a nice BoM, but in order to run them from the command line you need to be sure that the project's XML BoM is updated. You can do it running:
 ``` 
@@ -128,7 +141,7 @@ eeschema_do bom_xml YOUR_SCHEMATIC.sch DESTINATION/
 ```
 After running it *./YOUR_SCHEMATIC.xml* will be updated. You'll also get *DESTINATION/YOUR_SCHEMATIC.csv* contain a very basic BoM generated using KiCad's *bom2grouped_csv.xsl* template.
 
-### Run DRC:
+### Run DRC
 
 To run the Distance Rules Check:
 ```
@@ -174,7 +187,7 @@ The nature of these scripts make them very fragile. In particular when you run t
 3. Use the *-s* and *-w* options to start **x11vnc**. The execution will stop asking for a keypress. At this time you can start a VNC client like this: ```ssvncviewer :0```. You'll be able to see KiCad running and also interact with it.
 4. Same as 3 but also using *-m*, in this case you'll get a window manager to move the windows and other stuff.
 
-### Ignoring warnings and errors from ERC/DRC
+### Ignoring warnings and errors from ERC or DRC
 
 Sometimes we need to ignore some warnings and/or errors reported during the ERC and/or DRC test.
 
@@ -227,16 +240,17 @@ I saw a presentation of Jesse Vincent ([@obra](https://github.com/obra)) in the 
 The presentation used [kicad-automation-scripts](https://github.com/obra/kicad-automation-scripts) as base for the tasks that needs to emulate the user interaction.
 So I forked this repo.
 
-But this wasn't the original repo, Jesse's repo is fork of Productize SPRL's [scripts](https://github.com/productize/kicad-automation-scripts).
+But this wasn't the original repo, Jesse's repo is a fork of Productize SPRL's [scripts](https://github.com/productize/kicad-automation-scripts).
 These scripts were created by Seppe Stas ([@seppestas](https://github.com/seppestas)).
 
 According to Seppe he took many ideas from the [split-flap display project](https://scottbez1.github.io/splitflap/).
 In particular from the files [here](https://github.com/scottbez1/splitflap/tree/master/electronics/scripts).
 The author of split-flap is Scott Bezek ([@scottbez1](https://github.com/scottbez1)).
+Scott explained the idea in his [blog](https://scottbezek.blogspot.be/2016/04/scripting-kicad-pcbnew-exports.html)
 
 So this is the history of the scripts, at least what I know. In short: Scott Bezek had the original idea and used it for his project, but not as a separated tool.
 Seppe Stas from Productize SPRL took the scripts and created a tool from them.
 Then Jesse Vincent used the scripts to create a bigger set of tools and presented it on KiCon 2019.
 And finally I (Salvador E. Tropea) took Jesse's scripts and adapted them to the needs of [KiBot](https://github.com/INTI-CMNB/KiBot).
-Scott explained the idea in his [blog](https://scottbezek.blogspot.be/2016/04/scripting-kicad-pcbnew-exports.html)
+
 
