@@ -1,5 +1,17 @@
-#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# Copyright (c) 2019 Jesse Vincent (@obra)
+# Copyright (c) 2018-2019 Seppe Stas (@seppestas) (Productize SPRL)
+# Based on ideas by: Scott Bezek (@scottbez1)
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
+# Adapted from: https://github.com/obra/kicad-automation-scripts
+"""
+Utilities related to the filesystem and file names.
 
+Note: Only wait_for_file_created_by_process is from the original project.
+"""
 import os
 import time
 import re

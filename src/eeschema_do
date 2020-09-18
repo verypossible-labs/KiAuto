@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Various schematic operations
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# Copyright (c) 2019 Jesse Vincent (@obra)
+# Copyright (c) 2018-2019 Seppe Stas (@seppestas) (Productize SPRL)
+# Based on ideas by: Scott Bezek (@scottbez1)
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
+# Adapted from: https://github.com/obra/kicad-automation-scripts
+"""
+Various schematic operations
 
 This program runs eeschema and can:
 1) Export (plot) the schematic
@@ -8,13 +18,6 @@ This program runs eeschema and can:
 4) Run the ERC
 The process is graphical and very delicated.
 """
-
-__author__ = 'Scott Bezek, Salvador E. Tropea'
-__copyright__ = 'Copyright 2015-2020, INTI/Productize SPRL/Scott Bezek'
-__credits__ = ['Salvador E. Tropea', 'Scott Bezek']
-__license__ = 'Apache 2.0'
-__email__ = 'salvador@inti.gob.ar'
-__status__ = 'beta'
 
 import os
 import subprocess
@@ -39,7 +42,7 @@ from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process
                                   check_input_file, memorize_project, restore_project)
 from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
                              WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
-                             USER_HOTKEYS_PRESENT)
+                             USER_HOTKEYS_PRESENT, __copyright__, __license__)
 from kicad_auto.ui_automation import (
     PopenContext,
     xdotool,

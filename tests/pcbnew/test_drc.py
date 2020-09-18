@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
 """
 Tests for 'pcbnew_do run_drc'
 

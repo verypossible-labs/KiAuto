@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
 import os
 import re
 from sys import exit, path
@@ -156,4 +161,11 @@ class Config(object):
         self.err_filters = []
 
 
+__author__ = 'Salvador E. Tropea'
+__copyright__ = 'Copyright 2018-2020, INTI/Productize SPRL'
+__credits__ = ['Salvador E. Tropea', 'Seppe Stas', 'Jesse Vincent', 'Scott Bezek']
+__license__ = 'Apache 2.0'
+__email__ = 'stropea@inti.gob.ar'
+__status__ = 'beta'
+__url__ = 'https://github.com/INTI-CMNB/kicad-automation-scripts/'
 __version__ = '1.4.2'

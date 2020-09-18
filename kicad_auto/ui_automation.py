@@ -1,25 +1,20 @@
-#!/usr/bin/env python
-#
-# Utility functions for UI automation with xdotool in a virtual framebuffer
-# with XVFB. Also includes utilities for accessing the clipboard for easily
-# and efficiently copy-pasting strings in the UI
-# Based on splitflap/electronics/scripts/export_util.py by Scott Bezek
-#
-#   Copyright 2019 Productize SPRL
-#   Copyright 2015-2016 Scott Bezek and the splitflap contributors
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# Copyright (c) 2019 Jesse Vincent (@obra)
+# Copyright (c) 2018-2019 Seppe Stas (@seppestas) (Productize SPRL)
+# Copyright (c) 2015-2016 Scott Bezek (@scottbez1)
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
+# Adapted from: https://github.com/obra/kicad-automation-scripts
+"""
+Utility functions for UI automation with xdotool in a virtual framebuffer
+with XVFB. Also includes utilities for accessing the clipboard for easily
+and efficiently copy-pasting strings in the UI.
 
+Based on splitflap/electronics/scripts/export_util.py by Scott Bezek
+"""
 import os
 from subprocess import (Popen, CalledProcessError, TimeoutExpired, call, check_output, STDOUT, DEVNULL, PIPE)
 import tempfile
