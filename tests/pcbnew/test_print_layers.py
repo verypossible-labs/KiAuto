@@ -21,7 +21,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (WRONG_LAYER_NAME, Config)
+from kiauto.misc import (WRONG_LAYER_NAME, Config)
 
 
 PROG = 'pcbnew_do'

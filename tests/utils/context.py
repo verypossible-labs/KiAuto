@@ -10,10 +10,10 @@ from pty import spawn
 from contextlib import contextmanager
 from psutil import pid_exists
 import sys
-# Look for the 'kicad_auto' module from where the script is running
+# Look for the 'kiauto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(os.path.dirname(script_dir)))
-from kicad_auto.ui_automation import recorded_xvfb, PopenContext
+from kiauto.ui_automation import recorded_xvfb, PopenContext
 
 COVERAGE_SCRIPT = 'python3-coverage'
 KICAD_PCB_EXT = '.kicad_pcb'
@@ -97,7 +97,7 @@ class TestContext(object):
             self._del_dir_after = False
         else:
             # create a tmp dir
-            self.output_dir = tempfile.mkdtemp(prefix='tmp-kicad_auto-'+self.test_name+'-')
+            self.output_dir = tempfile.mkdtemp(prefix='tmp-kiauto-'+self.test_name+'-')
             self._del_dir_after = True
         logging.info('Output dir: '+self.output_dir)
 

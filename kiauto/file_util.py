@@ -20,8 +20,8 @@ import atexit
 # python3-psutil
 import psutil
 
-from kicad_auto.misc import (WRONG_ARGUMENTS, KICAD_VERSION_5_99)
-from kicad_auto import log
+from kiauto.misc import (WRONG_ARGUMENTS, KICAD_VERSION_5_99)
+from kiauto import log
 logger = log.get_logger(__name__)
 
 

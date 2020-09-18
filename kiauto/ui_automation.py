@@ -24,7 +24,7 @@ from contextlib import contextmanager
 # python3-xvfbwrapper
 from xvfbwrapper import Xvfb
 
-from kicad_auto import log
+from kiauto import log
 logger = log.get_logger(__name__)
 
 

@@ -13,7 +13,7 @@ import sys
 import logging
 
 # Default domain, base name for the tool
-domain = 'ki_auto'
+domain = 'kiauto'
 verbose_level = 2
 
 

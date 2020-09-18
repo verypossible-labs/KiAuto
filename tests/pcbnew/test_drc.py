@@ -22,7 +22,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import Config
+from kiauto.misc import Config
 
 PROG = 'pcbnew_do'
 REPORT = 'drc_result.rpt'

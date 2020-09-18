@@ -21,7 +21,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (PCBNEW_CFG_PRESENT, NO_PCB, WRONG_PCB_NAME, WRONG_ARGUMENTS, CORRUPTED_PCB)
+from kiauto.misc import (PCBNEW_CFG_PRESENT, NO_PCB, WRONG_PCB_NAME, WRONG_ARGUMENTS, CORRUPTED_PCB)
 
 PROG = 'pcbnew_do'
 BOGUS_PCB = 'bogus.kicad_pcb'

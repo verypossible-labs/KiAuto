@@ -21,8 +21,8 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC, WRONG_SCH_NAME, EESCHEMA_ERROR,
-                             WRONG_ARGUMENTS)
+from kiauto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC, WRONG_SCH_NAME, EESCHEMA_ERROR,
+                         WRONG_ARGUMENTS)
 
 PROG = 'eeschema_do'
 BOGUS_SCH = 'bogus.sch'

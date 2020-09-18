@@ -28,31 +28,23 @@ import atexit
 import json
 import time
 
-# Look for the 'kicad_auto' module from where the script is running
+# Look for the 'kiauto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(script_dir))
-# kicad_auto import
+# kiauto import
 # Log functionality first
-from kicad_auto import log
+from kiauto import log
 log.set_domain(os.path.splitext(os.path.basename(__file__))[0])
 logger = log.init()
 
-from kicad_auto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
-                                  check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
-                                  check_input_file, memorize_project, restore_project)
-from kicad_auto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
-                             WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
-                             USER_HOTKEYS_PRESENT, __copyright__, __license__)
-from kicad_auto.ui_automation import (
-    PopenContext,
-    xdotool,
-    wait_for_window,
-    wait_not_focused,
-    recorded_xvfb,
-    clipboard_store,
-    clipboard_retrieve,
-    wait_point
-)
+from kiauto.file_util import (load_filters, wait_for_file_created_by_process, apply_filters, list_errors, list_warnings,
+                              check_kicad_config_dir, restore_config, backup_config, check_lib_table, create_user_hotkeys,
+                              check_input_file, memorize_project, restore_project)
+from kiauto.misc import (REC_W, REC_H, __version__, NO_SCHEMATIC, EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT,
+                         WAIT_START, WRONG_SCH_NAME, EESCHEMA_ERROR, Config, KICAD_VERSION_5_99,
+                         USER_HOTKEYS_PRESENT, __copyright__, __license__)
+from kiauto.ui_automation import (PopenContext, xdotool, wait_for_window, wait_not_focused, recorded_xvfb, clipboard_store,
+                                  clipboard_retrieve, wait_point)
 
 TITLE_CONFIRMATION = '^Confirmation$'
 TITLE_REMAP_SYMBOLS = '^Remap Symbols$'
