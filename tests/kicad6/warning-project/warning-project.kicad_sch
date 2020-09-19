@@ -64,11 +64,26 @@
     (path "/00000000-0000-0000-0000-00005ca75bc1/00000000-0000-0000-0000-00005ca77789"
       (reference "#PWR03") (unit 1) (value "GND") (footprint "")
     )
+    (path "/00000000-0000-0000-0000-00005ca75bc1/1ed5ca78-d751-47e9-b748-b057e90ebba6"
+      (reference "#PWR04") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/00000000-0000-0000-0000-00005ca75bc1/14e1cf09-3ac8-4563-9bd2-f32f0f92fcaa"
+      (reference "#PWR05") (unit 1) (value "GND") (footprint "")
+    )
+    (path "/00000000-0000-0000-0000-00005ca75bc1/eb0d90b2-92c1-4f29-9d8d-31d0c93a548a"
+      (reference "#PWR06") (unit 1) (value "GND") (footprint "")
+    )
     (path "/00000000-0000-0000-0000-00005ca75bc1/00000000-0000-0000-0000-00005ca76352"
       (reference "C2") (unit 1) (value "C") (footprint "Capacitor_SMD:C_0402_1005Metric")
     )
     (path "/00000000-0000-0000-0000-00005ca75bc1/00000000-0000-0000-0000-00005ca75c86"
       (reference "R1") (unit 1) (value "R") (footprint "Resistor_SMD:R_0402_1005Metric")
+    )
+    (path "/00000000-0000-0000-0000-00005ca75bc1/6122815c-ed48-4444-97de-10cf32b7093d"
+      (reference "U1") (unit 1) (value "74AHC1G126") (footprint "")
+    )
+    (path "/00000000-0000-0000-0000-00005ca75bc1/30e3447e-b729-4837-89d0-2726c444382d"
+      (reference "U2") (unit 4) (value "74LS04") (footprint "")
     )
   )
 )
