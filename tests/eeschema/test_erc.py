@@ -30,7 +30,7 @@ OUT_IG_ERR_REX = r'Ignoring (\d+) ERC error/s'
 OUT_IG_WAR_REX = r'Ignoring (\d+) ERC warning/s'
 
 
-def test_erc_ok():
+def test_erc_ok_1():
     """ 1) Test a project with 0 ERC errors/warnings.
         2) Test the --record option.
         3) Test the case when the .erc report aready exists. """
