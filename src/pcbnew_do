@@ -44,7 +44,7 @@ from kiauto.misc import (REC_W, REC_H, __version__, NO_PCB, PCBNEW_CFG_PRESENT, 
                          WRONG_PCB_NAME, PCBNEW_ERROR, WRONG_ARGUMENTS, Config, KICAD_VERSION_5_99, USER_HOTKEYS_PRESENT,
                          CORRUPTED_PCB, __copyright__, __license__)
 from kiauto.ui_automation import (PopenContext, xdotool, wait_not_focused, wait_for_window, recorded_xvfb, clipboard_store,
-                                  clipboard_retrieve, wait_point)
+                                  wait_point)
 
 TITLE_CONFIRMATION = '^Confirmation$'
 TITLE_ERROR = '^Error$'
@@ -308,29 +308,16 @@ def run_drc_6_0(cfg):
     xdotool(['key', 'Return'])
     #
     # To know when KiCad finished we try this:
-    # - When finished the list of errors is selected
-    # - 2 Shift+Tab gives the focus to the messages.
-    # - Ctrl+A selects all
-    # - Ctrl+V copies to the clipboard
-    # We try this sequence until we get the "Finished" message.
+    # - Currently I can see a way, just wait some time
     #
-    tries = 30
-    while tries:
-        tries -= 1
-        xdotool(['key', 'shift+Tab', 'shift+Tab', 'ctrl+a', 'ctrl+c'])
-        res = clipboard_retrieve()
-        if 'Finished' in res or 'Done.' in res:
-            break
-        sleep(0.5)
-    if not tries:
-        RuntimeError('Timed out waiting for ERC')
+    sleep(12)
     # Save the DRC
     clipboard_store(cfg.output_file)
     logger.info('Open the save dialog')
     wait_point(cfg)
     logger.info('Save DRC')
     wait_point(cfg)
-    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
+    xdotool(['key', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'Return'])
     # Wait for the save dialog
     wait_for_window('DRC File save dialog', 'Save Report to File')
     # Paste the name
