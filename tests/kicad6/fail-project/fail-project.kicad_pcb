@@ -1,4 +1,4 @@
-(kicad_pcb (version 20200913) (generator pcbnew)
+(kicad_pcb (version 20200916) (generator pcbnew)
 
   (general
     (thickness 1.6)
@@ -347,10 +347,10 @@
     )
   )
 
-  (gr_line (start 187.96 69.85) (end 142.24 69.85) (layer "F.SilkS") (width 0.12) (tstamp 28df9ca8-035c-4c79-8866-2fe2ffbfb639))
-  (gr_line (start 142.24 69.85) (end 142.24 91.44) (layer "F.SilkS") (width 0.12) (tstamp 809c3697-0ca1-4514-8459-8bd35b2a2b12))
-  (gr_line (start 187.96 91.44) (end 187.96 69.85) (layer "F.SilkS") (width 0.12) (tstamp 8efb8aeb-0fda-489f-842a-645043336a1e))
-  (gr_line (start 142.24 91.44) (end 187.96 91.44) (layer "F.SilkS") (width 0.12) (tstamp c0f291df-fa83-4d1d-8a25-8895fe5ad48c))
+  (gr_line (start 187.96 69.85) (end 142.24 69.85) (layer "Edge.Cuts") (width 0.12) (tstamp 28df9ca8-035c-4c79-8866-2fe2ffbfb639))
+  (gr_line (start 142.24 69.85) (end 142.24 91.44) (layer "Edge.Cuts") (width 0.12) (tstamp 809c3697-0ca1-4514-8459-8bd35b2a2b12))
+  (gr_line (start 187.96 91.44) (end 187.96 69.85) (layer "Edge.Cuts") (width 0.12) (tstamp 8efb8aeb-0fda-489f-842a-645043336a1e))
+  (gr_line (start 142.24 91.44) (end 187.96 91.44) (layer "Edge.Cuts") (width 0.12) (tstamp c0f291df-fa83-4d1d-8a25-8895fe5ad48c))
 
   (segment (start 167.155 83.37) (end 165.1 81.315) (width 0.25) (layer "F.Cu") (net 1) (tstamp 04963fab-3a2a-42fe-a739-89e1ddf79e11))
   (segment (start 167.155 83.82) (end 167.155 83.37) (width 0.25) (layer "F.Cu") (net 1) (tstamp 20d44d68-5007-40df-9404-3448707f65e8))
