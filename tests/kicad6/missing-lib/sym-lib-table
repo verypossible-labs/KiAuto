@@ -1,3 +1,4 @@
 (sym_lib_table
-  (lib (name kicad4-project-rescue)(type Legacy)(uri ${KIPRJMOD}/missing-lib-rescue.lib)(options "")(descr ""))
+  (lib (name "kicad4-project-rescue")(type "Legacy")(uri "${KIPRJMOD}/missing-lib-rescue.lib")(options "")(descr ""))
+  (lib (name "missing-lib-rescue")(type "Legacy")(uri "${KIPRJMOD}/missing-lib-rescue.lib")(options "")(descr ""))
 )

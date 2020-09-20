@@ -120,18 +120,20 @@ def test_erc_remap():
 
 
 def test_erc_error():
-    """ Here we have a missing library """
+    """ Here we have a missing library.
+        On KiCad 6 there is no need for the libs. """
     prj = 'missing-lib'
     rep = prj+'.erc'
     ctx = context.TestContextSCH('ERC_Error', prj)
-    cmd = [PROG, 'run_erc']
-    ctx.run(cmd)
-    ctx.expect_out_file(rep)
-    assert ctx.search_err(r"Missing library") is not None
+    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+        cmd = [PROG, 'run_erc']
+        ctx.run(cmd)
+        ctx.expect_out_file(rep)
+        assert ctx.search_err(r"Missing library") is not None
     ctx.clean_up()
 
 
-def test_erc_filter():
+def test_erc_filter_1():
     """ Test a project with 1 ERC error and 2 ERC warnings.
         But we are filtering all of them. """
     prj = 'fail-project'
