@@ -66,14 +66,23 @@ def dismiss_library_error():
     xdotool(['key', 'Escape'])
 
 
-def dismiss_remap_helper():
+def dismiss_remap_helper(cfg):
     # The "Remap Symbols" windows pop up if the uses the project symbol library
     # the older list look up method for loading library symbols.
     # This can be ignored as we're just trying to output data and don't
     # want to mess with the actual project.
     logger.debug('Check for symbol remapping')
     wait_for_window('Remap Symbols', TITLE_REMAP_SYMBOLS, 3)
-    xdotool(['key', 'Escape'])
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        xdotool(['key', 'Return'])
+        wait_for_window('Project Rescue Helper', 'Project Rescue Helper', 3)
+        time.sleep(2)
+        xdotool(['key', 'Return'])
+        wait_for_window('Remap Symbols', TITLE_REMAP_SYMBOLS, 3)
+        time.sleep(2)
+        xdotool(['key', 'Tab', 'Tab', 'Return', 'Escape'])
+    else:
+        xdotool(['key', 'Escape'])
     logger.warning('Schematic needs update')
 
 
@@ -116,7 +125,7 @@ def wait_eeschema_start(cfg):
         pass
     if failed_focuse:
         if other == TITLE_REMAP_SYMBOLS:
-            dismiss_remap_helper()
+            dismiss_remap_helper(cfg)
         if other == TITLE_ERROR:
             dismiss_library_error()
         if other == TITLE_CONFIRMATION:

@@ -37,6 +37,10 @@ test: lint
 	$(PY_COV) report
 	$(PY_COV) html
 	x-www-browser htmlcov/index.html
+	-@rm -rf tests/kicad6/kicad4-project/kicad4-project-rescue.lib tests/kicad6/kicad4-project/kicad4-project.kicad_prl \
+		tests/kicad6/kicad4-project/kicad4-project.kicad_pro tests/kicad6/kicad4-project/kicad4-project.kicad_sch \
+		tests/kicad6/kicad4-project/kicad4-project.pro-bak tests/kicad6/kicad4-project/rescue-backup/ \
+		tests/kicad6/kicad4-project/sym-lib-table
 
 test_docker_local:
 	rm -rf output
@@ -113,6 +117,10 @@ single_test:
 	@cat pp/*/output.txt
 	@echo "********************" Error
 	@tail -n 30 pp/*/error.txt
+	-@rm -rf tests/kicad6/kicad4-project/kicad4-project-rescue.lib tests/kicad6/kicad4-project/kicad4-project.kicad_prl \
+		tests/kicad6/kicad4-project/kicad4-project.kicad_pro tests/kicad6/kicad4-project/kicad4-project.kicad_sch \
+		tests/kicad6/kicad4-project/kicad4-project.pro-bak tests/kicad6/kicad4-project/rescue-backup/ \
+		tests/kicad6/kicad4-project/sym-lib-table
 
 .PHONY: deb deb_clean test lint test_local gen_ref test_docker_local single_test
 

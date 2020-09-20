@@ -342,7 +342,9 @@ class TestContext(object):
 
 class TestContextSCH(TestContext):
 
-    def __init__(self, test_name, prj_name):
+    def __init__(self, test_name, prj_name, old_sch=False):
         super().__init__(test_name, prj_name)
         self.mode = MODE_SCH
+        if old_sch:
+            self.sch_ext = '.sch'
         self._get_board_name()

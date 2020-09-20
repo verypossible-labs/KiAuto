@@ -111,7 +111,7 @@ def test_erc_remap():
     """ Here we use a KiCad 4 .sch that needs symbol remapping """
     prj = 'kicad4-project'
     rep = prj+'.erc'
-    ctx = context.TestContextSCH('ERC_Remap', prj)
+    ctx = context.TestContextSCH('ERC_Remap', prj, True)
     cmd = [PROG, 'run_erc']
     ctx.run(cmd)
     ctx.expect_out_file(rep)
