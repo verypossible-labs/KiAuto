@@ -180,7 +180,7 @@ class TestContext(object):
             ret_code = process.wait()
         logging.debug('ret_code '+str(ret_code))
         exp_ret = 0 if ret_val is None else ret_val
-        assert ret_code == exp_ret
+        assert ret_code == exp_ret, exp_ret
         if use_a_tty:
             with open(out_filename, 'w') as f:
                 f.write(self.out)
