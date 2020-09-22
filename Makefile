@@ -2,8 +2,8 @@
 PY_COV=python3-coverage
 PYTEST=pytest-3
 REFDIR=tests/reference/6/
-GOOD=tests/kicad5/good-project/good-project.kicad_pcb
-REFILL=tests/kicad5/zone-refill/zone-refill.kicad_pcb
+GOOD=tests/kicad6/good-project/good-project.kicad_pcb
+REFILL=tests/kicad6/zone-refill/zone-refill.kicad_pcb
 GOOD_SCH=tests/kicad6/good-project/good-project.kicad_sch
 CWD := $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 USER_ID=$(shell id -u)
@@ -48,7 +48,20 @@ test_docker_local:
 	# Run in the same directory to make the __pycache__ valid
 	# Also change the owner of the files to the current user (we run as root like in GitHub)
 	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:latest \
-		/bin/bash -c "flake8 . --count --statistics ; $(PYTEST) --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/"
+		/bin/bash -c "flake8 . --count --statistics ; $(PYTEST) --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/ .coverage"
+	$(PY_COV) report
+	$(PY_COV) html
+	x-www-browser htmlcov/index.html
+
+test_docker_local_ng:
+	rm -rf output
+	$(PY_COV) erase
+	# Run in the same directory to make the __pycache__ valid
+	# Also change the owner of the files to the current user (we run as root like in GitHub)
+#	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:nightly \
+#		/bin/bash -c "flake8 . --count --statistics ; KIAUS_USE_NIGHTLY=5.99 $(PYTEST) --log-cli-level debug -k '$(SINGLE_TEST)' --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/ .coverage"
+	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:nightly \
+		/bin/bash -c "flake8 . --count --statistics ; KIAUS_USE_NIGHTLY=5.99 $(PYTEST) --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/ .coverage"
 	$(PY_COV) report
 	$(PY_COV) html
 	x-www-browser htmlcov/index.html
@@ -83,6 +96,9 @@ gen1_ref:
 	mv $(REFDIR)good-project-Power.ps.new $(REFDIR)good-project-Power.ps
 
 gen_ref:
+	# Force using the default color scheme
+	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] && [ -e output $(HOME)/.config/kicadnightly/5.99/colors.ok ] ; then rm -rf $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
+	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] ; then mv $(HOME)/.config/kicadnightly/5.99/colors $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
 	# Reference outputs, must be manually inspected if regenerated
 	# cp -a $(REFILL).refill $(REFILL)
 	# src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
@@ -109,6 +125,8 @@ gen_ref:
 	mv $(REFDIR)good-project-logic.ps.new $(REFDIR)good-project-logic.ps
 	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-Power.ps > $(REFDIR)good-project-Power.ps.new
 	mv $(REFDIR)good-project-Power.ps.new $(REFDIR)good-project-Power.ps
+	# Restore the colors scheme
+	mv $(HOME)/.config/kicadnightly/5.99/colors.ok $(HOME)/.config/kicadnightly/5.99/colors
 
 single_test:
 	rm -rf pp
