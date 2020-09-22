@@ -165,7 +165,7 @@ def test_erc_filter_bad_syntax():
     """ Wrong filter name. """
     prj = 'fail-project'
     ctx = context.TestContextSCH('ERC_Filter_Bad_Syntax', prj)
-    cmd = [PROG, '-v', 'run_erc', '-f', ctx.get_prodir_filename('fail-project.sch')]
+    cmd = [PROG, '-v', 'run_erc', '-f', ctx.get_prodir_filename('sym-lib-table')]
     ctx.run(cmd, WRONG_ARGUMENTS)
     m = ctx.search_err(r"Syntax error at line \d+ in filter file")
     assert m is not None
