@@ -101,7 +101,7 @@ def test_bogus_sch():
     # Create an invalid SCH
     with open(sch, 'w') as f:
         f.write('dummy')
-    cmd = [PROG, 'run_erc']
+    cmd = [PROG, '-vv', '-r', 'run_erc']
     ctx.run(cmd, EESCHEMA_ERROR, filename=sch)
     assert ctx.search_err(r"eeschema reported an error") is not None
     ctx.clean_up()

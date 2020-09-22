@@ -112,7 +112,7 @@ def test_erc_remap():
     prj = 'kicad4-project'
     rep = prj+'.erc'
     ctx = context.TestContextSCH('ERC_Remap', prj, True)
-    cmd = [PROG, 'run_erc']
+    cmd = [PROG, '-vv', '-r', 'run_erc']
     ctx.run(cmd)
     ctx.expect_out_file(rep)
     assert ctx.search_err(r"Schematic needs update") is not None
