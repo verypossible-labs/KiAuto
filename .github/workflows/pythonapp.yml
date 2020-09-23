@@ -40,22 +40,22 @@ jobs:
       with:
         name: Test_Output_${{ matrix.ki_release }}
         path: output
-    - name: Coveralls Parallel
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        flag-name: run-${{ matrix.ki_release }}
-        parallel: true
-        path-to-lcov: .coverage
+    - name: Upload Coverage
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        COVERALLS_FLAG_NAME: ${{ matrix.ki_release }}
+        COVERALLS_PARALLEL: true
+      run: coveralls
 
-  finish:
+  coveralls:
+    name: Finish Coveralls
     needs: test
     runs-on: ubuntu-latest
+    container: python:3-slim
     steps:
-    - name: Coveralls Finished
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
-        parallel-finished: true
-        path-to-lcov: .coverage
-
+    - name: Finished
+      run: |
+        pip3 install --upgrade coveralls
+        coveralls --finish
+      env:
+        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
