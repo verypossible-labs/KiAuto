@@ -96,7 +96,7 @@ def test_erc_ok_eeschema_running():
     # Run eeschema in parallel to get 'Dismiss eeschema already running'
     with ctx.start_kicad(cfg.eeschema, cfg):
         # Enable DEBUG logs
-        cmd = [PROG, '-vv', 'run_erc']
+        cmd = [PROG, '-vv', '-r', 'run_erc']
         # Use a TTY to get colors in the DEBUG logs
         ctx.run(cmd, use_a_tty=True)
         ctx.stop_kicad()
