@@ -31,6 +31,7 @@ logger = log.get_logger(__name__)
 class PopenContext(Popen):
 
     def __exit__(self, type, value, traceback):
+        logger.debug("Closing pipe with %d", self.pid)
         # Note: currently we don't communicate with the child so these cases are never used.
         # I keep them in case they are needed, but excluded from the coverage.
         # Also note that closing stdin needs extra handling, implemented in the parent class
@@ -42,6 +43,7 @@ class PopenContext(Popen):
         if self.stdin:
             self.stdin.close()   # pragma: no cover
         if type:
+            logger.debug("Terminating %d", self.pid)
             self.terminate()
         # Wait for the process to terminate, to avoid zombies.
         try:
@@ -53,6 +55,7 @@ class PopenContext(Popen):
             retry = True
             pass
         if retry:  # pragma: no cover
+            logger.debug("Killing %d", self.pid)
             # We shouldn't get here. Kill the process and wait upto 10 seconds
             self.kill()
             self.wait(10)
