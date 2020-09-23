@@ -110,37 +110,48 @@ def wait_eeschema(cfg, time, others=None):
 
 
 def wait_eeschema_start(cfg):
-    failed_focuse = False
-    other = None
-    try:
-        wait_eeschema(cfg, args.wait_start, others=[TITLE_CONFIRMATION, TITLE_REMAP_SYMBOLS, TITLE_ERROR, TITLE_WARNING])
-    except RuntimeError:  # pragma: no cover
-        logger.debug('Time-out waiting for eeschema, will retry')
-        failed_focuse = True
-        pass
-    except ValueError as err:
-        other = str(err)
-        logger.debug('Found "'+other+'" window instead of eeschema')
-        failed_focuse = True
-        pass
-    if failed_focuse:
+    wait_start = cfg.wait_start
+    retry = 3
+    while retry:
+        failed_focuse = False
+        other = None
+        try:
+            wait_eeschema(cfg, wait_start, others=[TITLE_CONFIRMATION, TITLE_REMAP_SYMBOLS, TITLE_ERROR, TITLE_WARNING])
+        except RuntimeError:  # pragma: no cover
+            logger.debug('Time-out waiting for eeschema, will retry')
+            failed_focuse = True
+            pass
+        except ValueError as err:
+            other = str(err)
+            logger.debug('Found "'+other+'" window instead of eeschema')
+            failed_focuse = True
+            pass
+        if not failed_focuse:
+            return
+        # Failed to find the window
+        # Did we find a dialog?
         if other == TITLE_REMAP_SYMBOLS:
             dismiss_remap_helper(cfg)
-        if other == TITLE_ERROR:
+        elif other == TITLE_ERROR:
             dismiss_library_error()
-        if other == TITLE_CONFIRMATION:
+        elif other == TITLE_CONFIRMATION:
             dismiss_already_running()
-        if other == TITLE_WARNING:
+        elif other == TITLE_WARNING:
             dismiss_warning()
             # This is crazy, if we miss a lib we get an "Error", pressing ESC solves it
             # If we have a damaged file we get a "Warning", pressing ESC fails ...
             logger.error('eeschema reported an error')
             exit(EESCHEMA_ERROR)
-        try:
-            wait_eeschema(cfg, 5)
-        except RuntimeError:  # pragma: no cover
-            logger.error('Time-out waiting for eeschema, giving up')
-            raise
+        else:
+            # One more time, just 5 seconds
+            if retry > 2:
+                retry = 2
+            wait_start = 5
+        retry -= 1
+        if retry:
+            time.sleep(1)
+    logger.error('Time-out waiting for eeschema, giving up')
+    exit(EESCHEMA_ERROR)
 
 
 def exit_eeschema(cfg):
@@ -514,6 +525,7 @@ if __name__ == '__main__':
     cfg.video_name = args.command+'_eeschema_screencast.ogv'
     cfg.all_pages = getattr(args, 'all_pages', False)
     cfg.warnings_as_errors = getattr(args, 'warnings_as_errors', False)
+    cfg.wait_start = args.wait_start
     # Make sure the input file exists and has an extension
     check_input_file(cfg, NO_SCHEMATIC, WRONG_SCH_NAME)
     # Load filters
