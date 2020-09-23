@@ -16,9 +16,12 @@ on:
 
 jobs:
   test:
+    strategy:
+      matrix:
+        ki_release: [latest, nightly]
 
     runs-on: ubuntu-latest
-    container: setsoft/kicad_auto_test:latest
+    container: setsoft/kicad_auto_test:${{ matrix.ki_release }}
 
     steps:
     - uses: actions/checkout@v2
@@ -28,18 +31,28 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings.
         flake8 . --count --exit-zero --statistics
-    - name: Test with pytest
-      env:
-        COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+    - name: Test ${{ matrix.ki_release }}
       run: |
-        python3-coverage erase
-        pytest-3 --test_dir output
-        python3-coverage report
-        coveralls
+        make test_server_${{ matrix.ki_release }}
     - name: Store results
       if: ${{ always() }}
       uses: actions/upload-artifact@v1
       with:
-        name: Test_Output
+        name: Test_Output_${{ matrix.ki_release }}
         path: output
+    - name: Coveralls Parallel
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        flag-name: run-${{ matrix.ki_release }}
+        parallel: true
 
+  finish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Coveralls Finished
+      uses: coverallsapp/github-action@master
+      with:
+        github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        parallel-finished: true
