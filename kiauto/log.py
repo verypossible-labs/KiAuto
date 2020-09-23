@@ -1,4 +1,11 @@
-"""Log module
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
+# Adapted from: https://stackoverflow.com/questions/384076/how-can-i-color-python-logging-output
+"""
+Log module
 
 Handles logging initialization and formating.
 """
@@ -6,7 +13,8 @@ import sys
 import logging
 
 # Default domain, base name for the tool
-domain = 'ki_auto'
+domain = 'kiauto'
+verbose_level = 2
 
 
 def get_logger(name=None):
@@ -20,21 +28,28 @@ def set_domain(name):
     domain = name
 
 
-def init(level):
-    """Initialize the logging feature using a custom format and the specified verbosity level"""
+def set_level(logger, level):
+    global verbose_level
+    verbose_level = level
     if level >= 2:
         log_level = logging.DEBUG
     elif level == 1:
         log_level = logging.INFO
     else:
         log_level = logging.WARNING
-
-    logger = get_logger()
     logger.setLevel(log_level)
+
+
+def get_level():
+    return verbose_level
+
+
+def init():
+    """Initialize the logging feature using a custom format and the specified verbosity level"""
+    logger = get_logger()
     ch = logging.StreamHandler()
     ch.setFormatter(CustomFormatter())
     logger.addHandler(ch)
-
     return logger
 
 

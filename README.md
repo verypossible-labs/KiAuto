@@ -1,26 +1,53 @@
-KiCad automation scripts
-========================
+KiAuto
+======
 
 ![Python application](https://github.com/INTI-CMNB/kicad-automation-scripts/workflows/Python%20application/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/kicad-automation-scripts/badge.svg?branch=master&service=github)](https://coveralls.io/github/INTI-CMNB/kicad-automation-scripts?branch=master)
 
-A bunch of scripts to automate [KiCad](https://www.kicad-pcb.org/) processes using UI automation with [xdotool](https://www.semicomplete.com/projects/xdotool/).
+KiCad automation scripts.
+In particular to automate tasks that can't be done using the KiCad native Python interface.
+The automation is carried out emulating the user interaction.
 
-This is a fork of Productize SPRL's  [scripts](https://github.com/productize/kicad-automation-scripts), based in big parts on Scott Bezek's scripts in his 
-[split-flap display project](https://scottbez1.github.io/splitflap/).
-For more info see his [excellent blog posts][scot's blog].
+## Index
+
+* [Introduction](#introduction)
+* [Installation](#installation)
+  * [Dependencies](#dependencies)
+  * [No installation](#no-installation)
+  * [Python style installation](#python-style-installation)
+  * [Installation on Ubuntu/Debian](#installation-on-debian)
+* [Usage](#usage)
+  * [Export a schematic to PDF or SVG](#export-a-schematic-to-pdf-or-svg)
+  * [Run ERC](#run-erc)
+  * [Generate netlist](#generate-netlist)
+  * [Update BoM XML or basic BoM generation](#update-bom-xml-or-basic-bom-generation)
+  * [Run DRC](#run-drc)
+  * [Export layout as PDF](#export-layout-as-pdf)
+  * [Refilling copper zones](#refilling-copper-zones)
+  * [Common options](#common-options)
+  * [Ignoring warnings and errors from ERC or DRC](#ignoring-warnings-and-errors-from-erc-or-drc)
+* [History](#history)
+
+## Introduction
+
+Current implementation uses a virtual X server ([xvfb](https://www.x.org/releases/X11R7.6/doc/man/man1/Xvfb.1.xhtml)),
+sends key events and detects which window is focused using [xdotool](https://github.com/jordansissel/xdotool/)
+and handles the clipboard using [xclip](https://github.com/astrand/xclip).
+This means it works for Linux. KiCad is also available for Windows and MacOSX, help to port the scripts will be appreciated.
 
 Currently tested and working:
 
 - Exporting schematics to PDF, SVG, PS, DXF and HPGL
-- Exporting layouts to PDF 
+- Exporting layouts (PCBs) to PDF
 - Running ERC on schematics
 - Running DRC on layouts
 - Netlist generation
 - Basic BoM generation (mainly the XML needed for [KiBoM](https://github.com/SchrodingersGat/KiBoM))
 
-If you are looking for Gerbers, Drill and Position take a look at [KiPlot](https://github.com/INTI-CMNB/kiplot).
+If you are looking for Gerbers, Drill, Position, STEP and more take a look at [KiBot](https://github.com/INTI-CMNB/KiBot).
 
-If you are looking for STEP files creation take a look at *kicad2step*, part of KiCad.
+This project started as a fork of [kicad-automation-scripts](https://github.com/obra/kicad-automation-scripts) for more information read the [history](#History) section.
+
+A docker image containg the scripts and other tools can be found at [DockerHub](https://hub.docker.com/repository/docker/setsoft/kicad_auto).
 
 ## Installation
 
@@ -29,9 +56,9 @@ If you are looking for STEP files creation take a look at *kicad2step*, part of 
 If you are installing from a Debian package you don't need to worry about dependencies, otherwise you need to install:
 
 - [**KiCad**](http://kicad-pcb.org/) 5.1.x
-- [**xsltproc**](http://xmlsoft.org/xslt/) (usually installed as a KiCad dependency). Only needed for BoMs.
 - [**xdotool**](https://github.com/jordansissel/xdotool)
 - [**xclip**](https://github.com/astrand/xclip)
+- [**xsltproc**](http://xmlsoft.org/xslt/) (usually installed as a KiCad dependency). Only needed for BoMs.
 
 If you want to debug problems you could also need:
 
@@ -43,7 +70,7 @@ If you want to debug problems you could also need:
 
 You can use the scripts without installing. The scripts are located at the *src/* directory.
 
-You can also define a bash aliases:
+You can also define bash aliases:
 
 ```
 alias pcbnew_do=PATH_TO_REPO/src/pcbnew_do
@@ -63,7 +90,7 @@ Just run the setup, like with any other Python tool:
 sudo python3 setup.py install
 ```
 
-### Installation on Ubuntu/Debian:
+### Installation on Debian
 
 Get the Debian package from the [releases section](https://github.com/INTI-CMNB/kicad-automation-scripts/releases) and run:
 ```
@@ -72,9 +99,14 @@ sudo apt install ./kicad-automation-scripts.inti-cmnb_*_all.deb
 
 ## Usage
 
+Two scripts are provided:
+
+- **eeschema_do**: interacts with KiCad's eeschema (schematic editor)
+- **pcbnew_do**: interacts with KiCad's pcbnew (PCB editor)
+
 You can get detailed help using the *--help* command line option. Here I include some basic usage.
 
-### Export a schematic to PDF (or SVG)
+### Export a schematic to PDF or SVG
 
 ```
 eeschema_do export -a YOUR_SCHEMATIC.sch DESTINATION/
@@ -85,7 +117,7 @@ eeschema_do export -a -f svg YOUR_SCHEMATIC.sch DESTINATION/
 ```
 In this case you'll get one SVG for each page in your schematic.
 
-### Run ERC:
+### Run ERC
 
 To run the Electrical Rules Check:
 ```
@@ -93,7 +125,7 @@ eeschema_do run_erc YOUR_SCHEMATIC.sch DESTINATION/
 ```
 If an error is detected you'll get a message and the script will return a negative error level. Additionally you'll get *DESTINATION/YOUR_SCHEMATIC.erc* containing KiCad's report.
 
-### Generate netlist:
+### Generate netlist
 
 To generate or update the netlist, needed by other tools:
 ``` 
@@ -101,7 +133,7 @@ eeschema_do netlist YOUR_SCHEMATIC.sch DESTINATION/
 ```
 You'll get *DESTINATION/YOUR_SCHEMATIC.net*
 
-### Update BoM XML/basic BoM generation:
+### Update BoM XML or basic BoM generation:
 
 Tools like [KiBoM](https://github.com/SchrodingersGat/KiBoM) can generate a nice BoM, but in order to run them from the command line you need to be sure that the project's XML BoM is updated. You can do it running:
 ``` 
@@ -109,7 +141,7 @@ eeschema_do bom_xml YOUR_SCHEMATIC.sch DESTINATION/
 ```
 After running it *./YOUR_SCHEMATIC.xml* will be updated. You'll also get *DESTINATION/YOUR_SCHEMATIC.csv* contain a very basic BoM generated using KiCad's *bom2grouped_csv.xsl* template.
 
-### Run DRC:
+### Run DRC
 
 To run the Distance Rules Check:
 ```
@@ -155,7 +187,7 @@ The nature of these scripts make them very fragile. In particular when you run t
 3. Use the *-s* and *-w* options to start **x11vnc**. The execution will stop asking for a keypress. At this time you can start a VNC client like this: ```ssvncviewer :0```. You'll be able to see KiCad running and also interact with it.
 4. Same as 3 but also using *-m*, in this case you'll get a window manager to move the windows and other stuff.
 
-### Ignoring warnings and errors from ERC/DRC
+### Ignoring warnings and errors from ERC or DRC
 
 Sometimes we need to ignore some warnings and/or errors reported during the ERC and/or DRC test.
 
@@ -201,11 +233,24 @@ it you just need mto use the *-f* command line option:
 pcbnew_do run_drc -f FILTER_FILE YOUR_PCB.kicad_pcb DESTINATION/
 ```
 
+## History
 
-## Useful references
+I saw a presentation of Jesse Vincent ([@obra](https://github.com/obra)) in the [KiCon 2019](https://2019.kicad-kicon.com/) about automating KiCad tasks.
 
-split-flap: https://github.com/scottbez1/splitflap
+The presentation used [kicad-automation-scripts](https://github.com/obra/kicad-automation-scripts) as base for the tasks that needs to emulate the user interaction.
+So I forked this repo.
 
-scot's blog: https://scottbezek.blogspot.be/2016/04/scripting-kicad-pcbnew-exports.html
+But this wasn't the original repo, Jesse's repo is a fork of Productize SPRL's [scripts](https://github.com/productize/kicad-automation-scripts).
+These scripts were created by Seppe Stas ([@seppestas](https://github.com/seppestas)).
 
-Dockerhub: https://hub.docker.com/repository/docker/setsoft/kicad_auto
+According to Seppe he took many ideas from the [split-flap display project](https://scottbez1.github.io/splitflap/).
+In particular from the files [here](https://github.com/scottbez1/splitflap/tree/master/electronics/scripts).
+The author of split-flap is Scott Bezek ([@scottbez1](https://github.com/scottbez1)).
+Scott explained the idea in his [blog](https://scottbezek.blogspot.be/2016/04/scripting-kicad-pcbnew-exports.html)
+
+So this is the history of the scripts, at least what I know. In short: Scott Bezek had the original idea and used it for his project, but not as a separated tool.
+Seppe Stas from Productize SPRL took the scripts and created a tool from them.
+Then Jesse Vincent used the scripts to create a bigger set of tools and presented it on KiCon 2019.
+And finally I (Salvador E. Tropea) took Jesse's scripts and adapted them to the needs of [KiBot](https://github.com/INTI-CMNB/KiBot).
+
+

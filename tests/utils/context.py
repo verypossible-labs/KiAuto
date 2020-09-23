@@ -6,27 +6,63 @@ import subprocess
 import re
 import pytest
 from glob import glob
-from pty import openpty
+from pty import spawn
 from contextlib import contextmanager
 from psutil import pid_exists
 import sys
-# Look for the 'kicad_auto' module from where the script is running
+# Look for the 'kiauto' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(os.path.dirname(script_dir)))
-from kicad_auto.ui_automation import recorded_xvfb, PopenContext
+from kiauto.ui_automation import recorded_xvfb, PopenContext
 
 COVERAGE_SCRIPT = 'python3-coverage'
 KICAD_PCB_EXT = '.kicad_pcb'
-KICAD_SCH_EXT = '.sch'
-REF_DIR = 'tests/reference'
 
 MODE_SCH = 1
 MODE_PCB = 0
 
+KICAD_VERSION_5_99 = 5099000
+
+
+def usable_cmd(cmd):
+    return ' '.join(cmd)
+
 
 class TestContext(object):
+    pty_data = None
 
     def __init__(self, test_name, prj_name):
+        ng_ver = os.environ.get('KIAUS_USE_NIGHTLY')
+        if ng_ver:
+            # Path to the Python module
+            sys.path.insert(0, '/usr/lib/kicad-nightly/lib/python3/dist-packages')
+            self.kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicadnightly/'+ng_ver)
+        else:
+            self.kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
+        import pcbnew
+        # Detect version
+        m = re.match(r'(\d+)\.(\d+)\.(\d+)', pcbnew.GetBuildVersion())
+        major = int(m.group(1))
+        minor = int(m.group(2))
+        patch = int(m.group(3))
+        self.kicad_version = major*1000000+minor*1000+patch
+        logging.debug('Detected KiCad v{}.{}.{} ({})'.format(major, minor, patch, self.kicad_version))
+        if self.kicad_version < KICAD_VERSION_5_99:
+            self.board_dir = '../kicad5'
+            self.sch_ext = '.sch'
+            self.ref_dir = 'tests/reference/5'
+            self.pro_ext = '.pro'
+            self.pcbnew_conf = os.path.join(self.kicad_cfg_dir, 'pcbnew')
+            self.eeschema_conf = os.path.join(self.kicad_cfg_dir, 'eeschema')
+            self.kicad_conf = os.path.join(self.kicad_cfg_dir, 'kicad_common')
+        else:
+            self.board_dir = '../kicad6'
+            self.sch_ext = '.kicad_sch'
+            self.ref_dir = 'tests/reference/6'
+            self.pro_ext = '.kicad_pro'
+            self.pcbnew_conf = os.path.join(self.kicad_cfg_dir, 'pcbnew.json')
+            self.eeschema_conf = os.path.join(self.kicad_cfg_dir, 'eeschema.json')
+            self.kicad_conf = os.path.join(self.kicad_cfg_dir, 'kicad_common.json')
         # We are using PCBs
         self.mode = MODE_PCB
         # The name used for the test output dirs and other logging
@@ -44,15 +80,15 @@ class TestContext(object):
 
     def _get_board_cfg_dir(self):
         this_dir = os.path.dirname(os.path.realpath(__file__))
-        return os.path.join(this_dir, '../kicad5')
+        return os.path.abspath(os.path.join(this_dir, self.board_dir))
 
     def _get_board_name(self):
         self.board_file = os.path.join(self._get_board_cfg_dir(),
                                        self.prj_name,
                                        self.prj_name +
-                                       (KICAD_PCB_EXT if self.mode == MODE_PCB else KICAD_SCH_EXT))
+                                       (KICAD_PCB_EXT if self.mode == MODE_PCB else self.sch_ext))
         logging.info('PCB file: '+self.board_file)
-        assert os.path.isfile(self.board_file)
+        assert os.path.isfile(self.board_file), self.board_file
 
     def _set_up_output_dir(self, test_dir):
         if test_dir:
@@ -61,7 +97,7 @@ class TestContext(object):
             self._del_dir_after = False
         else:
             # create a tmp dir
-            self.output_dir = tempfile.mkdtemp(prefix='tmp-kicad_auto-'+self.test_name+'-')
+            self.output_dir = tempfile.mkdtemp(prefix='tmp-kiauto-'+self.test_name+'-')
             self._del_dir_after = True
         logging.info('Output dir: '+self.output_dir)
 
@@ -90,13 +126,32 @@ class TestContext(object):
             f.write('Dummy file\n')
 
     def get_pro_filename(self):
-        return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+'.pro')
+        return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+self.pro_ext)
+
+    def get_prl_filename(self):
+        return os.path.join(self._get_board_cfg_dir(), self.prj_name, self.prj_name+'.kicad_prl')
 
     def get_prodir_filename(self, file):
         return os.path.join(self._get_board_cfg_dir(), self.prj_name, file)
 
     def get_pro_mtime(self):
         return os.path.getmtime(self.get_pro_filename())
+
+    def get_prl_mtime(self):
+        if self.kicad_version < KICAD_VERSION_5_99:
+            return os.path.getmtime(self.get_pro_filename())
+        return os.path.getmtime(self.get_prl_filename())
+
+    def get_sub_sheet_name(self, sub, ext):
+        if self.kicad_version < KICAD_VERSION_5_99:
+            return sub.lower()+'-'+sub+'.'+ext
+        return self.prj_name+'-'+sub+'.'+ext
+
+    @staticmethod
+    def read(fd):
+        data = os.read(fd, 1024)
+        TestContext.pty_data += data
+        return data
 
     def run(self, cmd, ret_val=None, extra=None, use_a_tty=False, filename=None):
         logging.debug('Running '+self.test_name)
@@ -107,31 +162,26 @@ class TestContext(object):
         cmd.append(self.output_dir)
         if extra is not None:
             cmd = cmd+extra
-        logging.debug(cmd)
+        logging.debug(usable_cmd(cmd))
         out_filename = self.get_out_path('output.txt')
         err_filename = self.get_out_path('error.txt')
         if use_a_tty:
             # This is used to test the coloured logs, we need stderr to be a TTY
-            master, slave = openpty()
-            f_err = slave
-            f_out = slave
+            TestContext.pty_data = b''
+            ret_code = spawn(cmd, self.read)
+            self.err = TestContext.pty_data.decode()
+            self.out = self.err
         else:
             # Redirect stdout and stderr to files
             f_out = os.open(out_filename, os.O_RDWR | os.O_CREAT)
             f_err = os.open(err_filename, os.O_RDWR | os.O_CREAT)
-        # Run the process
-        process = subprocess.Popen(cmd, stdout=f_out, stderr=f_err)
-        ret_code = process.wait()
+            # Run the process
+            process = subprocess.Popen(cmd, stdout=f_out, stderr=f_err)
+            ret_code = process.wait()
         logging.debug('ret_code '+str(ret_code))
-        if use_a_tty:
-            self.err = os.read(master, 10000)
-            self.err = self.err.decode()
-            self.out = self.err
         exp_ret = 0 if ret_val is None else ret_val
-        assert ret_code == exp_ret
+        assert ret_code == exp_ret, exp_ret
         if use_a_tty:
-            os.close(master)
-            os.close(slave)
             with open(out_filename, 'w') as f:
                 f.write(self.out)
             with open(err_filename, 'w') as f:
@@ -170,16 +220,16 @@ class TestContext(object):
         if reference is None:
             reference = image
         cmd = ['compare',
-               # Tolerate 5 % error in color
-               '-fuzz', '5%',
+               # Tolerate 30 % error in color
+               '-fuzz', '30%',
                # Count how many pixels differ
                '-metric', 'AE',
                self.get_out_path(image),
-               os.path.join(REF_DIR, reference),
-               # Avoid the part where KiCad version is printed
-               '-crop', '100%x92%+0+0', '+repage',
+               os.path.join(self.ref_dir, reference),
+               # Avoid the part where KiCad version and title are printed
+               '-crop', '100%x88%+0+0', '+repage',
                self.get_out_path(diff)]
-        logging.debug('Comparing images with: '+str(cmd))
+        logging.debug('Comparing images with: '+usable_cmd(cmd))
         res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         # m = re.match(r'([\d\.e-]+) \(([\d\.e-]+)\)', res.decode())
         # assert m
@@ -191,7 +241,8 @@ class TestContext(object):
     def svg_to_png(self, svg):
         png = os.path.splitext(svg)[0]+'.png'
         logging.debug('Converting '+svg+' to '+png)
-        cmd = ['convert', '-density', '150', svg, png]
+        # cmd = ['convert', '-density', '150', svg, png]
+        cmd = ['rsvg-convert', '-d', '150', '-p', '150', '-o', png, svg]
         subprocess.check_call(cmd)
         return os.path.basename(png)
 
@@ -200,9 +251,9 @@ class TestContext(object):
         if reference is None:
             reference = image
         image_png = self.svg_to_png(self.get_out_path(image))
-        reference_png = self.svg_to_png(os.path.join(REF_DIR, reference))
+        reference_png = self.svg_to_png(os.path.join(self.ref_dir, reference))
         self.compare_image(image_png, reference_png, diff)
-        os.remove(os.path.join(REF_DIR, reference_png))
+        os.remove(os.path.join(self.ref_dir, reference_png))
 
     def ps_to_png(self, ps):
         png = os.path.splitext(ps)[0]+'.png'
@@ -216,19 +267,19 @@ class TestContext(object):
         if reference is None:
             reference = image
         image_png = self.ps_to_png(self.get_out_path(image))
-        reference_png = self.ps_to_png(os.path.join(REF_DIR, reference))
+        reference_png = self.ps_to_png(os.path.join(self.ref_dir, reference))
         self.compare_image(image_png, reference_png, diff)
-        os.remove(os.path.join(REF_DIR, reference_png))
+        os.remove(os.path.join(self.ref_dir, reference_png))
 
     def compare_pdf(self, gen, reference=None, diff='diff-{}.png'):
         """ For multi-page PDFs """
         if reference is None:
             reference = gen
-        logging.debug('Comparing PDFs: '+gen+' vs '+reference)
+        logging.debug('Comparing PDFs: '+gen+' vs '+reference+' (reference)')
         # Split the reference
         logging.debug('Splitting '+reference)
         cmd = ['convert', '-density', '150',
-               os.path.join(REF_DIR, reference),
+               os.path.join(self.ref_dir, reference),
                self.get_out_path('ref-%d.png')]
         subprocess.check_call(cmd)
         # Split the generated
@@ -250,7 +301,7 @@ class TestContext(object):
                    # Avoid the part where KiCad version is printed
                    '-crop', '100%x92%+0+0', '+repage',
                    self.get_out_path(diff.format(page))]
-            logging.debug('Comparing images with: '+str(cmd))
+            logging.debug('Comparing images with: '+usable_cmd(cmd))
             res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
             m = re.match(r'([\d\.]+) \(([\d\.]+)\)', res.decode())
             assert m
@@ -260,9 +311,9 @@ class TestContext(object):
     def compare_txt(self, text, reference=None, diff='diff.txt'):
         if reference is None:
             reference = text
-        cmd = ['/bin/sh', '-c', 'diff -ub '+os.path.join(REF_DIR, reference)+' ' +
+        cmd = ['/bin/sh', '-c', 'diff -ub '+os.path.join(self.ref_dir, reference)+' ' +
                self.get_out_path(text)+' > '+self.get_out_path(diff)]
-        logging.debug('Comparing texts with: '+str(cmd))
+        logging.debug('Comparing texts with: '+usable_cmd(cmd))
         res = subprocess.call(cmd)
         assert res == 0
 
@@ -274,13 +325,12 @@ class TestContext(object):
             f.write(re.sub(pattern, repl, txt))
 
     @contextmanager
-    def start_kicad(self, cmd):
+    def start_kicad(self, cmd, cfg):
         """ Context manager to run a command under a virual X server.
             Use like this: with context.start_kicad('command'): """
-        xvfb_kwargs = {'width': 800, 'height': 600, 'colordepth': 24, }
-        with recorded_xvfb(None, None, False, False, **xvfb_kwargs):
+        with recorded_xvfb(cfg):
             with PopenContext([cmd], stderr=subprocess.DEVNULL, close_fds=True) as self.proc:
-                logging.debug('Started '+cmd+' with PID: '+str(self.proc.pid))
+                logging.debug('Started `'+cmd+'` with PID: '+str(self.proc.pid))
                 assert pid_exists(self.proc.pid)
                 yield
 
@@ -292,7 +342,9 @@ class TestContext(object):
 
 class TestContextSCH(TestContext):
 
-    def __init__(self, test_name, prj_name):
+    def __init__(self, test_name, prj_name, old_sch=False):
         super().__init__(test_name, prj_name)
         self.mode = MODE_SCH
+        if old_sch:
+            self.sch_ext = '.sch'
         self._get_board_name()

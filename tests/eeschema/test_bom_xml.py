@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
 """
 Tests for eeschema_do bom_xml.
 
@@ -21,7 +26,7 @@ def test_bom_xml():
     prj = 'good-project'
     bom = prj+'.csv'
     ctx = context.TestContextSCH('BoM_XML', prj)
-    cmd = [PROG, 'bom_xml']
+    cmd = [PROG, '-vv', '-r', 'bom_xml']
     ctx.run(cmd)
     ctx.expect_out_file(bom)
     ctx.search_in_file(bom, [r'C1 C2 ,2,"C","Capacitor_SMD:C_0402_1005Metric"',

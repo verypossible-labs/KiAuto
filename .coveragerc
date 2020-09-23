@@ -1,6 +1,6 @@
 [run]
 source = 
-    kicad_auto
+    kiauto
     src
 
 [report]

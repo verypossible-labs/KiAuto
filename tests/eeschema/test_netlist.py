@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
 """
 Tests for eeschema_do netlist
 
@@ -28,7 +33,7 @@ def test_netlist():
     cmd = [PROG, 'netlist']
     ctx.run(cmd)
     ctx.expect_out_file(net)
-    ctx.search_in_file(net, [r'\(node \(ref R1\) \(pin 1\)\)',
-                             r'\(node \(ref R1\) \(pin 2\)\)',
-                             r'\(export \(version D\)'])
+    ctx.search_in_file(net, [r'\(node \(ref "?R1"?\) \(pin "?1"?\)( \(pinfunction "1"\))?\)',
+                             r'\(node \(ref "?R1"?\) \(pin "?2"?\)( \(pinfunction "2"\))?\)',
+                             r'\(export \(version "?D"?\)'])
     ctx.clean_up()

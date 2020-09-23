@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
 """
 Tests for 'pcbnew_do export'
 
@@ -8,6 +13,7 @@ pytest-3 --log-cli-level debug
 
 import os
 import sys
+import logging
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
 prev_dir = os.path.dirname(script_dir)
@@ -15,7 +21,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (WRONG_LAYER_NAME)
+from kiauto.misc import (WRONG_LAYER_NAME, Config)
 
 
 PROG = 'pcbnew_do'
@@ -23,14 +29,18 @@ DEFAULT = 'printed.pdf'
 CMD_OUT = 'output.txt'
 
 
-def test_print_pcb_good_dwg():
+def test_print_pcb_good_dwg_1():
     ctx = context.TestContext('Print_Good_with_Dwg', 'good-project')
     pdf = 'good_pcb_with_dwg.pdf'
-    cmd = [PROG, 'export', '--output_name', pdf]
+    mtime1 = ctx.get_pro_mtime()
+    mtime2 = ctx.get_prl_mtime()
+    cmd = [PROG, '-vv', 'export', '--output_name', pdf]
     layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(pdf)
     ctx.compare_image(pdf)
+    assert mtime1 == ctx.get_pro_mtime()
+    assert mtime2 == ctx.get_prl_mtime()
     ctx.clean_up()
 
 
@@ -58,8 +68,9 @@ def test_print_pcb_good_dwg_dism():
     # Create the output to force and overwrite
     with open(ctx.get_out_path(pdf), 'w') as f:
         f.write('dummy')
+    cfg = Config(logging)
     # Run pcbnew in parallel to get 'Dismiss pcbnew already running'
-    with ctx.start_kicad('pcbnew'):
+    with ctx.start_kicad(cfg.pcbnew, cfg):
         cmd = [PROG, '-v', '--wait_start', '5', 'export', '--output_name', pdf]
         layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
         ctx.run(cmd, extra=layers)

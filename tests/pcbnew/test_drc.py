@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
 """
 Tests for 'pcbnew_do run_drc'
 
@@ -12,9 +17,12 @@ import logging
 import shutil
 # Look for the 'utils' module from where the script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(script_dir))
+prev_dir = os.path.dirname(script_dir)
+sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
+sys.path.insert(0, os.path.dirname(prev_dir))
+from kiauto.misc import Config
 
 PROG = 'pcbnew_do'
 REPORT = 'drc_result.rpt'
@@ -75,12 +83,14 @@ def test_drc_ok_pcbnew_running():
     # Create a report to force and overwrite
     with open(ctx.get_out_path(REPORT), 'w') as f:
         f.write('dummy')
+    cfg = Config(logging)
     # Run pcbnew in parallel to get 'Dismiss pcbnew already running'
-    with ctx.start_kicad('pcbnew'):
+    with ctx.start_kicad(cfg.pcbnew, cfg):
         # Enable DEBUG logs
         cmd = [PROG, '-vv', 'run_drc']
         # Use a TTY to get colors in the DEBUG logs
         ctx.run(cmd, use_a_tty=True)
+        # ctx.run(cmd)
         ctx.stop_kicad()
     ctx.expect_out_file(REPORT)
     logging.debug('Checking for colors in DEBUG logs')

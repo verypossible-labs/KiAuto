@@ -1,3 +1,8 @@
+# -*- coding: utf-8 -*-
+# Copyright (c) 2020 Salvador E. Tropea
+# Copyright (c) 2020 Instituto Nacional de Tecnologïa Industrial
+# License: Apache 2.0
+# Project: KiAuto (formerly kicad-automation-scripts)
 """
 Tests for eeschema_do miscellaneous stuff.
 
@@ -16,8 +21,8 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kicad_auto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC, WRONG_SCH_NAME, EESCHEMA_ERROR,
-                             WRONG_ARGUMENTS)
+from kiauto.misc import (EESCHEMA_CFG_PRESENT, KICAD_CFG_PRESENT, NO_SCHEMATIC, WRONG_SCH_NAME, EESCHEMA_ERROR,
+                         WRONG_ARGUMENTS)
 
 PROG = 'eeschema_do'
 BOGUS_SCH = 'bogus.sch'
@@ -28,18 +33,14 @@ def test_eeschema_config_backup():
         back-up and the user must take action. """
     prj = 'good-project'
     ctx = context.TestContextSCH('Eeschema_config_bkp', prj)
-
     # Create a fake back-up
-    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
-    if not os.path.isdir(kicad_cfg_dir):
+    if not os.path.isdir(ctx.kicad_cfg_dir):
         logging.debug('Creating KiCad config dir')
-        os.makedirs(kicad_cfg_dir, exist_ok=True)
-    config_file = os.path.join(kicad_cfg_dir, 'eeschema')
-    old_config_file = config_file + '.pre_script'
+        os.makedirs(ctx.kicad_cfg_dir, exist_ok=True)
+    old_config_file = ctx.eeschema_conf + '.pre_script'
     logging.debug('Eeschema old config: '+old_config_file)
-    with open(old_config_file, 'w') as f:
+    with open(old_config_file, 'wt') as f:
         f.write('Dummy back-up\n')
-
     # Run the command
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, EESCHEMA_CFG_PRESENT)
@@ -54,18 +55,14 @@ def test_kicad_common_config_backup():
         back-up and the user must take action. """
     prj = 'good-project'
     ctx = context.TestContextSCH('Eeschema_common_config_bkp', prj)
-
     # Create a fake back-up
-    kicad_cfg_dir = os.path.join(os.environ['HOME'], '.config/kicad')
-    if not os.path.isdir(kicad_cfg_dir):
+    if not os.path.isdir(ctx.kicad_cfg_dir):
         logging.debug('Creating KiCad config dir')
-        os.makedirs(kicad_cfg_dir, exist_ok=True)
-    config_file = os.path.join(kicad_cfg_dir, 'kicad_common')
-    old_config_file = config_file + '.pre_script'
+        os.makedirs(ctx.kicad_cfg_dir, exist_ok=True)
+    old_config_file = ctx.kicad_conf + '.pre_script'
     logging.debug('KiCad common old config: '+old_config_file)
-    with open(old_config_file, 'w') as f:
+    with open(old_config_file, 'wt') as f:
         f.write('Dummy back-up\n')
-
     # Run the command
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, KICAD_CFG_PRESENT)
@@ -92,7 +89,7 @@ def test_sch_no_extension():
     ctx = context.TestContextSCH('SCH_no_extension', prj)
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, WRONG_SCH_NAME, filename='Makefile')
-    m = ctx.search_err(r'Schematic files must use sch extension')
+    m = ctx.search_err(r'Input files must use an extension')
     assert m is not None
     ctx.clean_up()
 
@@ -104,7 +101,7 @@ def test_bogus_sch():
     # Create an invalid SCH
     with open(sch, 'w') as f:
         f.write('dummy')
-    cmd = [PROG, 'run_erc']
+    cmd = [PROG, '-vv', '-r', 'run_erc']
     ctx.run(cmd, EESCHEMA_ERROR, filename=sch)
     assert ctx.search_err(r"eeschema reported an error") is not None
     ctx.clean_up()

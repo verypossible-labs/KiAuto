@@ -1,10 +1,10 @@
 #!/usr/bin/make
 PY_COV=python3-coverage
 PYTEST=pytest-3
-REFDIR=tests/reference/
-GOOD=tests/kicad5/good-project/good-project.kicad_pcb
-REFILL=tests/kicad5/zone-refill/zone-refill.kicad_pcb
-GOOD_SCH=tests/kicad5/good-project/good-project.sch
+REFDIR=tests/reference/6/
+GOOD=tests/kicad6/good-project/good-project.kicad_pcb
+REFILL=tests/kicad6/zone-refill/zone-refill.kicad_pcb
+GOOD_SCH=tests/kicad6/good-project/good-project.kicad_sch
 CWD := $(abspath $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST))))))
 USER_ID=$(shell id -u)
 GROUP_ID=$(shell id -g)
@@ -14,6 +14,7 @@ deb:
 
 deb_clean:
 	fakeroot debian/rules clean
+	-@rm -rf kiauto.egg-info
 
 lint:
 	# flake8 --filename is broken
@@ -24,18 +25,27 @@ lint:
 	flake8 . --count --statistics
 	rm eeschema_do.py pcbnew_do.py
 
-test: lint
+test_server: lint
 	$(PY_COV) erase
 	$(PYTEST)
 	$(PY_COV) report
 
-test_local: lint
+test: lint
+	# Force using the default color scheme
+	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] && [ -e output $(HOME)/.config/kicadnightly/5.99/colors.ok ] ; then rm -rf $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
+	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] ; then mv $(HOME)/.config/kicadnightly/5.99/colors $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
 	rm -rf output
 	$(PY_COV) erase
 	$(PYTEST) --test_dir output
 	$(PY_COV) report
 	$(PY_COV) html
 	x-www-browser htmlcov/index.html
+	-@rm -rf tests/kicad6/kicad4-project/kicad4-project-rescue.lib tests/kicad6/kicad4-project/kicad4-project.kicad_prl \
+		tests/kicad6/kicad4-project/kicad4-project.kicad_pro tests/kicad6/kicad4-project/kicad4-project.kicad_sch \
+		tests/kicad6/kicad4-project/kicad4-project.pro-bak tests/kicad6/kicad4-project/rescue-backup/ \
+		tests/kicad6/kicad4-project/sym-lib-table
+	# Restore the colors scheme
+	mv $(HOME)/.config/kicadnightly/5.99/colors.ok $(HOME)/.config/kicadnightly/5.99/colors
 
 test_docker_local:
 	rm -rf output
@@ -43,10 +53,27 @@ test_docker_local:
 	# Run in the same directory to make the __pycache__ valid
 	# Also change the owner of the files to the current user (we run as root like in GitHub)
 	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:latest \
-		/bin/bash -c "flake8 . --count --statistics ; $(PYTEST) --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/"
+		/bin/bash -c "flake8 . --count --statistics ; $(PYTEST) --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/kicad5/ .coverage"
 	$(PY_COV) report
 	$(PY_COV) html
 	x-www-browser htmlcov/index.html
+
+test_docker_local_ng:
+	rm -rf output
+	$(PY_COV) erase
+	# Run in the same directory to make the __pycache__ valid
+	# Also change the owner of the files to the current user (we run as root like in GitHub)
+#	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:nightly \
+#		/bin/bash -c "flake8 . --count --statistics ; KIAUS_USE_NIGHTLY=5.99 $(PYTEST) --log-cli-level debug -k '$(SINGLE_TEST)' --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/ .coverage"
+	docker run --rm -v $(CWD):$(CWD) --workdir="$(CWD)" setsoft/kicad_auto_test:nightly \
+		/bin/bash -c "flake8 . --count --statistics ; KIAUS_USE_NIGHTLY=5.99 $(PYTEST) --test_dir output ; chown -R $(USER_ID):$(GROUP_ID) output/ tests/ .coverage"
+	$(PY_COV) report
+	$(PY_COV) html
+	x-www-browser htmlcov/index.html
+	-@rm -rf tests/kicad6/kicad4-project/kicad4-project-rescue.lib tests/kicad6/kicad4-project/kicad4-project.kicad_prl \
+		tests/kicad6/kicad4-project/kicad4-project.kicad_pro tests/kicad6/kicad4-project/kicad4-project.kicad_sch \
+		tests/kicad6/kicad4-project/kicad4-project.pro-bak tests/kicad6/kicad4-project/rescue-backup/ \
+		tests/kicad6/kicad4-project/sym-lib-table
 
 docker_shell:
 	docker run  -it --rm -v $(CWD):$(CWD) --workdir="$(CWD)" \
@@ -68,14 +95,26 @@ docker_deb_shell:
 	--volume="/home/$(USER):/home/$(USER):rw" \
 	setsoft/kicad_pybuild:latest /bin/bash
 
+gen1_ref:
+	src/eeschema_do export --file_format ps --all $(GOOD_SCH) $(REFDIR)
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project.ps > $(REFDIR)good-project.ps.new
+	mv $(REFDIR)good-project.ps.new $(REFDIR)good-project.ps
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-logic.ps > $(REFDIR)good-project-logic.ps.new
+	mv $(REFDIR)good-project-logic.ps.new $(REFDIR)good-project-logic.ps
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-Power.ps > $(REFDIR)good-project-Power.ps.new
+	mv $(REFDIR)good-project-Power.ps.new $(REFDIR)good-project-Power.ps
+
 gen_ref:
+	# Force using the default color scheme
+	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] && [ -e output $(HOME)/.config/kicadnightly/5.99/colors.ok ] ; then rm -rf $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
+	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] ; then mv $(HOME)/.config/kicadnightly/5.99/colors $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
 	# Reference outputs, must be manually inspected if regenerated
-	cp -a $(REFILL).refill $(REFILL)
-	src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
-	cp -a $(REFILL).ok $(REFILL)
-	src/pcbnew_do export --output_name good_pcb_with_dwg.pdf $(GOOD) $(REFDIR) F.Cu F.SilkS Dwgs.User Edge.Cuts
-	src/pcbnew_do export --output_name good_pcb_inners.pdf   $(GOOD) $(REFDIR) F.Cu F.SilkS GND.Cu Signal1.Cu Signal2.Cu Power.Cu Edge.Cuts
-	src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
+	# cp -a $(REFILL).refill $(REFILL)
+	# src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
+	# cp -a $(REFILL).ok $(REFILL)
+	# src/pcbnew_do export --output_name good_pcb_with_dwg.pdf $(GOOD) $(REFDIR) F.Cu F.SilkS Dwgs.User Edge.Cuts
+	# src/pcbnew_do export --output_name good_pcb_inners.pdf   $(GOOD) $(REFDIR) F.Cu F.SilkS GND.Cu Signal1.Cu Signal2.Cu Power.Cu Edge.Cuts
+	# src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
 	src/eeschema_do export --file_format pdf --all $(GOOD_SCH) $(REFDIR)
 	mv $(REFDIR)good-project.pdf $(REFDIR)good_sch_all.pdf
 	src/eeschema_do export --file_format pdf $(GOOD_SCH) $(REFDIR)
@@ -84,17 +123,19 @@ gen_ref:
 	# I really hate this, files has time stamps, 3 of them in fact, WHY ANOTHER INSIDE!!!
 	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project.svg > $(REFDIR)good-project.svg.new
 	mv $(REFDIR)good-project.svg.new $(REFDIR)good-project.svg
-	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)logic-logic.svg > $(REFDIR)logic-logic.svg.new
-	mv $(REFDIR)logic-logic.svg.new $(REFDIR)logic-logic.svg
-	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)power-Power.svg > $(REFDIR)power-Power.svg.new
-	mv $(REFDIR)power-Power.svg.new $(REFDIR)power-Power.svg
+	# sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project-logic.svg > $(REFDIR)good-project-logic.svg.new
+	# mv $(REFDIR)good-project-logic.svg.new $(REFDIR)good-project-logic.svg
+	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project-Power.svg > $(REFDIR)good-project-Power.svg.new
+	mv $(REFDIR)good-project-Power.svg.new $(REFDIR)good-project-Power.svg
 	src/eeschema_do export --file_format ps --all $(GOOD_SCH) $(REFDIR)
 	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project.ps > $(REFDIR)good-project.ps.new
 	mv $(REFDIR)good-project.ps.new $(REFDIR)good-project.ps
-	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)logic-logic.ps > $(REFDIR)logic-logic.ps.new
-	mv $(REFDIR)logic-logic.ps.new $(REFDIR)logic-logic.ps
-	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)power-Power.ps > $(REFDIR)power-Power.ps.new
-	mv $(REFDIR)power-Power.ps.new $(REFDIR)power-Power.ps
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-logic.ps > $(REFDIR)good-project-logic.ps.new
+	mv $(REFDIR)good-project-logic.ps.new $(REFDIR)good-project-logic.ps
+	sed -E -e 's/^%%CreationDate: .*/%%CreationDate: DATE/' -e 's/^%%Title: .*/%%Title: TITLE/' $(REFDIR)good-project-Power.ps > $(REFDIR)good-project-Power.ps.new
+	mv $(REFDIR)good-project-Power.ps.new $(REFDIR)good-project-Power.ps
+	# Restore the colors scheme
+	mv $(HOME)/.config/kicadnightly/5.99/colors.ok $(HOME)/.config/kicadnightly/5.99/colors
 
 single_test:
 	rm -rf pp
@@ -103,6 +144,10 @@ single_test:
 	@cat pp/*/output.txt
 	@echo "********************" Error
 	@tail -n 30 pp/*/error.txt
+	-@rm -rf tests/kicad6/kicad4-project/kicad4-project-rescue.lib tests/kicad6/kicad4-project/kicad4-project.kicad_prl \
+		tests/kicad6/kicad4-project/kicad4-project.kicad_pro tests/kicad6/kicad4-project/kicad4-project.kicad_sch \
+		tests/kicad6/kicad4-project/kicad4-project.pro-bak tests/kicad6/kicad4-project/rescue-backup/ \
+		tests/kicad6/kicad4-project/sym-lib-table
 
 .PHONY: deb deb_clean test lint test_local gen_ref test_docker_local single_test
 

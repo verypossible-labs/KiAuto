@@ -7,11 +7,11 @@ Source: <url://example.com>
 Files:     .dockerignore
            MANIFEST.in
            README.md
-           kicad_auto/__init__.py
-           kicad_auto/file_util.py
-           kicad_auto/log.py
-           kicad_auto/misc.py
-           kicad_auto/ui_automation.py
+           kiauto/__init__.py
+           kiauto/file_util.py
+           kiauto/log.py
+           kiauto/misc.py
+           kiauto/ui_automation.py
            setup.py
            src/eeschema_do
            src/pcbnew_print_layers
