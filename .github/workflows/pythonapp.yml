@@ -46,6 +46,7 @@ jobs:
         github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
         flag-name: run-${{ matrix.ki_release }}
         parallel: true
+        path-to-lcov: .coverage
 
   finish:
     needs: test
@@ -56,3 +57,5 @@ jobs:
       with:
         github-token: ${{ secrets.COVERALLS_REPO_TOKEN }}
         parallel-finished: true
+        path-to-lcov: .coverage
+
