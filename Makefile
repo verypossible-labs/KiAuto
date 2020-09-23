@@ -31,6 +31,9 @@ test_server: lint
 	$(PY_COV) report
 
 test: lint
+	# Force using the default color scheme
+	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] && [ -e output $(HOME)/.config/kicadnightly/5.99/colors.ok ] ; then rm -rf $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
+	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] ; then mv $(HOME)/.config/kicadnightly/5.99/colors $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
 	rm -rf output
 	$(PY_COV) erase
 	$(PYTEST) --test_dir output
@@ -41,6 +44,8 @@ test: lint
 		tests/kicad6/kicad4-project/kicad4-project.kicad_pro tests/kicad6/kicad4-project/kicad4-project.kicad_sch \
 		tests/kicad6/kicad4-project/kicad4-project.pro-bak tests/kicad6/kicad4-project/rescue-backup/ \
 		tests/kicad6/kicad4-project/sym-lib-table
+	# Restore the colors scheme
+	mv $(HOME)/.config/kicadnightly/5.99/colors.ok $(HOME)/.config/kicadnightly/5.99/colors
 
 test_docker_local:
 	rm -rf output
@@ -65,6 +70,10 @@ test_docker_local_ng:
 	$(PY_COV) report
 	$(PY_COV) html
 	x-www-browser htmlcov/index.html
+	-@rm -rf tests/kicad6/kicad4-project/kicad4-project-rescue.lib tests/kicad6/kicad4-project/kicad4-project.kicad_prl \
+		tests/kicad6/kicad4-project/kicad4-project.kicad_pro tests/kicad6/kicad4-project/kicad4-project.kicad_sch \
+		tests/kicad6/kicad4-project/kicad4-project.pro-bak tests/kicad6/kicad4-project/rescue-backup/ \
+		tests/kicad6/kicad4-project/sym-lib-table
 
 docker_shell:
 	docker run  -it --rm -v $(CWD):$(CWD) --workdir="$(CWD)" \
