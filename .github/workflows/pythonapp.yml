@@ -1,4 +1,4 @@
-name: KiCad stable test
+name: Regression tests
 
 on:
   push:
