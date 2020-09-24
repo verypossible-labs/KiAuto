@@ -20,6 +20,7 @@ from subprocess import (Popen, CalledProcessError, TimeoutExpired, call, check_o
 import tempfile
 import time
 import shutil
+import signal
 from contextlib import contextmanager
 # python3-xvfbwrapper
 from xvfbwrapper import Xvfb
@@ -44,7 +45,11 @@ class PopenContext(Popen):
             self.stdin.close()   # pragma: no cover
         if type:
             logger.debug("Terminating %d", self.pid)
-            self.terminate()
+            # KiCad nightly uses a shell script as intermediate to run setup the environment
+            # and run the proper binary. If we simply call "terminate" we just kill the
+            # shell script. So we create a group and then kill the whole group.
+            os.killpg(os.getpgid(self.pid), signal.SIGTERM)
+            # self.terminate()
         # Wait for the process to terminate, to avoid zombies.
         try:
             # Wait for 3 seconds
@@ -57,7 +62,8 @@ class PopenContext(Popen):
         if retry:  # pragma: no cover
             logger.debug("Killing %d", self.pid)
             # We shouldn't get here. Kill the process and wait upto 10 seconds
-            self.kill()
+            os.killpg(os.getpgid(self.pid), signal.SIGKILL)
+            # self.kill()
             self.wait(10)
 
 
@@ -110,7 +116,7 @@ def start_wm(do_it):
     if do_it:
         cmd = ['fluxbox']
         logger.debug('Starting WM: '+str(cmd))
-        with PopenContext(cmd, stdout=DEVNULL, stderr=DEVNULL, close_fds=True) as wm_proc:
+        with PopenContext(cmd, stdout=DEVNULL, stderr=DEVNULL, close_fds=True, start_new_session=True) as wm_proc:
             wait_wm()
             try:
                 yield
@@ -129,7 +135,7 @@ def start_record(do_record, video_dir, video_name):
         cmd = ['recordmydesktop', '--overwrite', '--no-sound', '--no-frame', '--on-the-fly-encoding',
                '-o', video_filename]
         logger.debug('Recording session with: '+str(cmd))
-        with PopenContext(cmd, stdout=DEVNULL, stderr=DEVNULL, close_fds=True) as screencast_proc:
+        with PopenContext(cmd, stdout=DEVNULL, stderr=DEVNULL, close_fds=True, start_new_session=True) as screencast_proc:
             try:
                 yield
             finally:
@@ -148,7 +154,7 @@ def start_x11vnc(do_it, old_display):
         else:
             cmd = ['x11vnc', '-display', os.environ['DISPLAY'], '-localhost']
             logger.debug('Starting VNC server: '+str(cmd))
-            with PopenContext(cmd, stdout=DEVNULL, stderr=DEVNULL, close_fds=True) as x11vnc_proc:
+            with PopenContext(cmd, stdout=DEVNULL, stderr=DEVNULL, close_fds=True, start_new_session=True) as x11vnc_proc:
                 if old_display is None:
                     old_display = ':0'
                 logger.debug('To monitor the Xvfb now you can start: "ssvncviewer '+old_display+'"(or similar)')

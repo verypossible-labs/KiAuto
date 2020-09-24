@@ -566,7 +566,7 @@ if __name__ == '__main__':
     cfg.output_file_no_ext = os.path.join(output_dir, os.path.splitext(os.path.basename(cfg.input_file))[0])
     error_level = 0
     with recorded_xvfb(cfg):
-        with PopenContext([cfg.eeschema, cfg.input_file], close_fds=True,
+        with PopenContext([cfg.eeschema, cfg.input_file], close_fds=True, start_new_session=True,
                           stderr=subprocess.DEVNULL, stdout=subprocess.DEVNULL) as eeschema_proc:
             # Wait for Eeschema
             wait_eeschema_start(cfg)

@@ -25,10 +25,15 @@ lint:
 	flake8 . --count --statistics
 	rm eeschema_do.py pcbnew_do.py
 
-test_server: lint
-	$(PY_COV) erase
-	$(PYTEST)
-	$(PY_COV) report
+test_server_latest:
+	python3-coverage erase
+	pytest-3 --test_dir output
+	python3-coverage report
+
+test_server_nightly:
+	python3-coverage erase
+	KIAUS_USE_NIGHTLY=5.99 pytest-3 --test_dir output
+	python3-coverage report
 
 test: lint
 	# Force using the default color scheme

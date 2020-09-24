@@ -581,7 +581,8 @@ if __name__ == '__main__':
     #
     error_level = 0
     with recorded_xvfb(cfg):
-        with PopenContext([cfg.pcbnew, cfg.input_file], stderr=subprocess.DEVNULL, close_fds=True) as pcbnew_proc:
+        with PopenContext([cfg.pcbnew, cfg.input_file], stderr=subprocess.DEVNULL, close_fds=True,
+                          start_new_session=True) as pcbnew_proc:
             clipboard_store(output_file)
             cfg.pcbnew_pid = pcbnew_proc.pid
             wait_pcbew_start(cfg)
@@ -605,7 +606,6 @@ if __name__ == '__main__':
                     else:
                         list_warnings(cfg)
                     error_level = -(drc_errors+unconnected_pads)
-            pcbnew_proc.terminate()
     #
     # Exit clean-up
     #
