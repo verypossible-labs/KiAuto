@@ -336,6 +336,21 @@ def run_drc_6_0(cfg):
     wait_pcbnew()
 
 
+def run_drc_python(cfg):
+    logger.debug("Using Python interface instead of running KiCad")
+    import pcbnew
+    # logger.debug("Re-filling zones")
+    # Broken: https://gitlab.com/kicad/code/kicad/-/issues/5646
+    # filler = pcbnew.ZONE_FILLER(cfg.board, None)
+    # filler.Fill(cfg.board.Zones())
+    logger.debug("Running DRC")
+    pcbnew.WriteDRCReport(cfg.board, cfg.output_file, 1, True, True)
+    if cfg.save:
+        logger.info('Saving PCB')
+        os.rename(cfg.input_file, cfg.input_file + '-bak')
+        cfg.board.Save(cfg.input_file)
+
+
 def run_drc(cfg):
     if cfg.kicad_version >= KICAD_VERSION_5_99:
         run_drc_6_0(cfg)
@@ -480,6 +495,27 @@ def load_pcb(fname):
     return board
 
 
+def process_drc_out(cfg):
+    error_level = 0
+    drc_errors, unconnected_pads = parse_drc(cfg)
+    logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+    # Apply filters
+    skip_err, skip_unc = apply_filters(cfg, 'DRC error/s', 'unconnected pad/s')
+    drc_errors = drc_errors-skip_err
+    unconnected_pads = unconnected_pads-skip_unc
+    if drc_errors == 0 and unconnected_pads == 0:
+        logger.info('No errors')
+    else:
+        logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
+        list_errors(cfg)
+        if args.ignore_unconnected:
+            unconnected_pads = 0
+        else:
+            list_warnings(cfg)
+        error_level = -(drc_errors+unconnected_pads)
+    return error_level
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
     subparsers = parser.add_subparsers(help='Command:', dest='command')
@@ -580,32 +616,23 @@ if __name__ == '__main__':
     # Do all the work
     #
     error_level = 0
-    with recorded_xvfb(cfg):
-        with PopenContext([cfg.pcbnew, cfg.input_file], stderr=subprocess.DEVNULL, close_fds=True,
-                          start_new_session=True) as pcbnew_proc:
-            clipboard_store(output_file)
-            cfg.pcbnew_pid = pcbnew_proc.pid
-            wait_pcbew_start(cfg)
-            if args.command == 'export':
-                print_layers(cfg)
-            else:  # run_drc
-                run_drc(cfg)
-                drc_errors, unconnected_pads = parse_drc(cfg)
-                logger.debug('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
-                # Apply filters
-                skip_err, skip_unc = apply_filters(cfg, 'DRC error/s', 'unconnected pad/s')
-                drc_errors = drc_errors-skip_err
-                unconnected_pads = unconnected_pads-skip_unc
-                if drc_errors == 0 and unconnected_pads == 0:
-                    logger.info('No errors')
-                else:
-                    logger.error('Found {} DRC errors and {} unconnected pads'.format(drc_errors, unconnected_pads))
-                    list_errors(cfg)
-                    if args.ignore_unconnected:
-                        unconnected_pads = 0
-                    else:
-                        list_warnings(cfg)
-                    error_level = -(drc_errors+unconnected_pads)
+    if args.command == 'run_drc' and cfg.kicad_version >= KICAD_VERSION_5_99 and not cfg.save:
+        # First command to migrate to Python!
+        # Save not yet available, bug in ZONE_FILLER
+        run_drc_python(cfg)
+        error_level = process_drc_out(cfg)
+    else:
+        with recorded_xvfb(cfg):
+            with PopenContext([cfg.pcbnew, cfg.input_file], stderr=subprocess.DEVNULL, close_fds=True,
+                              start_new_session=True) as pcbnew_proc:
+                clipboard_store(output_file)
+                cfg.pcbnew_pid = pcbnew_proc.pid
+                wait_pcbew_start(cfg)
+                if args.command == 'export':
+                    print_layers(cfg)
+                else:  # run_drc
+                    run_drc(cfg)
+                    error_level = process_drc_out(cfg)
     #
     # Exit clean-up
     #
