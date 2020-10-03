@@ -339,10 +339,9 @@ def run_drc_6_0(cfg):
 def run_drc_python(cfg):
     logger.debug("Using Python interface instead of running KiCad")
     import pcbnew
-    # logger.debug("Re-filling zones")
-    # Broken: https://gitlab.com/kicad/code/kicad/-/issues/5646
-    # filler = pcbnew.ZONE_FILLER(cfg.board, None)
-    # filler.Fill(cfg.board.Zones())
+    logger.debug("Re-filling zones")
+    filler = pcbnew.ZONE_FILLER(cfg.board)
+    filler.Fill(cfg.board.Zones())
     logger.debug("Running DRC")
     pcbnew.WriteDRCReport(cfg.board, cfg.output_file, 1, True, True)
     if cfg.save:
@@ -618,9 +617,8 @@ if __name__ == '__main__':
     # Do all the work
     #
     error_level = 0
-    if args.command == 'run_drc' and cfg.kicad_version >= KICAD_VERSION_5_99 and not cfg.save:
+    if args.command == 'run_drc' and cfg.kicad_version >= KICAD_VERSION_5_99:
         # First command to migrate to Python!
-        # Save not yet available, bug in ZONE_FILLER
         run_drc_python(cfg)
         error_level = process_drc_out(cfg)
     else:
