@@ -119,7 +119,7 @@ gen_ref:
 	# cp -a $(REFILL).ok $(REFILL)
 	# src/pcbnew_do export --output_name good_pcb_with_dwg.pdf $(GOOD) $(REFDIR) F.Cu F.SilkS Dwgs.User Edge.Cuts
 	# src/pcbnew_do export --output_name good_pcb_inners.pdf   $(GOOD) $(REFDIR) F.Cu F.SilkS GND.Cu Signal1.Cu Signal2.Cu Power.Cu Edge.Cuts
-	# src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
+	src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
 	src/eeschema_do export --file_format pdf --all $(GOOD_SCH) $(REFDIR)
 	mv $(REFDIR)good-project.pdf $(REFDIR)good_sch_all.pdf
 	src/eeschema_do export --file_format pdf $(GOOD_SCH) $(REFDIR)

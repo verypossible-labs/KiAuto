@@ -375,7 +375,9 @@ def load_layers(pcb):
         collect_layers = False
         for line in pcb_file:
             if collect_layers:
-                z = re.match(r'\s+\((\d+)\s+(\S+)', line)
+                z = re.match(r'\s+\((\d+)\s+"[^"]+"\s+\S+\s+"([^"]+)"', line)
+                if not z:
+                    z = re.match(r'\s+\((\d+)\s+(\S+)', line)
                 if z:
                     id, name = z.groups()
                     if name[0] == '"':
