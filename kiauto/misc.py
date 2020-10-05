@@ -167,5 +167,5 @@ __credits__ = ['Salvador E. Tropea', 'Seppe Stas', 'Jesse Vincent', 'Scott Bezek
 __license__ = 'Apache 2.0'
 __email__ = 'stropea@inti.gob.ar'
 __status__ = 'beta'
-__url__ = 'https://github.com/INTI-CMNB/kicad-automation-scripts/'
+__url__ = 'https://github.com/INTI-CMNB/KiAuto/'
 __version__ = '1.5.0'
