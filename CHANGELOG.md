@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for KiCad Nightly
   - Just define the environment variable: `KIAUS_USE_NIGHTLY=5.99`
 
-
 ## [1.4.2] - 2020-09-10
 ### Fixed
 - Crash when no arguments.
