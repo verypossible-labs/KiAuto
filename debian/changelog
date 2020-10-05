@@ -1,6 +1,6 @@
 kiauto (1.5.0-1) stable; urgency=medium
 
-  * Support for running the kicad-nightly (unstable and broken) version
+  * Support for running the kicad-nightly (unstable) version
 
  -- Salvador E. Tropea <salvador@galadriel.inti.gob.ar>  Fri, 18 Sep 2020 13:29:23 -0300
 
