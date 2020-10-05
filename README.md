@@ -13,6 +13,7 @@ The automation is carried out emulating the user interaction.
 * [Installation](#installation)
   * [Dependencies](#dependencies)
   * [No installation](#no-installation)
+  * [Installation using pip](#installation-using-pip)
   * [Python style installation](#python-style-installation)
   * [Installation on Ubuntu/Debian](#installation-on-debian)
 * [Usage](#usage)
@@ -81,6 +82,15 @@ Note that the following Python 3 packages must be installed:
 
 - [**xvfbwrapper**](https://pypi.org/project/xvfbwrapper/)
 - [**psutil**](https://pypi.org/project/psutil/)
+
+### Installation using pip
+
+```shell
+pip install kiauto
+```
+
+Note that `pip` has the dubious idea of compiling everything it downloads.
+There is no advantage in doing it and it interferes with the `mcpy` macros.
 
 ### Python style installation
 
