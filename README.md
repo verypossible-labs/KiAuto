@@ -89,8 +89,14 @@ Note that the following Python 3 packages must be installed:
 pip install kiauto
 ```
 
-Note that `pip` has the dubious idea of compiling everything it downloads.
-There is no advantage in doing it and it interferes with the `mcpy` macros.
+You can also install the current git code running:
+
+
+```shell
+pip install .
+```
+
+In the root of the repo.
 
 ### Python style installation
 
@@ -104,7 +110,7 @@ sudo python3 setup.py install
 
 Get the Debian package from the [releases section](https://github.com/INTI-CMNB/kicad-automation-scripts/releases) and run:
 ```
-sudo apt install ./kicad-automation-scripts.inti-cmnb_*_all.deb 
+sudo apt install ./kiauto_*_all.deb
 ```
 
 ## Usage
