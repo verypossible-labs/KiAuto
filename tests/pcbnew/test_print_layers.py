@@ -21,7 +21,7 @@ sys.path.insert(0, prev_dir)
 # Utils import
 from utils import context
 sys.path.insert(0, os.path.dirname(prev_dir))
-from kiauto.misc import (WRONG_LAYER_NAME, Config)
+from kiauto.misc import (WRONG_LAYER_NAME, WRONG_ARGUMENTS, Config)
 
 
 PROG = 'pcbnew_do'
@@ -131,4 +131,45 @@ def test_print_pcb_refill():
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(pdf)
     ctx.compare_image(pdf)
+    ctx.clean_up()
+
+
+def test_wrong_scaling():
+    ctx = context.TestContext('wrong_scaling', 'good-project')
+    cmd = [PROG, 'export', '--scaling', 'A']
+    layers = ['F.Cu', 'GND_Cu']
+    ctx.run(cmd, WRONG_ARGUMENTS, extra=layers)
+    m = ctx.search_err(r"Scaling must be a floating point value")
+    assert m is not None
+    ctx.clean_up()
+
+
+def test_wrong_pad_style_1():
+    ctx = context.TestContext('wrong_pad_style_1', 'good-project')
+    cmd = [PROG, 'export', '--pads', 'A']
+    layers = ['F.Cu', 'GND_Cu']
+    ctx.run(cmd, WRONG_ARGUMENTS, extra=layers)
+    m = ctx.search_err(r"Pads style must be an integer value")
+    assert m is not None
+    ctx.clean_up()
+
+
+def test_wrong_pad_style_2():
+    ctx = context.TestContext('wrong_pad_style_2', 'good-project')
+    cmd = [PROG, 'export', '--pads', '3']
+    layers = ['F.Cu', 'GND_Cu']
+    ctx.run(cmd, WRONG_ARGUMENTS, extra=layers)
+    m = ctx.search_err(r"Pad style must be 0, 1 or 2")
+    assert m is not None
+    ctx.clean_up()
+
+
+def test_print_pcb_good_dwg_2():
+    ctx = context.TestContext('print_pcb_good_dwg_2', 'good-project')
+    pdf = 'good_pcb_sep_bn.pdf'
+    cmd = [PROG, 'export', '--scaling', '4', '--pads', '0', '--no-title', '--monochrome', '--separate', '--output_name', pdf]
+    layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
+    ctx.run(cmd, extra=layers)
+    ctx.expect_out_file(pdf)
+    ctx.compare_pdf(pdf)
     ctx.clean_up()

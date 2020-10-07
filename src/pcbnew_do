@@ -221,7 +221,7 @@ def print_layers(cfg):
     # Two possible options here:
     # 1) With WM we usually get "Exclude PCB edge ..." selected
     # 2) Without WM we usually get "Color" selected
-    # In both cases sending 4 Shit+Tab moves as to one of the layer columns.
+    # In both cases sending 4 Shit+Tab moves us to one of the layer columns.
     # From there Return prints and Escape closes the window.
     xdotool(['key', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'shift+Tab', 'Return'])
     # Check it is open
@@ -459,11 +459,19 @@ def create_pcbnew_config(cfg):
     with open(cfg.conf_pcbnew, "wt") as text_file:
         if cfg.conf_pcbnew_json:
             conf = {"graphics": {"canvas_type": 2}}
-            conf["drc_dialog"] = {"refill_zones": True, "test_track_to_zone": True, "test_all_track_errors": True}
+            conf["drc_dialog"] = {"refill_zones": True,
+                                  "test_track_to_zone": True,
+                                  "test_all_track_errors": True}
             conf["system"] = {"first_run_shown": True}
-            conf["printing"] = {"monochrome": False, "title_block": True, "layers": sorted(used_layers)}
-            conf["plot"] = {"check_zones_before_plotting": cfg.fill_zones, "one_page_per_layer": 1, "pads_drill_mode": 2}
-            conf["window"] = {"size_x": cfg.rec_width, "size_y": cfg.rec_height}
+            conf["printing"] = {"monochrome": cfg.monochrome,
+                                "title_block": not cfg.no_title,
+                                "scale": cfg.scaling,
+                                "layers": sorted(used_layers)}
+            conf["plot"] = {"check_zones_before_plotting": cfg.fill_zones,
+                            "one_page_per_layer": int(not cfg.separate),
+                            "pads_drill_mode": cfg.pads}
+            conf["window"] = {"size_x": cfg.rec_width,
+                              "size_y": cfg.rec_height}
             json_text = json.dumps(conf)
             text_file.write(json_text)
             logger.debug(json_text)
@@ -473,13 +481,20 @@ def create_pcbnew_config(cfg):
             text_file.write('DrcTrackToZoneTest=1\n')
             text_file.write('PcbFrameFirstRunShown=1\n')
             # Color
-            text_file.write('PrintMonochrome=0\n')
+            text_file.write('PrintMonochrome=%d\n' % (cfg.monochrome))
             # Include frame
-            text_file.write('PrintPageFrame=1\n')
-            # Real drill marks
-            text_file.write('PrintPadsDrillOpt=2\n')
+            text_file.write('PrintPageFrame=%d\n' % (not cfg.no_title))
+            # Drill marks
+            text_file.write('PrintPadsDrillOpt=%d\n' % (cfg.pads))
             # Only one file
-            text_file.write('PrintSinglePage=1\n')
+            text_file.write('PrintSinglePage=%d\n' % (not cfg.separate))
+            # Scaling
+            if int(cfg.scaling) == 1:
+                text_file.write('PrintScale=0\n')
+            elif cfg.scaling:
+                text_file.write('PrintScale=%3.1f\n' % (cfg.scaling))
+            else:
+                text_file.write('PrintScale=1\n')
             # List all posible layers, indicating which ones are requested
             for x in range(0, 50):
                 text_file.write('PlotLayer_%d=%d\n' % (x, int(x in used_layers)))
@@ -533,10 +548,16 @@ if __name__ == '__main__':
     parser.add_argument('--wait_key', '-w', help='Wait for key to advance (debug)', action='store_true')
     parser.add_argument('--wait_start', help='Timeout to pcbnew start ['+str(WAIT_START)+']', type=int, default=WAIT_START)
 
+    # short commands: flmopsSt
     export_parser = subparsers.add_parser('export', help='Export PCB layers')
     export_parser.add_argument('--fill_zones', '-f', help='Fill all zones before printing', action='store_true')
     export_parser.add_argument('--list', '-l', help='Print a list of layers in LIST PCB and exit', nargs=1, action=ListLayers)
     export_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['printed.pdf'])
+    export_parser.add_argument('--scaling', '-s', nargs=1, help='Scale factor (0 fit page)', default=[1.0])
+    export_parser.add_argument('--pads', '-p', nargs=1, help='Pads style (0 none, 1 small, 2 full)', default=[2])
+    export_parser.add_argument('--no-title', '-t', help='Remove the title-block', action='store_true')
+    export_parser.add_argument('--monochrome', '-m', help='Print in blanck and white', action='store_true')
+    export_parser.add_argument('--separate', '-S', help='Layers in separated sheets', action='store_true')
     export_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     export_parser.add_argument('output_dir', help='Output directory')
     export_parser.add_argument('layers', nargs='+', help='Which layers to include')
@@ -585,6 +606,28 @@ if __name__ == '__main__':
         # Read the layer names from the PCB
         cfg.fill_zones = args.fill_zones
         cfg.layers = args.layers
+        try:
+            cfg.scaling = float(args.scaling[0])
+        except ValueError:
+            logger.error('Scaling must be a floating point value')
+            exit(WRONG_ARGUMENTS)
+        try:
+            cfg.pads = int(args.pads[0])
+        except ValueError:
+            logger.error('Pads style must be an integer value')
+            exit(WRONG_ARGUMENTS)
+        if cfg.pads < 0 or cfg.pads > 2:
+            logger.error('Pad style must be 0, 1 or 2')
+            exit(WRONG_ARGUMENTS)
+        cfg.no_title = args.no_title
+        cfg.monochrome = args.monochrome
+        cfg.separate = args.separate
+    else:
+        cfg.scaling = 1.0
+        cfg.pads = 2
+        cfg.no_title = False
+        cfg.monochrome = False
+        cfg.separate = False
 
     if args.command == 'run_drc' and args.errors_filter:
         load_filters(cfg, args.errors_filter[0])

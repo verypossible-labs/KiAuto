@@ -224,10 +224,13 @@ class TestContext(object):
                '-fuzz', '30%',
                # Count how many pixels differ
                '-metric', 'AE',
+               # Create a 720p image
+               '-size', 'x720',
                self.get_out_path(image),
                os.path.join(self.ref_dir, reference),
                # Avoid the part where KiCad version and title are printed
-               '-crop', '100%x88%+0+0', '+repage',
+               # Also avoid the upper numbers. KiCad 5.1.7 changed the place for "1"
+               '-crop', '100%x80%+0+36', '+repage',
                self.get_out_path(diff)]
         logging.debug('Comparing images with: '+usable_cmd(cmd))
         res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)

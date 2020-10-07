@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- Options to pcbnew_do export:
+  - `--scaling/-s`     Scale factor (0 fit page)
+  - `--pads/-p`        Pads style (0 none, 1 small, 2 full)
+  - `--no-title/-t`    Remove the title-block
+  - `--monochrome/-m`  Print in blanck and white
+  - `--separate/-S`    Layers in separated sheets
 
 ## [1.5.0] - 2020-10-05
 ### Added
