@@ -1,8 +1,14 @@
+kiauto (1.5.1-1) stable; urgency=medium
+
+  * New pcbnew_do export options
+
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Thu, 08 Oct 2020 12:49:23 -0300
+
 kiauto (1.5.0-1) stable; urgency=medium
 
   * Support for running the kicad-nightly (unstable) version
 
- -- Salvador E. Tropea <salvador@galadriel.inti.gob.ar>  Fri, 18 Sep 2020 13:29:23 -0300
+ -- Salvador E. Tropea <salvador@inti.gob.ar>  Fri, 18 Sep 2020 13:29:23 -0300
 
 kicad-automation-scripts.inti-cmnb (1.4.2-1) stable; urgency=medium
 

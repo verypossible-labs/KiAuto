@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+
+## [1.5.1] - 2020-10-08
 ### Added
 - Options to pcbnew_do export:
   - `--scaling/-s`     Scale factor (0 fit page)
