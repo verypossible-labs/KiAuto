@@ -1,7 +1,9 @@
 KiAuto
 ======
 
-![Python application](https://github.com/INTI-CMNB/kicad-automation-scripts/workflows/Regression%20tests/badge.svg) [![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/KiAuto/badge.svg?branch=master&service=github)](https://coveralls.io/github/INTI-CMNB/KiAuto?branch=master)
+[![Regression tests](https://github.com/INTI-CMNB/KiAuto/workflows/Regression%20tests/badge.svg)](https://github.com/INTI-CMNB/KiAuto/actions)
+[![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/KiAuto/badge.svg?branch=master&service=github)](https://coveralls.io/github/INTI-CMNB/KiAuto?branch=master)
+[![PyPI version](https://img.shields.io/pypi/v/kibot?style=plastic)](https://pypi.org/project/kiauto/)
 
 KiCad automation scripts.
 In particular to automate tasks that can't be done using the KiCad native Python interface.
@@ -108,7 +110,7 @@ sudo python3 setup.py install
 
 ### Installation on Debian
 
-Get the Debian package from the [releases section](https://github.com/INTI-CMNB/kicad-automation-scripts/releases) and run:
+Get the Debian package from the [releases section](https://github.com/INTI-CMNB/KiAuto/releases) and run:
 ```
 sudo apt install ./kiauto_*_all.deb
 ```
