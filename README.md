@@ -1,9 +1,9 @@
 KiAuto
 ======
 
-[![Regression tests](https://github.com/INTI-CMNB/KiAuto/workflows/Regression%20tests/badge.svg)](https://github.com/INTI-CMNB/KiAuto/actions)
-[![Coverage Status](https://coveralls.io/repos/github/INTI-CMNB/KiAuto/badge.svg?branch=master&service=github)](https://coveralls.io/github/INTI-CMNB/KiAuto?branch=master)
-[![PyPI version](https://img.shields.io/pypi/v/kibot?style=plastic)](https://pypi.org/project/kiauto/)
+[![Regression tests](https://img.shields.io/github/workflow/status/INTI-CMNB/KiAuto/Regression%20tests?style=plastic)](https://github.com/INTI-CMNB/KiAuto/actions)
+[![Coverage Status](https://img.shields.io/coveralls/github/INTI-CMNB/KiAuto?style=plastic)](https://coveralls.io/github/INTI-CMNB/KiAuto?branch=master)
+[![PyPI version](https://img.shields.io/pypi/v/kiauto?style=plastic)](https://pypi.org/project/kiauto/)
 
 KiCad automation scripts.
 In particular to automate tasks that can't be done using the KiCad native Python interface.
