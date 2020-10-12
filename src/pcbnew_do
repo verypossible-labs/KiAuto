@@ -635,6 +635,7 @@ if __name__ == '__main__':
         cfg.no_title = False
         cfg.monochrome = False
         cfg.separate = False
+        cfg.mirror = False
 
     if args.command == 'run_drc' and args.errors_filter:
         load_filters(cfg, args.errors_filter[0])
