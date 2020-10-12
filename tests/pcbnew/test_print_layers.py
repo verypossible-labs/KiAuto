@@ -167,9 +167,12 @@ def test_wrong_pad_style_2():
 def test_print_pcb_good_dwg_2():
     ctx = context.TestContext('print_pcb_good_dwg_2', 'good-project')
     pdf = 'good_pcb_sep_bn.pdf'
-    cmd = [PROG, 'export', '--scaling', '4', '--pads', '0', '--no-title', '--monochrome', '--separate', '--output_name', pdf]
+    cmd = [PROG, 'export', '--mirror', '--scaling', '4', '--pads', '0', '--no-title', '--monochrome', '--separate',
+           '--output_name', pdf]
     layers = ['F.Cu', 'F.SilkS', 'Dwgs.User', 'Edge.Cuts']
     ctx.run(cmd, extra=layers)
     ctx.expect_out_file(pdf)
+    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+        assert ctx.search_err(r"KiCad 5 doesn't support setting mirror")
     ctx.compare_pdf(pdf)
     ctx.clean_up()
