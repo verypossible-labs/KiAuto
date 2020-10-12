@@ -242,7 +242,9 @@ def print_layers(cfg):
              # Select all
              'ctrl+a',
              # Paste
-             'ctrl+v',
+             'ctrl+v'])
+    sleep(1)
+    xdotool(['key',
              # Select this name
              'Return'])
     # Back to print
@@ -468,6 +470,7 @@ def create_pcbnew_config(cfg):
                                 "scale": cfg.scaling,
                                 "layers": sorted(used_layers)}
             conf["plot"] = {"check_zones_before_plotting": cfg.fill_zones,
+                            "mirror": cfg.mirror,
                             "one_page_per_layer": int(not cfg.separate),
                             "pads_drill_mode": cfg.pads}
             conf["window"] = {"size_x": cfg.rec_width,
@@ -548,7 +551,7 @@ if __name__ == '__main__':
     parser.add_argument('--wait_key', '-w', help='Wait for key to advance (debug)', action='store_true')
     parser.add_argument('--wait_start', help='Timeout to pcbnew start ['+str(WAIT_START)+']', type=int, default=WAIT_START)
 
-    # short commands: flmopsSt
+    # short commands: flmMopsSt
     export_parser = subparsers.add_parser('export', help='Export PCB layers')
     export_parser.add_argument('--fill_zones', '-f', help='Fill all zones before printing', action='store_true')
     export_parser.add_argument('--list', '-l', help='Print a list of layers in LIST PCB and exit', nargs=1, action=ListLayers)
@@ -557,6 +560,7 @@ if __name__ == '__main__':
     export_parser.add_argument('--pads', '-p', nargs=1, help='Pads style (0 none, 1 small, 2 full)', default=[2])
     export_parser.add_argument('--no-title', '-t', help='Remove the title-block', action='store_true')
     export_parser.add_argument('--monochrome', '-m', help='Print in blanck and white', action='store_true')
+    export_parser.add_argument('--mirror', '-M', help='Print mirrored', action='store_true')
     export_parser.add_argument('--separate', '-S', help='Layers in separated sheets', action='store_true')
     export_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     export_parser.add_argument('output_dir', help='Output directory')
@@ -622,6 +626,9 @@ if __name__ == '__main__':
         cfg.no_title = args.no_title
         cfg.monochrome = args.monochrome
         cfg.separate = args.separate
+        cfg.mirror = args.mirror
+        if args.mirror and cfg.kicad_version < KICAD_VERSION_5_99:
+            logger.warning("KiCad 5 doesn't support setting mirror print from the configuration file")
     else:
         cfg.scaling = 1.0
         cfg.pads = 2
