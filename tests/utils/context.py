@@ -153,7 +153,7 @@ class TestContext(object):
         TestContext.pty_data += data
         return data
 
-    def run(self, cmd, ret_val=None, extra=None, use_a_tty=False, filename=None):
+    def run(self, cmd, ret_val=None, extra=None, use_a_tty=False, filename=None, ignore_ret=False):
         logging.debug('Running '+self.test_name)
         # Change the command to be local and add the board and output arguments
         cmd[0] = os.path.abspath(os.path.dirname(os.path.abspath(__file__))+'/../../src/'+cmd[0])
@@ -180,7 +180,8 @@ class TestContext(object):
             ret_code = process.wait()
         logging.debug('ret_code '+str(ret_code))
         exp_ret = 0 if ret_val is None else ret_val
-        assert ret_code == exp_ret, "got {} when {} expected".format(ret_code, exp_ret)
+        if not ignore_ret:
+            assert ret_code == exp_ret, "got {} when {} expected".format(ret_code, exp_ret)
         if use_a_tty:
             with open(out_filename, 'w') as f:
                 f.write(self.out)
