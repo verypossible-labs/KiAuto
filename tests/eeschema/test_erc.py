@@ -62,9 +62,9 @@ def test_erc_fail():
     ctx.clean_up()
 
 
-def test_erc_warning():
+def test_erc_warning_1():
     prj = 'warning-project'
-    ctx = context.TestContextSCH('ERC_Warning', prj)
+    ctx = context.TestContextSCH('test_erc_warning_1', prj)
     cmd = [PROG, 'run_erc']
     ctx.run(cmd, 0)
     ctx.expect_out_file(prj+'.erc')
@@ -76,7 +76,7 @@ def test_erc_warning():
 
 def test_erc_warning_fail():
     prj = 'warning-project'
-    ctx = context.TestContextSCH('ERC_Warning_as_Error', prj)
+    ctx = context.TestContextSCH('test_erc_warning_fail', prj)
     cmd = [PROG, 'run_erc', '--warnings_as_errors']
     ctx.run(cmd, 255)
     ctx.expect_out_file(prj+'.erc')
@@ -113,9 +113,15 @@ def test_erc_remap():
     rep = prj+'.erc'
     ctx = context.TestContextSCH('ERC_Remap', prj, True)
     cmd = [PROG, '-vv', '-r', 'run_erc']
-    ctx.run(cmd)
+    # This is an old project that I can't edit.
+    # KiCad 6 reports various issues.
+    # This check is oriented to check we detect the need for update.
+    ctx.run(cmd, ignore_ret=True)
     ctx.expect_out_file(rep)
-    assert ctx.search_err(r"Schematic needs update") is not None
+    # KiCad 5.99 20201013 doesn't use a modal window for the remap
+    # So we can't detect it
+    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+        assert ctx.search_err(r"Schematic needs update") is not None
     ctx.clean_up()
 
 
