@@ -27,8 +27,8 @@ EESCHEMA_ERROR = 10
 NO_PCBNEW_MODULE = 11
 USER_HOTKEYS_PRESENT = 12
 CORRUPTED_PCB = 13
-# Wait 25 s to pcbnew/eeschema window to be present
-WAIT_START = 25
+# Wait 40 s to pcbnew/eeschema window to be present
+WAIT_START = 40
 # Name for testing versions
 NIGHTLY = 'nightly'
 

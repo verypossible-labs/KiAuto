@@ -165,21 +165,28 @@ class TestContext(object):
         logging.debug(usable_cmd(cmd))
         out_filename = self.get_out_path('output.txt')
         err_filename = self.get_out_path('error.txt')
-        if use_a_tty:
-            # This is used to test the coloured logs, we need stderr to be a TTY
-            TestContext.pty_data = b''
-            ret_code = spawn(cmd, self.read)
-            self.err = TestContext.pty_data.decode()
-            self.out = self.err
-        else:
-            # Redirect stdout and stderr to files
-            f_out = os.open(out_filename, os.O_RDWR | os.O_CREAT)
-            f_err = os.open(err_filename, os.O_RDWR | os.O_CREAT)
-            # Run the process
-            process = subprocess.Popen(cmd, stdout=f_out, stderr=f_err)
-            ret_code = process.wait()
-        logging.debug('ret_code '+str(ret_code))
         exp_ret = 0 if ret_val is None else ret_val
+        retry = 2
+        while retry:
+            if use_a_tty:
+                # This is used to test the coloured logs, we need stderr to be a TTY
+                TestContext.pty_data = b''
+                ret_code = spawn(cmd, self.read)
+                self.err = TestContext.pty_data.decode()
+                self.out = self.err
+            else:
+                # Redirect stdout and stderr to files
+                f_out = os.open(out_filename, os.O_RDWR | os.O_CREAT)
+                f_err = os.open(err_filename, os.O_RDWR | os.O_CREAT)
+                # Run the process
+                process = subprocess.Popen(cmd, stdout=f_out, stderr=f_err)
+                ret_code = process.wait()
+            logging.debug('ret_code '+str(ret_code))
+            if not ((ret_code == 9 or ret_code == 10) and exp_ret != 9 and exp_ret != 10):
+                break
+            retry -= 1
+            if retry:
+                logging.debug('Retrying ...')
         if not ignore_ret:
             assert ret_code == exp_ret, "got {} when {} expected".format(ret_code, exp_ret)
         if use_a_tty:
