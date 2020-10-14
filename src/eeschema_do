@@ -199,6 +199,7 @@ def eeschema_plot_schematic(cfg):
     logger.info('Paste output directory')
     wait_point(cfg)
     xdotool(['key', 'ctrl+v'])
+    time.sleep(1)
     # Press the "Plot xxx" button
     logger.info('Move to the "plot" button')
     wait_point(cfg)
@@ -280,6 +281,8 @@ def eeschema_run_erc_schematic_5_1(cfg):
     logger.info('Pasting output file')
     wait_point(cfg)
     xdotool(['key', 'ctrl+a', 'ctrl+v'])
+    # Wait before sending the `Return`
+    time.sleep(1)
     # Run the ERC
     logger.info('Run ERC')
     wait_point(cfg)
@@ -336,6 +339,8 @@ def eeschema_run_erc_schematic_6_0(cfg):
     logger.info('Pasting output file')
     wait_point(cfg)
     xdotool(['key', 'ctrl+a', 'ctrl+v'])
+    # Wait before sending the `Return`
+    time.sleep(1)
     # Wait for report created
     logger.info('Wait for ERC file creation')
     wait_point(cfg)
@@ -396,6 +401,8 @@ def eeschema_netlist_commands(cfg):
     logger.info('Pasting output file')
     wait_point(cfg)
     xdotool(['key', 'ctrl+a', 'ctrl+v'])
+    # Wait before sending the `Return`
+    time.sleep(1)
     # Confirm the name and generate the netlist
     logger.info('Generate Netlist')
     wait_point(cfg)
@@ -427,6 +434,8 @@ def eeschema_bom_xml_commands(cfg):
     logger.info('Paste xslt command')
     wait_point(cfg)
     xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'ctrl+v'])
+    # Wait before sending the `Return`
+    time.sleep(1)
     # Generate the netlist
     logger.info('Generating netlist')
     wait_point(cfg)
