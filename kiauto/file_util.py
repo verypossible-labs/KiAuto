@@ -257,5 +257,5 @@ def _restore_project(name, stat_v, content):
 def restore_project(cfg):
     """ If the .pro was modified try to restore it """
     _restore_project(cfg.pro_name, cfg.pro_stat, cfg.pro_content)
-    if cfg.prl_ext:
+    if cfg.prl_ext and cfg.prl_stat:
         _restore_project(cfg.prl_name, cfg.prl_stat, cfg.prl_content)
