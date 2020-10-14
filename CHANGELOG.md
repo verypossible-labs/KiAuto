@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Fixed
+- Problems when using KiCad 5.99 and projects from KiCad 5.
 
 ## [1.5.2] - 2020-10-12
 ### Added
