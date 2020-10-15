@@ -251,6 +251,8 @@ it you just need mto use the *-f* command line option:
 pcbnew_do run_drc -f FILTER_FILE YOUR_PCB.kicad_pcb DESTINATION/
 ```
 
+Note that when using KiCad 6 the errors are strings enclosed by brackets, use only the text, not the brackets.
+
 ## History
 
 I saw a presentation of Jesse Vincent ([@obra](https://github.com/obra)) in the [KiCon 2019](https://2019.kicad-kicon.com/) about automating KiCad tasks.

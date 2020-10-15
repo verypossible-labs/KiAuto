@@ -58,6 +58,10 @@ def parse_drc(cfg):
     unconnected_pads = None
     in_errs = False
     in_wrns = False
+    if cfg.kicad_version >= KICAD_VERSION_5_99:
+        err_regex = re.compile(r'^\[(\S+)\]: (.*)')
+    else:
+        err_regex = re.compile(r'^ErrType\((\d+)\): (.*)')
     for line in lines:
         m = re.search(r'^\*\* Found ([0-9]+) DRC (errors|violations) \*\*$', line)
         if m:
@@ -74,7 +78,7 @@ def parse_drc(cfg):
         if m:
             break
         if in_errs:
-            m = re.search(r'^ErrType\((\d+)\): (.*)', line)
+            m = err_regex.search(line)
             if m:
                 cfg.errs.append('({}) {}'.format(m.group(1), m.group(2)))
                 continue
@@ -82,7 +86,7 @@ def parse_drc(cfg):
                 cfg.errs.append(cfg.errs.pop()+'\n'+line)
                 continue
         if in_wrns:
-            m = re.search(r'^ErrType\((\d+)\): (.*)', line)
+            m = err_regex.search(line)
             if m:
                 cfg.wrns.append('({}) {}'.format(m.group(1), m.group(2)))
                 continue

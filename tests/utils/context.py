@@ -223,23 +223,26 @@ class TestContext(object):
             m = re.search(t, txt, re.MULTILINE)
             assert m
 
-    def compare_image(self, image, reference=None, diff='diff.png'):
-        """ For images and single page PDFs """
-        if reference is None:
-            reference = image
-        cmd = ['compare',
-               # Tolerate 30 % error in color
-               '-fuzz', '30%',
-               # Count how many pixels differ
-               '-metric', 'AE',
-               # Create a 720p image
-               '-size', 'x720',
-               self.get_out_path(image),
-               os.path.join(self.ref_dir, reference),
-               # Avoid the part where KiCad version and title are printed
-               # Also avoid the upper numbers. KiCad 5.1.7 changed the place for "1"
-               '-crop', '100%x80%+0+36', '+repage',
-               self.get_out_path(diff)]
+    @staticmethod
+    def cmd_compare(img, ref, diff):
+        return ['compare',
+                # Tolerate 30 % error in color
+                '-fuzz', '30%',
+                # Count how many pixels differ
+                '-metric', 'AE',
+                # Create a 720p image
+                '-size', 'x720',
+                img, ref,
+                # Avoid the part where KiCad version and title are printed
+                # Also avoid the upper numbers. KiCad 5.1.7 changed the place for "1"
+                '-crop', '100%x80%+0+36',
+                # Remove the area outside the image
+                '+repage',
+                diff]
+
+    @staticmethod
+    def _compare_image(img, ref, diff):
+        cmd = TestContext.cmd_compare(img, ref, diff)
         logging.debug('Comparing images with: '+usable_cmd(cmd))
         res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
         # m = re.match(r'([\d\.e-]+) \(([\d\.e-]+)\)', res.decode())
@@ -248,6 +251,12 @@ class TestContext(object):
         ae = int(res.decode())
         logging.debug('AE=%d' % ae)
         assert ae == 0
+
+    def compare_image(self, image, reference=None, diff='diff.png'):
+        """ For images and single page PDFs """
+        if reference is None:
+            reference = image
+        self._compare_image(self.get_out_path(image), os.path.join(self.ref_dir, reference), self.get_out_path(diff))
 
     def svg_to_png(self, svg):
         png = os.path.splitext(svg)[0]+'.png'
@@ -306,18 +315,9 @@ class TestContext(object):
         assert len(ref_pages) == len(gen_pages)
         # Compare each page
         for page in range(len(ref_pages)):
-            cmd = ['compare', '-metric', 'MSE',
-                   self.get_out_path('ref-'+str(page)+'.png'),
-                   self.get_out_path('gen-'+str(page)+'.png'),
-                   # Avoid the part where KiCad version is printed
-                   '-crop', '100%x92%+0+0', '+repage',
-                   self.get_out_path(diff.format(page))]
-            logging.debug('Comparing images with: '+usable_cmd(cmd))
-            res = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
-            m = re.match(r'([\d\.]+) \(([\d\.]+)\)', res.decode())
-            assert m
-            logging.debug('MSE={} ({})'.format(m.group(1), m.group(2)))
-            assert float(m.group(2)) == 0.0
+            self._compare_image(self.get_out_path('ref-'+str(page)+'.png'),
+                                self.get_out_path('gen-'+str(page)+'.png'),
+                                self.get_out_path(diff.format(page)))
 
     def compare_txt(self, text, reference=None, diff='diff.txt'):
         if reference is None:

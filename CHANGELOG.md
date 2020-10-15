@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- Support for KiCad 5.99 DRC/ERC reports.
+
 ### Fixed
 - Problems when using KiCad 5.99 and projects from KiCad 5.
 

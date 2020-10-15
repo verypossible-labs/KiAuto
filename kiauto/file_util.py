@@ -69,7 +69,7 @@ def load_filters(cfg, file):
         for line in f:
             line = line.rstrip()
             if len(line) > 0 and line[0] != '#':
-                m = re.search(r'^(\d+),(.*)$', line)
+                m = re.search(r'^(\S+)\s*,(.*)$', line)
                 if m:
                     cfg.err_filters.append([m.group(1), m.group(2)])
                     fl = fl+1
