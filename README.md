@@ -69,22 +69,6 @@ If you want to debug problems you could also need:
 - [**x11vnc**](http://www.karlrunge.com/x11vnc/) and a client like [**ssvnc**](http://www.karlrunge.com/x11vnc/ssvnc.html), to see the KiCad live interaction.
 - [**fluxbox**](http://fluxbox.org/) and [**wmctrl**](http://tripie.sweb.cz/utils/wmctrl/) if you want to have a window manager when using **x11vnc**. Othewise windows can't be moved.
 
-### No installation
-
-You can use the scripts without installing. The scripts are located at the *src/* directory.
-
-You can also define bash aliases:
-
-```
-alias pcbnew_do=PATH_TO_REPO/src/pcbnew_do
-alias eeschema_do=PATH_TO_REPO/src/eeschema_do
-```
-
-Note that the following Python 3 packages must be installed:
-
-- [**xvfbwrapper**](https://pypi.org/project/xvfbwrapper/)
-- [**psutil**](https://pypi.org/project/psutil/)
-
 ### Installation using pip
 
 ```shell
@@ -107,6 +91,26 @@ Just run the setup, like with any other Python tool:
 ```
 sudo python3 setup.py install
 ```
+
+### No installation
+
+You can use the scripts without installing. The scripts are located at the *src/* directory.
+
+You can also define bash aliases:
+
+```
+alias pcbnew_do=PATH_TO_REPO/src/pcbnew_do
+alias eeschema_do=PATH_TO_REPO/src/eeschema_do
+```
+
+Note that the following Python 3 packages must be installed:
+
+- [**xvfbwrapper**](https://pypi.org/project/xvfbwrapper/)
+- [**psutil**](https://pypi.org/project/psutil/)
+
+Also note that this won't work if you plan to call the scripts from KiBot or other tool.
+Aliases are good for direct command line use, but are restricted to the shell where the aliases are declared.
+You can add the aliases to the bash configuration, but if the tool doesn't use bash or don't even use a shell this won't work.
 
 ### Installation on Debian
 
