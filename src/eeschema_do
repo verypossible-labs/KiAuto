@@ -314,29 +314,14 @@ def eeschema_run_erc_schematic_6_0(cfg):
     wait_point(cfg)
     xdotool(['key', 'Return'])
     #
-    # To know when KiCad finished we try this:
-    # - After pressing "Return" a "hidden widget" is selected.
-    #   The focus is before the messages and after the close.
-    # - A Tab gives the focus to the messages.
-    # - Ctrl+A selects all
-    # - Ctrl+V copies to the clipboard
-    # We try this sequence until we get the "Finished" message.
+    # Currently is impossible to know when it finished.
     #
-    tries = 30
-    while tries:
-        tries -= 1
-        xdotool(['key', 'Tab', 'ctrl+a', 'ctrl+c'])
-        res = clipboard_retrieve()
-        if 'Finished' in res:
-            break
-        time.sleep(0.5)
-    if not tries:
-        RuntimeError('Timed out waiting for ERC')
+    time.sleep(15)
     # Save the report
     clipboard_store(cfg.output_file)
     logger.info('Open the save dialog')
     wait_point(cfg)
-    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
+    xdotool(['key', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Tab', 'Return'])
     # Wait for the save dialog
     wait_for_window('ERC File save dialog', 'Save Report to File')
     # Paste the name
