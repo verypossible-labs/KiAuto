@@ -306,6 +306,7 @@
       "pin_not_connected": "error",
       "pin_not_driven": "error",
       "pin_to_pin": "error",
+      "power_pin_not_driven": "error",
       "similar_labels": "error",
       "unresolved_variable": "error",
       "wire_dangling": "error"
@@ -322,7 +323,7 @@
   "net_settings": {
     "classes": [
       {
-        "bus_width": 12.007874015748031,
+        "bus_width": 12.0,
         "clearance": 0.2,
         "diff_pair_gap": 0.25,
         "diff_pair_via_gap": 0.25,
@@ -336,7 +337,7 @@
         "track_width": 0.25,
         "via_diameter": 0.8,
         "via_drill": 0.4,
-        "wire_width": 5.984251968503937
+        "wire_width": 5.0
       }
     ],
     "meta": {
@@ -368,6 +369,7 @@
       "intersheets_ref_short": false,
       "intersheets_ref_show": false,
       "intersheets_ref_suffix": "",
+      "junction_size_choice": 3,
       "pin_symbol_size": 25.0,
       "text_offset_ratio": 0.3
     },
