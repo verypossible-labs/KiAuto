@@ -538,6 +538,58 @@ def process_drc_out(cfg):
         error_level = -(drc_errors+unconnected_pads)
     return error_level
 
+def export_3d_image():
+    # export a image capture of the 3d view
+    logger.info('Dismiss pcbnew already running')
+    pcbnew_main = xdotool(['getwindowfocus'])
+
+    # Had troubled gettin the Alt+3 command to work without this
+    xdotool(['windowsize', pcbnew_main, '100%', '100%'])
+    wait_point(cfg)
+
+    xdotool(['key', 'Alt+3'])
+    wait_for_window('3D Viewer', r'3D', timeout=20)
+    logger.info('3D Viewer loaded successfully')
+
+    # Make the viewer fullsize so that a higher resolution image is saved
+    viewer_3d = xdotool(['getwindowfocus'])
+    xdotool(['windowsize', viewer_3d, '100%', '100%'])
+
+    # Board with a lot of parts take a while to load
+    logger.info('Waiting for large models...')
+    sleep(5)
+
+    # Zoom +1
+    xdotool(['key', 'F1'])
+    logger.info('Zooming...')
+    sleep(7)
+
+    # File->Save
+    board_name = os.path.basename(cfg.input_file).split('.')[0]
+    xdotool(['key', 'F10', 'Down', 'Down'])
+    xdotool(['key', 'Return'])
+    sleep(1)
+    wait_point(cfg)
+    xdotool(['type', output_dir + '/' + board_name + '-front'])
+    wait_point(cfg)
+    xdotool(['key', 'Return'])
+    sleep(2)
+    logger.info('Front view saved')
+
+    # Flip
+    xdotool(['key', 'Shift+z'])
+    # Zoom +1
+    xdotool(['key', 'F1'])
+    sleep(2)
+    # File->Save
+    xdotool(['key', 'F10', 'Down', 'Down'])
+    xdotool(['key', 'Return'])
+    xdotool(['type', output_dir + '/' + board_name + '-back'])
+    xdotool(['key', 'Return'])
+    logger.info('Back view saved')
+
+    # Exit
+    exit_pcbnew(cfg)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='KiCad PCB automation')
@@ -569,6 +621,11 @@ if __name__ == '__main__':
     export_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
     export_parser.add_argument('output_dir', help='Output directory')
     export_parser.add_argument('layers', nargs='+', help='Which layers to include')
+
+    export_parser = subparsers.add_parser('3d_export', help='Export image of 3d view')
+    export_parser.add_argument('--output_name', '-o', nargs=1, help='Name of the output file', default=['printed.pdf']) #dont really use this
+    export_parser.add_argument('kicad_pcb_file', help='KiCad PCB file')
+    export_parser.add_argument('output_dir', help='Output directory')
 
     # short commands: ios
     drc_parser = subparsers.add_parser('run_drc', help='Run Design Rules Checker on a PCB')
@@ -685,6 +742,8 @@ if __name__ == '__main__':
                 wait_pcbew_start(cfg)
                 if args.command == 'export':
                     print_layers(cfg)
+                elif args.command == '3d_export':
+                    export_3d_image()
                 else:  # run_drc
                     run_drc(cfg)
                     error_level = process_drc_out(cfg)
