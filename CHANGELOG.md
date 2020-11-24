@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ## [Unreleased]
+### Added
+- KiCad environment variables preservation in eeschema_do
 
 ## [1.5.3] - 2020-10-15
 ### Added
