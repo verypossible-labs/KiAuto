@@ -60,7 +60,7 @@
       36,
       37
     ],
-    "visible_layers": "7ffff_ffffffff"
+    "visible_layers": "fffffff_ffffffff"
   },
   "meta": {
     "filename": "warning-project.kicad_prl",
@@ -73,11 +73,11 @@
         "open": false,
         "window": {
           "display": 0,
-          "maximized": true,
-          "pos_x": 381,
-          "pos_y": 37,
-          "size_x": 585,
-          "size_y": 363
+          "maximized": false,
+          "pos_x": 752,
+          "pos_y": 556,
+          "size_x": 1616,
+          "size_y": 1257
         }
       }
     ]

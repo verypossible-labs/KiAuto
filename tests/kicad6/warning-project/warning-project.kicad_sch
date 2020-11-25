@@ -1,4 +1,4 @@
-(kicad_sch (version 20200828) (generator eeschema)
+(kicad_sch (version 20201015) (generator eeschema)
 
   (page 1 3)
 
@@ -42,9 +42,18 @@
     )
   )
 
+  (sheet_instances
+    (path "/" (page "1"))
+    (path "/00000000-0000-0000-0000-00005ca71704/" (page "2"))
+    (path "/00000000-0000-0000-0000-00005ca75bc1/" (page "3"))
+  )
+
   (symbol_instances
     (path "/00000000-0000-0000-0000-00005ca71704/00000000-0000-0000-0000-00005ca72902"
       (reference "#FLG02") (unit 1) (value "PWR_FLAG") (footprint "")
+    )
+    (path "/00000000-0000-0000-0000-00005ca71704/730f8822-2270-4bad-80bd-620f2d81aa41"
+      (reference "#FLG0101") (unit 1) (value "PWR_FLAG") (footprint "")
     )
     (path "/00000000-0000-0000-0000-00005ca71704/00000000-0000-0000-0000-00005ca73f58"
       (reference "#PWR01") (unit 1) (value "GND") (footprint "")

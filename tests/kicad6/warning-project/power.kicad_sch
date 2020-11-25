@@ -1,6 +1,6 @@
-(kicad_sch (version 20200828) (generator eeschema)
+(kicad_sch (version 20201015) (generator eeschema)
 
-  (page 2 3)
+  (page 1 3)
 
   (paper "A4")
 
@@ -63,6 +63,12 @@
       (property "ki_description" "Special symbol for telling ERC where power comes from" (id 5) (at 0 0 0)
         (effects (font (size 1.27 1.27)) hide)
       )
+      (symbol "PWR_FLAG_0_0"
+        (pin power_out line (at 0 0 90) (length 0)
+          (name "pwr" (effects (font (size 1.27 1.27))))
+          (number "1" (effects (font (size 1.27 1.27))))
+        )
+      )
       (symbol "PWR_FLAG_0_1"
         (polyline
           (pts
@@ -74,12 +80,6 @@
             (xy 0 1.27)
           )
           (stroke (width 0)) (fill (type none))
-        )
-      )
-      (symbol "PWR_FLAG_0_0"
-        (pin power_out line (at 0 0 90) (length 0)
-          (name "pwr" (effects (font (size 1.27 1.27))))
-          (number "1" (effects (font (size 1.27 1.27))))
         )
       )
     )
@@ -213,7 +213,7 @@
       (property "Datasheet" "" (id 3) (at 0 0 0)
         (effects (font (size 1.27 1.27)))
       )
-      (property "ki_fp_filters" "Pin_Header_Straight_1X02\nPin_Header_Angled_1X02\nSocket_Strip_Straight_1X02\nSocket_Strip_Angled_1X02" (id 4) (at 0 0 0)
+      (property "ki_fp_filters" "Pin_Header_Straight_1X02 Pin_Header_Angled_1X02 Socket_Strip_Straight_1X02 Socket_Strip_Angled_1X02" (id 4) (at 0 0 0)
         (effects (font (size 1.27 1.27)) hide)
       )
       (symbol "CONN_01X02-conn_0_1"
@@ -241,16 +241,23 @@
   )
 
   (junction (at 123.19 92.964) (diameter 1.016) (color 0 0 0 0))
+  (junction (at 125.476 90.424) (diameter 1.016) (color 0 0 0 0))
   (junction (at 132.334 90.424) (diameter 1.016) (color 0 0 0 0))
   (junction (at 138.43 90.424) (diameter 1.016) (color 0 0 0 0))
 
-  (wire (pts (xy 115.57 90.424) (xy 132.334 90.424))
+  (wire (pts (xy 115.57 90.424) (xy 125.476 90.424))
     (stroke (width 0) (type solid) (color 0 0 0 0))
   )
   (wire (pts (xy 115.57 92.964) (xy 123.19 92.964))
     (stroke (width 0) (type solid) (color 0 0 0 0))
   )
   (wire (pts (xy 123.19 92.964) (xy 132.334 92.964))
+    (stroke (width 0) (type solid) (color 0 0 0 0))
+  )
+  (wire (pts (xy 125.476 89.408) (xy 125.476 90.424))
+    (stroke (width 0) (type solid) (color 0 0 0 0))
+  )
+  (wire (pts (xy 125.476 90.424) (xy 132.334 90.424))
     (stroke (width 0) (type solid) (color 0 0 0 0))
   )
   (wire (pts (xy 132.334 90.424) (xy 138.43 90.424))
@@ -293,6 +300,21 @@
     (property "Value" "PWR_FLAG" (id 1) (at 123.19 98.6282 0))
     (property "Footprint" "" (id 2) (at 123.19 92.964 0))
     (property "Datasheet" "" (id 3) (at 123.19 92.964 0))
+  )
+
+  (symbol (lib_id "power:PWR_FLAG") (at 125.476 89.408 0) (unit 1)
+    (in_bom yes) (on_board yes)
+    (uuid "730f8822-2270-4bad-80bd-620f2d81aa41")
+    (property "Reference" "#FLG0101" (id 0) (at 125.476 87.503 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "PWR_FLAG" (id 1) (at 125.476 85.0836 0))
+    (property "Footprint" "" (id 2) (at 125.476 89.408 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (id 3) (at 125.476 89.408 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
   )
 
   (symbol (lib_id "power:VCC") (at 132.334 90.424 0) (unit 1)
