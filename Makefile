@@ -114,9 +114,9 @@ gen_ref:
 	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] && [ -e output $(HOME)/.config/kicadnightly/5.99/colors.ok ] ; then rm -rf $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
 	if [ -e $(HOME)/.config/kicadnightly/5.99/colors ] ; then mv $(HOME)/.config/kicadnightly/5.99/colors $(HOME)/.config/kicadnightly/5.99/colors.ok; fi
 	# Reference outputs, must be manually inspected if regenerated
-	# cp -a $(REFILL).refill $(REFILL)
-	# src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
-	# cp -a $(REFILL).ok $(REFILL)
+	cp -a $(REFILL).refill $(REFILL)
+	src/pcbnew_do export --output_name zone-refill.pdf $(REFILL) $(REFDIR) F.Cu B.Cu Edge.Cuts
+	cp -a $(REFILL).ok $(REFILL)
 	# src/pcbnew_do export --output_name good_pcb_with_dwg.pdf $(GOOD) $(REFDIR) F.Cu F.SilkS Dwgs.User Edge.Cuts
 	# src/pcbnew_do export --output_name good_pcb_inners.pdf   $(GOOD) $(REFDIR) F.Cu F.SilkS GND.Cu Signal1.Cu Signal2.Cu Power.Cu Edge.Cuts
 	src/pcbnew_do export --list $(GOOD) > $(REFDIR)good_pcb_layers.txt
@@ -129,8 +129,8 @@ gen_ref:
 	# I really hate this, files has time stamps, 3 of them in fact, WHY ANOTHER INSIDE!!!
 	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project.svg > $(REFDIR)good-project.svg.new
 	mv $(REFDIR)good-project.svg.new $(REFDIR)good-project.svg
-	# sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project-logic.svg > $(REFDIR)good-project-logic.svg.new
-	# mv $(REFDIR)good-project-logic.svg.new $(REFDIR)good-project-logic.svg
+	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project-logic.svg > $(REFDIR)good-project-logic.svg.new
+	mv $(REFDIR)good-project-logic.svg.new $(REFDIR)good-project-logic.svg
 	sed -E 's/date .* <\/title>/DATE <\/title>/' $(REFDIR)good-project-Power.svg > $(REFDIR)good-project-Power.svg.new
 	mv $(REFDIR)good-project-Power.svg.new $(REFDIR)good-project-Power.svg
 	src/eeschema_do export --file_format ps --all $(GOOD_SCH) $(REFDIR)

@@ -349,7 +349,7 @@ def run_drc_python(cfg):
     filler = pcbnew.ZONE_FILLER(cfg.board)
     filler.Fill(cfg.board.Zones())
     logger.debug("Running DRC")
-    pcbnew.WriteDRCReport(cfg.board, cfg.output_file, 1, True, True)
+    pcbnew.WriteDRCReport(cfg.board, cfg.output_file, pcbnew.EDA_UNITS_MILLIMETRES, True)
     if cfg.save:
         logger.info('Saving PCB')
         os.rename(cfg.input_file, cfg.input_file + '-bak')
@@ -470,6 +470,9 @@ def create_pcbnew_config(cfg):
                                   "test_all_track_errors": True}
             conf["system"] = {"first_run_shown": True}
             conf["printing"] = {"monochrome": cfg.monochrome,
+                                # TODO: Allow configuration
+                                "color_theme": "_builtin_classic",
+                                "use_theme": True,
                                 "title_block": not cfg.no_title,
                                 "scale": cfg.scaling,
                                 "layers": sorted(used_layers)}
