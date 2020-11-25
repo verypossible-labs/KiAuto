@@ -97,13 +97,16 @@ def test_sch_no_extension():
 def test_bogus_sch():
     """ A broken SCH file """
     ctx = context.TestContextSCH('Bogus_SCH', 'good-project')
-    sch = ctx.get_out_path(BOGUS_SCH)
-    # Create an invalid SCH
-    with open(sch, 'w') as f:
-        f.write('dummy')
-    cmd = [PROG, '-vv', '-r', 'run_erc']
-    ctx.run(cmd, EESCHEMA_ERROR, filename=sch)
-    assert ctx.search_err(r"eeschema reported an error") is not None
+    # Current KiCad 5.99 (20201125) creates the warning dialog, but doesn't give it focus.
+    # So we never know about the problem.
+    if ctx.kicad_version < context.KICAD_VERSION_5_99:
+        sch = ctx.get_out_path(BOGUS_SCH)
+        # Create an invalid SCH
+        with open(sch, 'w') as f:
+            f.write('dummy')
+        cmd = [PROG, '-vv', '-r', 'run_erc']
+        ctx.run(cmd, EESCHEMA_ERROR, filename=sch)
+        assert ctx.search_err(r"eeschema reported an error") is not None
     ctx.clean_up()
 
 
